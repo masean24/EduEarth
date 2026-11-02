@@ -52,9 +52,10 @@ Data demo hanya dibuat jika benar-benar diperlukan untuk mengembangkan UI. Atura
 - Jangan commit kode yang tidak lolos `flutter analyze`.
 
 ## Format jawaban agent (untuk setiap tugas)
-1. Ringkasan singkat: apa yang dikerjakan dan file yang terdampak.
-2. Dependency / konfigurasi baru (jika ada).
-3. Kode lengkap per file, masing-masing diawali path.
-4. SQL migrasi (jika ada).
-5. Checklist verifikasi: perintah yang dijalankan dan hal yang dicek manual.
-6. Item roadmap yang boleh dicentang, dan usulan tugas berikutnya.
+Karena agent menulis file langsung ke repo, **JANGAN menempelkan ulang kode lengkap di chat** (tampilkan potongan kode hanya jika diminta atau untuk review keputusan desain). Target panjang jawaban maksimal ±40 baris:
+1. Ringkasan singkat (3–6 baris).
+2. Daftar file yang dibuat/diubah (path + satu baris fungsi).
+3. Dependency / konfigurasi baru (jika ada).
+4. Hasil perintah verifikasi yang sudah dijalankan (`flutter analyze`, `flutter test`, dll.).
+5. Apa yang perlu dicek manual oleh pemilik.
+6. Usulan tugas berikutnya.

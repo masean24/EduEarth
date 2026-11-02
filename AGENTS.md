@@ -41,7 +41,7 @@ Peta di dalam app memakai **OpenStreetMap, BUKAN Google Maps SDK**. Google Maps 
 Untuk setiap tugas:
 
 1. **Konfirmasi pemahaman**: sebutkan fase/fitur yang sedang dikerjakan dan file mana yang akan dibuat atau diubah.
-2. **Tulis kode lengkap per file**, dengan path jelas (contoh: `lib/features/map/presentation/pages/explore_map_page.dart`). Jangan memakai potongan `// ... sisa kode`.
+2. **Tulis kode lengkap langsung ke file di repo** (jangan memakai potongan `// ... sisa kode` di dalam file). **JANGAN menempelkan ulang kode lengkap di chat**; tampilkan potongan kode di chat hanya jika diminta atau ada keputusan desain yang perlu direview. Target panjang jawaban di chat maksimal ±40 baris.
 3. **Pastikan terintegrasi**: import benar, provider terdaftar, route terdaftar, tidak ada referensi ke file yang belum ada.
 4. **Sebutkan dependency baru** yang perlu ditambahkan ke `pubspec.yaml` dan konfigurasi platform (AndroidManifest/Info.plist) bila ada.
 5. **Sertakan SQL** untuk perubahan database sebagai file migrasi di `supabase/migrations/`.

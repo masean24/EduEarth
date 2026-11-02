@@ -3,21 +3,21 @@
 > Agent: kerjakan **satu fase sekali**, urut. Centang item yang selesai dan terverifikasi.
 > Jangan mulai fase berikutnya sebelum "Kriteria selesai" fase saat ini terpenuhi dan pemilik menyetujui.
 
-**Status saat ini:** Fase 0 (belum dimulai)
+**Status saat ini:** Fase 1 (sedang dikerjakan)
 
 ---
 
 ## Fase 0 — Fondasi
-- [ ] Buat proyek Flutter (`com.<nama>.eduearth` atau sesuai pemilik), Android + iOS
-- [ ] `pubspec.yaml` dengan dependency di `docs/02_ARCHITECTURE.md`
-- [ ] Struktur folder sesuai arsitektur
-- [ ] `app_colors.dart`, `app_text_styles.dart`, `app_theme.dart`
-- [ ] `GlassContainer` (dengan fallback tanpa blur) + halaman demo komponen
-- [ ] `LoadingView`, `ErrorView`, `EmptyView`
-- [ ] `route_names.dart` + `app_router.dart` (GoRouter, placeholder halaman)
-- [ ] `app_config.dart` (dart-define), `.env.example`, `.gitignore` aman
-- [ ] Inisialisasi Supabase di `supabase_service.dart`
-- [ ] Setup Git + commit awal
+- [x] Buat proyek Flutter (`com.<nama>.eduearth` atau sesuai pemilik), Android + iOS
+- [x] `pubspec.yaml` dengan dependency di `docs/02_ARCHITECTURE.md`
+- [x] Struktur folder sesuai arsitektur
+- [x] `app_colors.dart`, `app_text_styles.dart`, `app_theme.dart`
+- [x] `GlassContainer` (dengan fallback tanpa blur) + halaman demo komponen
+- [x] `LoadingView`, `ErrorView`, `EmptyView`
+- [x] `route_names.dart` + `app_router.dart` (GoRouter, placeholder halaman)
+- [x] `app_config.dart` (dart-define), `.env.example`, `.gitignore` aman
+- [x] Inisialisasi Supabase di `supabase_service.dart`
+- [x] Setup Git + commit awal
 
 **Kriteria selesai:** app berjalan di Android/iOS, tema dan glass tampil benar, navigasi placeholder berfungsi, `flutter analyze` bersih.
 
@@ -80,4 +80,4 @@
 ---
 
 ## Catatan kemajuan
-(Agent: tambahkan ringkasan singkat per sesi di sini — tanggal, apa yang selesai, apa yang tertunda.)
+- **2026-11-02 (Fase 0):** Fondasi proyek (`com.eduearth.app`), struktur arsitektur feature-based, design system *Nature Tech + Liquid Glass*, `GlassContainer` dengan fallback tanpa blur, tiga state UI (`LoadingView`, `ErrorView`, `EmptyView`), halaman demo komponen, dan GoRouter 5 tab selesai dan terverifikasi.

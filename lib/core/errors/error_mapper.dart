@@ -30,33 +30,49 @@ class ErrorMapper {
 
     if (error is PostgrestException) {
       return AppException(
-        message: 'Gagal memuat atau menyimpan data. Silakan coba beberapa saat lagi.',
+        message:
+            'Gagal memuat atau menyimpan data. Silakan coba beberapa saat lagi.',
         code: error.code,
         originalError: error,
       );
     }
 
     return AppException(
-      message: 'Terjadi kesalahan koneksi atau sistem. Silakan periksa internet Anda dan coba lagi.',
+      message:
+          'Terjadi kesalahan koneksi atau sistem. Silakan periksa internet Anda dan coba lagi.',
       originalError: error,
     );
   }
 
   static String _mapAuthMessage(String rawMessage) {
     final lower = rawMessage.toLowerCase();
-    if (lower.contains('invalid login credentials')) {
+    if (lower.contains('invalid login credentials') ||
+        lower.contains('invalid_credentials')) {
       return 'Email atau kata sandi yang Anda masukkan salah.';
     }
-    if (lower.contains('user already registered')) {
+    if (lower.contains('user already registered') ||
+        lower.contains('already exists')) {
       return 'Email ini sudah terdaftar. Silakan masuk menggunakan akun Anda.';
     }
     if (lower.contains('email not confirmed')) {
       return 'Email Anda belum dikonfirmasi. Silakan periksa kotak masuk email Anda.';
     }
-    if (lower.contains('password should be at least')) {
+    if (lower.contains('password should be at least') ||
+        lower.contains('weak_password')) {
       return 'Kata sandi terlalu pendek. Gunakan minimal 6 karakter.';
     }
-    return 'Gagal memproses autentikasi. Silakan coba lagi.';
+    if (lower.contains('rate limit') ||
+        lower.contains('over_email_send_rate_limit') ||
+        lower.contains('too many requests')) {
+      return 'Terlalu banyak percobaan. Silakan tunggu beberapa saat sebelum mencoba lagi.';
+    }
+    if (lower.contains('invalid format') ||
+        lower.contains('unable to validate email')) {
+      return 'Format alamat email tidak valid.';
+    }
+    if (lower.contains('network') || lower.contains('socketexception')) {
+      return 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
+    }
+    return 'Gagal memproses autentikasi. Silakan periksa kembali data Anda dan coba lagi.';
   }
 }
-

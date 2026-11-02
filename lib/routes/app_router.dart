@@ -5,60 +5,109 @@ import 'package:go_router/go_router.dart';
 import '../core/constants/app_constants.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
+import '../core/theme/app_theme.dart';
 import '../core/widgets/common/design_system_showcase_page.dart';
+import '../core/widgets/common/error_view.dart';
+import '../core/widgets/common/loading_view.dart';
 import '../core/widgets/common/primary_button.dart';
 import '../core/widgets/common/secondary_button.dart';
 import '../core/widgets/glass/glass_container.dart';
+import '../features/auth/presentation/pages/login_page.dart';
+import '../features/auth/presentation/pages/register_page.dart';
+import '../features/auth/presentation/providers/auth_provider.dart';
+import '../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../features/onboarding/presentation/providers/onboarding_provider.dart';
+import '../features/splash/presentation/pages/splash_page.dart';
+import '../services/supabase_service.dart';
 import 'route_names.dart';
 
-/// Provider GoRouter utama untuk aplikasi EduEarth.
+/// Notifier internal untuk memicu evaluasi ulang redirect GoRouter
+/// ketika status onboarding atau sesi autentikasi berubah.
+class _RouterRefreshListenable extends ChangeNotifier {
+  void notify() => notifyListeners();
+}
+
+/// Provider GoRouter utama untuk aplikasi EduEarth dengan redirect dinamis
+/// berbasis status onboarding dan sesi autentikasi Supabase.
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final refreshListenable = _RouterRefreshListenable();
+  ref.onDispose(refreshListenable.dispose);
+
+  ref.listen(onboardingStatusProvider, (_, _) => refreshListenable.notify());
+  ref.listen(currentSessionProvider, (_, _) => refreshListenable.notify());
+
   return GoRouter(
-    initialLocation: RouteNames.homePath,
+    initialLocation: RouteNames.splashPath,
+    refreshListenable: refreshListenable,
     debugLogDiagnostics: false,
+    redirect: (context, state) {
+      final location = state.matchedLocation;
+
+      // Izinkan halaman demo komponen diakses kapan saja untuk verifikasi UI
+      if (location == RouteNames.designShowcasePath) {
+        return null;
+      }
+
+      final onboardingAsync = ref.read(onboardingStatusProvider);
+      if (onboardingAsync.isLoading) {
+        return location == RouteNames.splashPath
+            ? null
+            : RouteNames.splashPath;
+      }
+
+      final isOnboardingDone = onboardingAsync.value ?? false;
+      final isSupabaseReady = ref.read(isSupabaseInitializedProvider);
+      final isAuthenticated = ref.read(isAuthenticatedProvider);
+
+      // 1. Belum selesai onboarding -> arahkan ke /onboarding
+      if (!isOnboardingDone) {
+        if (location == RouteNames.onboardingPath ||
+            location == RouteNames.splashPath) {
+          return null;
+        }
+        return RouteNames.onboardingPath;
+      }
+
+      // 2. Sudah onboarding, Supabase aktif, tetapi belum login -> arahkan ke /login
+      final isAuthRoute =
+          location == RouteNames.loginPath ||
+          location == RouteNames.registerPath;
+
+      if (isSupabaseReady && !isAuthenticated) {
+        if (isAuthRoute || location == RouteNames.splashPath) {
+          return null;
+        }
+        return RouteNames.loginPath;
+      }
+
+      // 3. Sudah login tetapi mencoba membuka halaman login/register/onboarding
+      if (isAuthenticated &&
+          (isAuthRoute || location == RouteNames.onboardingPath)) {
+        return RouteNames.homePath;
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         name: RouteNames.splashName,
         path: RouteNames.splashPath,
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Splash Screen',
-          phaseLabel: 'Fase 1 — Database & Autentikasi',
-          description:
-              'Layar pembuka EduEarth yang memeriksa status onboarding dan sesi autentikasi pengguna.',
-          icon: Icons.eco_rounded,
-        ),
+        builder: (context, state) => const SplashPage(),
       ),
       GoRoute(
         name: RouteNames.onboardingName,
         path: RouteNames.onboardingPath,
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Onboarding',
-          phaseLabel: 'Fase 1 — Database & Autentikasi',
-          description:
-              'Pengenalan interaktif tentang peta pembangkit energi terbarukan, materi belajar, dan kuis.',
-          icon: Icons.wb_sunny_outlined,
-        ),
+        builder: (context, state) => const OnboardingPage(),
       ),
       GoRoute(
         name: RouteNames.loginName,
         path: RouteNames.loginPath,
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Masuk (Login)',
-          phaseLabel: 'Fase 1 — Database & Autentikasi',
-          description: 'Halaman autentikasi pengguna dengan Supabase Auth.',
-          icon: Icons.login_rounded,
-        ),
+        builder: (context, state) => const LoginPage(),
       ),
       GoRoute(
         name: RouteNames.registerName,
         path: RouteNames.registerPath,
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Daftar Akun (Register)',
-          phaseLabel: 'Fase 1 — Database & Autentikasi',
-          description:
-              'Pendaftaran akun baru yang otomatis membuat profil melalui trigger handle_new_user.',
-          icon: Icons.person_add_alt_1_rounded,
-        ),
+        builder: (context, state) => const RegisterPage(),
       ),
       GoRoute(
         name: RouteNames.designShowcaseName,
@@ -77,9 +126,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: RouteNames.homePath,
                 builder: (context, state) => const _PlaceholderScreen(
                   title: 'Home Dashboard',
-                  phaseLabel: 'Fase 0 Fondasi Aktif (Isi penuh di Fase 2)',
+                  phaseLabel: 'Fase 1 — Database & Autentikasi Aktif',
                   description:
-                      'Selamat datang di EduEarth! Fondasi arsitektur, tema Nature Tech, GlassContainer, dan GoRouter 5 tab telah siap.',
+                      'Autentikasi Supabase, profil pengguna otomatis (handle_new_user), dan seed 5 kategori energi telah siap. Isi lengkap Home hadir di Fase 2.',
                   icon: Icons.home_rounded,
                   showShowcaseButton: true,
                 ),
@@ -139,14 +188,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 name: RouteNames.profileName,
                 path: RouteNames.profilePath,
-                builder: (context, state) => const _PlaceholderScreen(
-                  title: 'Profil Pengguna',
-                  phaseLabel: 'Fase 5 — Profil dan Kelengkapan',
-                  description:
-                      'Kelola profil, riwayat belajar, bookmark, dan pengaturan efek visual.',
-                  icon: Icons.person_rounded,
-                  showShowcaseButton: true,
-                ),
+                builder: (context, state) => const _Phase1ProfileScreen(),
               ),
             ],
           ),
@@ -266,8 +308,110 @@ class _MainShellScaffold extends StatelessWidget {
   }
 }
 
-/// Layar placeholder Fase 0 untuk memverifikasi routing & tema.
-class _PlaceholderScreen extends StatelessWidget {
+/// Layar tab Profil untuk menguji sesi, trigger `user_profiles`, dan Logout di Fase 1.
+class _Phase1ProfileScreen extends ConsumerWidget {
+  const _Phase1ProfileScreen();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(currentSessionProvider);
+    final profileAsync = ref.watch(currentUserProfileProvider);
+    final authController = ref.watch(authControllerProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profil & Sesi Akun'),
+      ),
+      body: SafeArea(
+        child: profileAsync.when(
+          loading: () => const LoadingView(message: 'Memuat profil pengguna...'),
+          error: (error, _) => ErrorView(
+            message: error.toString(),
+            onRetry: () => ref.invalidate(currentUserProfileProvider),
+          ),
+          data: (profile) {
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 120),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceWhite,
+                    borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+                    border: Border.all(color: AppColors.divider),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 72,
+                        height: 72,
+                        decoration: const BoxDecoration(
+                          color: AppColors.mintGreen,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.person_rounded,
+                          size: 36,
+                          color: AppColors.forestGreen,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        profile?.displayName ??
+                            session?.user.email ??
+                            'Pengguna Tamu (Mode Lokal)',
+                        style: AppTextStyles.title,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        session?.user.email ?? 'Belum masuk dengan akun Supabase',
+                        style: AppTextStyles.caption,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (session != null)
+                  PrimaryButton(
+                    label: 'Keluar (Logout)',
+                    icon: Icons.logout_rounded,
+                    isLoading: authController.isLoading,
+                    onPressed: () async {
+                      await ref.read(authControllerProvider.notifier).signOut();
+                    },
+                  )
+                else
+                  PrimaryButton(
+                    label: 'Ke Halaman Masuk (Login)',
+                    icon: Icons.login_rounded,
+                    onPressed: () => context.push(RouteNames.loginPath),
+                  ),
+                const SizedBox(height: 12),
+                SecondaryButton(
+                  label: 'Ulangi Onboarding',
+                  icon: Icons.replay_rounded,
+                  onPressed: () async {
+                    await ref
+                        .read(onboardingStatusProvider.notifier)
+                        .resetOnboarding();
+                    if (context.mounted) {
+                      context.go(RouteNames.onboardingPath);
+                    }
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// Layar placeholder untuk tab yang baru diisi penuh di fase berikutnya.
+class _PlaceholderScreen extends ConsumerWidget {
   const _PlaceholderScreen({
     required this.title,
     required this.phaseLabel,
@@ -283,7 +427,9 @@ class _PlaceholderScreen extends StatelessWidget {
   final bool showShowcaseButton;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isAuthenticated = ref.watch(isAuthenticatedProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
@@ -293,6 +439,13 @@ class _PlaceholderScreen extends StatelessWidget {
               tooltip: 'Buka Demo Komponen & Design System',
               onPressed: () => context.push(RouteNames.designShowcasePath),
               icon: const Icon(Icons.palette_outlined),
+            ),
+          if (isAuthenticated)
+            IconButton(
+              tooltip: 'Keluar (Logout)',
+              onPressed: () =>
+                  ref.read(authControllerProvider.notifier).signOut(),
+              icon: const Icon(Icons.logout_rounded),
             ),
         ],
       ),
@@ -361,21 +514,6 @@ class _PlaceholderScreen extends StatelessWidget {
                     onPressed: () =>
                         context.push(RouteNames.designShowcasePath),
                   ),
-                  const SizedBox(height: 12),
-                  SecondaryButton(
-                    label: 'Cek Route Onboarding (Placeholder)',
-                    icon: Icons.explore_outlined,
-                    isExpanded: false,
-                    onPressed: () => context.push(RouteNames.onboardingPath),
-                  ),
-                ] else ...[
-                  const SizedBox(height: 24),
-                  SecondaryButton(
-                    label: 'Kembali ke Home',
-                    icon: Icons.arrow_back_rounded,
-                    isExpanded: false,
-                    onPressed: () => context.go(RouteNames.homePath),
-                  ),
                 ],
               ],
             ),
@@ -385,4 +523,3 @@ class _PlaceholderScreen extends StatelessWidget {
     );
   }
 }
-
