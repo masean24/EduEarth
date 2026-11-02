@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/constants/app_constants.dart';
@@ -13,14 +14,17 @@ import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/primary_button.dart';
 import '../../../../core/widgets/common/secondary_button.dart';
 import '../../../../models/power_plant.dart';
+import '../../../../routes/route_names.dart';
 import '../../../../services/external_map_service.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../bookmark/presentation/providers/bookmark_providers.dart';
 import '../providers/plants_providers.dart';
 
 /// Halaman Detail Pembangkit Energi (Plant Detail).
 ///
 /// Menampilkan atribut lengkap pembangkit, penanda data demo (bila `isDemo`),
-/// peta pratinjau OpenStreetMap, tautan sumber (`source_url`), dan tombol aksi
-/// "Buka di Google Maps" via `url_launcher`.
+/// peta pratinjau OpenStreetMap, tautan sumber (`source_url`), tombol toggle
+/// Bookmark, dan tombol aksi "Buka di Google Maps" via `url_launcher`.
 class PlantDetailPage extends ConsumerWidget {
   const PlantDetailPage({
     super.key,
@@ -68,14 +72,81 @@ class PlantDetailPage extends ConsumerWidget {
     }
   }
 
+  Future<void> _handleToggleBookmark(
+    BuildContext context,
+    WidgetRef ref,
+    String id,
+    bool currentlyBookmarked,
+  ) async {
+    final isAuthenticated = ref.read(isAuthenticatedProvider);
+    if (!isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Silakan masuk (login) untuk menyimpan bookmark.'),
+        ),
+      );
+      context.push(RouteNames.loginPath);
+      return;
+    }
+
+    final success = await ref
+        .read(bookmarkControllerProvider.notifier)
+        .togglePlant(id);
+
+    if (!context.mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            currentlyBookmarked
+                ? 'Pembangkit dihapus dari Bookmark.'
+                : 'Pembangkit disimpan ke Bookmark.',
+          ),
+        ),
+      );
+    } else {
+      final err = ref.read(bookmarkControllerProvider).error;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(err?.toString() ?? 'Gagal memperbarui bookmark.'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plantAsync = ref.watch(plantDetailProvider(plantId));
     final externalMapService = ref.watch(externalMapServiceProvider);
+    final isBookmarked = ref.watch(isPlantBookmarkedProvider(plantId));
+    final bookmarkController = ref.watch(bookmarkControllerProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail Pembangkit'),
+        actions: [
+          if (plantAsync.asData != null)
+            IconButton(
+              tooltip: isBookmarked
+                  ? 'Hapus dari Bookmark'
+                  : 'Simpan ke Bookmark',
+              onPressed: bookmarkController.isLoading
+                  ? null
+                  : () => _handleToggleBookmark(
+                        context,
+                        ref,
+                        plantId,
+                        isBookmarked,
+                      ),
+              icon: Icon(
+                isBookmarked
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_border_rounded,
+                color:
+                    isBookmarked ? AppColors.freshGreen : AppColors.forestGreen,
+              ),
+            ),
+        ],
       ),
       body: SafeArea(
         child: plantAsync.when(
@@ -329,7 +400,8 @@ class PlantDetailPage extends ConsumerWidget {
     required ExternalMapService externalMapService,
     required PowerPlant plant,
   }) {
-    final hasSource = plant.sourceUrl != null && plant.sourceUrl!.trim().isNotEmpty;
+    final hasSource =
+        plant.sourceUrl != null && plant.sourceUrl!.trim().isNotEmpty;
     final verifiedDate = plant.verifiedAt != null
         ? '${plant.verifiedAt!.day.toString().padLeft(2, '0')}-${plant.verifiedAt!.month.toString().padLeft(2, '0')}-${plant.verifiedAt!.year}'
         : 'Belum tercatat';
@@ -414,4 +486,3 @@ class _SpecRow extends StatelessWidget {
     );
   }
 }
-

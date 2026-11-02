@@ -1,5 +1,6 @@
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/constants/demo_data.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/errors/error_mapper.dart';
@@ -9,11 +10,15 @@ import '../../../services/supabase_service.dart';
 
 /// Repository terpusat untuk mengambil kategori energi, daftar pembangkit,
 /// detail pembangkit, serta hasil RPC `nearby_plants` dari Supabase.
+///
+/// Fallback `DemoData` HANYA dipakai bila `AppConfig.isSupabaseConfigured == false`.
+/// Apabila Supabase sudah dikonfigurasi tetapi query/inisialisasi gagal,
+/// repository melempar `AppException` agar UI menampilkan `ErrorView`.
 class PlantsRepository {
   const PlantsRepository();
 
   Future<List<EnergyCategory>> getEnergyCategories() async {
-    if (!SupabaseService.isInitialized) {
+    if (!AppConfig.isSupabaseConfigured) {
       return DemoData.categories;
     }
 
@@ -33,7 +38,7 @@ class PlantsRepository {
   }
 
   Future<List<PowerPlant>> getPublishedPlants({String? categorySlug}) async {
-    if (!SupabaseService.isInitialized) {
+    if (!AppConfig.isSupabaseConfigured) {
       if (categorySlug == null || categorySlug.isEmpty) {
         return DemoData.plants;
       }
@@ -68,7 +73,7 @@ class PlantsRepository {
   }
 
   Future<PowerPlant> getPlantById(String id) async {
-    if (!SupabaseService.isInitialized) {
+    if (!AppConfig.isSupabaseConfigured) {
       final match = DemoData.plants.where((p) => p.id == id).firstOrNull;
       if (match != null) return match;
       throw const AppException(
@@ -106,7 +111,7 @@ class PlantsRepository {
     required int radiusMeters,
     String? categorySlug,
   }) async {
-    if (!SupabaseService.isInitialized) {
+    if (!AppConfig.isSupabaseConfigured) {
       const distance = Distance();
       final userPoint = LatLng(latitude, longitude);
 
@@ -125,7 +130,10 @@ class PlantsRepository {
             );
             return plant.copyWith(distanceMeters: meters);
           })
-          .where((plant) => (plant.distanceMeters ?? double.infinity) <= radiusMeters)
+          .where(
+            (plant) =>
+                (plant.distanceMeters ?? double.infinity) <= radiusMeters,
+          )
           .toList()
         ..sort(
           (a, b) => (a.distanceMeters ?? 0).compareTo(b.distanceMeters ?? 0),
@@ -154,4 +162,3 @@ class PlantsRepository {
     }
   }
 }
-

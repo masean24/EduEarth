@@ -1,9 +1,10 @@
 // DEMO DATA — bukan data nyata.
 // Hanya digunakan sebagai fallback lokal apabila aplikasi dijalankan tanpa
-// kredensial Supabase (--dart-define). Seluruh data pembangkit di sini jelas
-// fiktif, diawali "[DEMO]", dan memiliki isDemo = true sesuai docs/06_CODING_STANDARDS.md.
+// kredensial Supabase (AppConfig.isSupabaseConfigured == false).
+// Apabila Supabase sudah dikonfigurasi dan query gagal, UI wajib menampilkan ErrorView.
 
 import '../../models/energy_category.dart';
+import '../../models/learning_material.dart';
 import '../../models/power_plant.dart';
 
 class DemoData {
@@ -155,5 +156,40 @@ class DemoData {
       isPublished: true,
     ),
   ];
-}
 
+  // DEMO DATA — materi konsep dasar draf untuk mode lokal tanpa Supabase
+  static const List<LearningMaterial> materials = [
+    LearningMaterial(
+      id: 'demo-mat-solar',
+      categoryId: 'demo-cat-solar',
+      categorySlug: 'solar',
+      categoryName: 'Solar Energy',
+      categoryShortCode: 'PLTS',
+      title: '[DRAF] Konsep Dasar Pembangkit Listrik Tenaga Surya (PLTS)',
+      slug: 'draf-konsep-dasar-plts',
+      summary:
+          '[DRAF - Perlu Review] Pengenalan prinsip efek fotovoltaik, komponen utama sistem PLTS, serta kelebihan dan keterbatasan energi surya secara umum.',
+      contentMd:
+          '## Pengertian Umum\n\n**Pembangkit Listrik Tenaga Surya (PLTS)** mengubah radiasi cahaya matahari menjadi energi listrik melalui sel fotovoltaik.\n\n## Cara Kerja\n1. Penyerapan foton oleh semikonduktor.\n2. Timbul arus searah (DC).\n3. Konversi DC ke AC oleh inverter.',
+      readMinutes: 4,
+      difficulty: 'beginner',
+      sortOrder: 1,
+    ),
+    LearningMaterial(
+      id: 'demo-mat-hydro',
+      categoryId: 'demo-cat-hydro',
+      categorySlug: 'hydro',
+      categoryName: 'Hydropower',
+      categoryShortCode: 'PLTA',
+      title: '[DRAF] Konsep Dasar Pembangkit Listrik Tenaga Air (PLTA)',
+      slug: 'draf-konsep-dasar-plta',
+      summary:
+          '[DRAF - Perlu Review] Penjelasan konversi energi potensial dan kinetik air menjadi energi mekanik turbin dan listrik.',
+      contentMd:
+          '## Pengertian Umum\n\n**Pembangkit Listrik Tenaga Air (PLTA)** memanfaatkan aliran atau terjunan air untuk memutar turbin dan generator listrik.',
+      readMinutes: 5,
+      difficulty: 'beginner',
+      sortOrder: 1,
+    ),
+  ];
+}

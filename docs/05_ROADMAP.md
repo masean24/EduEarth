@@ -3,7 +3,7 @@
 > Agent: kerjakan **satu fase sekali**, urut. Centang item yang selesai dan terverifikasi.
 > Jangan mulai fase berikutnya sebelum "Kriteria selesai" fase saat ini terpenuhi dan pemilik menyetujui.
 
-**Status saat ini:** Fase 2 (sedang dikerjakan)
+**Status saat ini:** Fase 3 (sedang dikerjakan)
 
 ---
 
@@ -33,15 +33,15 @@
 **Kriteria selesai:** user bisa daftar, login, keluar; profil terbuat otomatis; RLS terverifikasi.
 
 ## Fase 2 — Peta dan Pembangkit
-- [ ] Migrasi: `power_plants` (+ PostGIS, index, RLS), RPC `nearby_plants`
-- [ ] Data pembangkit: **hanya** data bersumber terverifikasi atau baris `is_demo = true` yang jelas ditandai
-- [ ] Bottom navigation shell (5 tab)
-- [ ] Home Dashboard (kategori, ringkasan, akses cepat)
-- [ ] Explore Map (`flutter_map` + OSM, marker per kategori, atribusi)
-- [ ] Map Filter (glass filter chips per kategori)
-- [ ] Plant Preview (glass bottom sheet)
-- [ ] Plant Detail (data + sumber + tombol "Buka di Google Maps")
-- [ ] Nearby Plants (izin lokasi, jarak, empty state saat izin ditolak/tidak ada hasil)
+- [x] Migrasi: `power_plants` (+ PostGIS, index, RLS), RPC `nearby_plants`
+- [x] Data pembangkit: **hanya** data bersumber terverifikasi atau baris `is_demo = true` yang jelas ditandai
+- [x] Bottom navigation shell (5 tab)
+- [x] Home Dashboard (kategori, ringkasan, akses cepat)
+- [x] Explore Map (`flutter_map` + OSM, marker per kategori, atribusi)
+- [x] Map Filter (glass filter chips per kategori)
+- [x] Plant Preview (glass bottom sheet)
+- [x] Plant Detail (data + sumber + tombol "Buka di Google Maps")
+- [x] Nearby Plants (izin lokasi, jarak, empty state saat izin ditolak/tidak ada hasil)
 
 **Kriteria selesai:** peta menampilkan pembangkit dari Supabase, filter bekerja, preview → detail → buka Google Maps berfungsi.
 
@@ -82,3 +82,4 @@
 ## Catatan kemajuan
 - **2026-11-02 (Fase 0):** Fondasi proyek (`com.eduearth.app`), struktur arsitektur feature-based, design system *Nature Tech + Liquid Glass*, `GlassContainer` dengan fallback tanpa blur, tiga state UI (`LoadingView`, `ErrorView`, `EmptyView`), halaman demo komponen, dan GoRouter 5 tab selesai dan terverifikasi.
 - **2026-11-02 (Fase 1):** Migrasi SQL (`energy_categories`, `user_profiles`, trigger `set_updated_at` & `handle_new_user`, RLS, seed 5 kategori energi), alur Splash → Onboarding (`SharedPreferences`) → Login/Register/Logout Supabase Auth, dan redirect dinamis GoRouter selesai dan terverifikasi.
+- **2026-11-02 (Fase 2):** Migrasi PostGIS `power_plants` + RPC `nearby_plants` + seed demo, Home Dashboard, Explore Map (OSM + glass filter chips + marker per kategori), Plant Preview bottom sheet, Plant Detail (dengan tombol Google Maps), dan Nearby Plants selesai dan terverifikasi.

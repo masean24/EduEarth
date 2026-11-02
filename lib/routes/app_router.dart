@@ -15,7 +15,11 @@ import '../core/widgets/glass/glass_container.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/register_page.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
+import '../features/bookmark/presentation/pages/bookmarks_page.dart';
 import '../features/home/presentation/pages/home_dashboard_page.dart';
+import '../features/learning/presentation/pages/energy_category_page.dart';
+import '../features/learning/presentation/pages/learning_dashboard_page.dart';
+import '../features/learning/presentation/pages/learning_detail_page.dart';
 import '../features/map/presentation/pages/explore_map_page.dart';
 import '../features/map/presentation/pages/nearby_plants_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
@@ -126,6 +130,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteNames.nearbyPlantsPath,
         builder: (context, state) => const NearbyPlantsPage(),
       ),
+      GoRoute(
+        name: RouteNames.energyCategoryName,
+        path: RouteNames.energyCategoryPath,
+        builder: (context, state) {
+          final slug = state.pathParameters['slug'] ?? '';
+          return EnergyCategoryPage(categorySlug: slug);
+        },
+      ),
+      GoRoute(
+        name: RouteNames.learningDetailName,
+        path: RouteNames.learningDetailPath,
+        builder: (context, state) {
+          final slug = state.pathParameters['slug'] ?? '';
+          return LearningDetailPage(materialSlug: slug);
+        },
+      ),
+      GoRoute(
+        name: RouteNames.bookmarksName,
+        path: RouteNames.bookmarksPath,
+        builder: (context, state) => const BookmarksPage(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return _MainShellScaffold(navigationShell: navigationShell);
@@ -154,14 +179,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 name: RouteNames.learningName,
                 path: RouteNames.learningPath,
-                builder: (context, state) => const _PlaceholderScreen(
-                  title: 'Learning Dashboard',
-                  phaseLabel: 'Fase 3 — Pembelajaran dan Bookmark',
-                  description:
-                      'Eksplorasi materi pembelajaran 5 kategori energi terbarukan Indonesia (PLTS, PLTA, PLTB, PLTP, Bioenergi).',
-                  icon: Icons.menu_book_rounded,
-                  showShowcaseButton: true,
-                ),
+                builder: (context, state) => const LearningDashboardPage(),
               ),
             ],
           ),
@@ -372,6 +390,12 @@ class _Phase1ProfileScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
+                SecondaryButton(
+                  label: 'Daftar Bookmark Saya',
+                  icon: Icons.bookmark_outline_rounded,
+                  onPressed: () => context.push(RouteNames.bookmarksPath),
+                ),
+                const SizedBox(height: 12),
                 if (session != null)
                   PrimaryButton(
                     label: 'Keluar (Logout)',
