@@ -33,3 +33,4 @@ class ProfileController extends AsyncNotifier<void> {
 
 final profileControllerProvider =
     AsyncNotifierProvider<ProfileController, void>(ProfileController.new);
+

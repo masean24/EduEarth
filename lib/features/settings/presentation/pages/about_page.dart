@@ -119,3 +119,4 @@ class AboutPage extends ConsumerWidget {
     );
   }
 }
+

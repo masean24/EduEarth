@@ -34,3 +34,4 @@ final globalSearchResultsProvider =
   final repo = ref.watch(searchRepositoryProvider);
   return repo.search(query);
 });
+

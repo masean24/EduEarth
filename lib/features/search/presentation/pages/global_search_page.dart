@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,7 +18,7 @@ import '../providers/search_providers.dart';
 /// Halaman Pencarian Global (Global Search) Fase 5.
 ///
 /// Mencari pembangkit energi (`power_plants`) dan materi pembelajaran
-/// (`learning_materials`) dengan search bar ber-efek Liquid Glass.
+/// (`learning_materials`) dengan search bar ber-efek Liquid Glass dan debounce.
 class GlobalSearchPage extends ConsumerStatefulWidget {
   const GlobalSearchPage({super.key});
 
@@ -25,7 +27,10 @@ class GlobalSearchPage extends ConsumerStatefulWidget {
 }
 
 class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
+  static const Duration _debounceDuration = Duration(milliseconds: 350);
+
   late final TextEditingController _controller;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -37,8 +42,23 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounceDuration, () {
+      if (!mounted) return;
+      ref.read(searchQueryProvider.notifier).setQuery(value);
+    });
+  }
+
+  void _clearSearch() {
+    _debounceTimer?.cancel();
+    _controller.clear();
+    ref.read(searchQueryProvider.notifier).clear();
   }
 
   @override
@@ -58,34 +78,39 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
               child: GlassContainer(
                 borderRadius: AppTheme.buttonRadius,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: TextField(
-                  controller: _controller,
-                  autofocus: true,
-                  textInputAction: TextInputAction.search,
-                  onChanged: (value) {
-                    ref.read(searchQueryProvider.notifier).setQuery(value);
+                child: ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _controller,
+                  builder: (context, textValue, _) {
+                    return TextField(
+                      controller: _controller,
+                      autofocus: true,
+                      textInputAction: TextInputAction.search,
+                      onChanged: _onSearchChanged,
+                      onSubmitted: (value) {
+                        _debounceTimer?.cancel();
+                        ref.read(searchQueryProvider.notifier).setQuery(value);
+                      },
+                      decoration: InputDecoration(
+                        hintText:
+                            'Cari nama pembangkit, provinsi, atau materi...',
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        filled: false,
+                        prefixIcon: const Icon(
+                          Icons.search_rounded,
+                          color: AppColors.forestGreen,
+                        ),
+                        suffixIcon: textValue.text.isNotEmpty
+                            ? IconButton(
+                                tooltip: 'Bersihkan pencarian',
+                                icon: const Icon(Icons.clear_rounded),
+                                onPressed: _clearSearch,
+                              )
+                            : null,
+                      ),
+                    );
                   },
-                  decoration: InputDecoration(
-                    hintText: 'Cari nama pembangkit, provinsi, atau materi...',
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    filled: false,
-                    prefixIcon: const Icon(
-                      Icons.search_rounded,
-                      color: AppColors.forestGreen,
-                    ),
-                    suffixIcon: query.isNotEmpty
-                        ? IconButton(
-                            tooltip: 'Bersihkan pencarian',
-                            icon: const Icon(Icons.clear_rounded),
-                            onPressed: () {
-                              _controller.clear();
-                              ref.read(searchQueryProvider.notifier).clear();
-                            },
-                          )
-                        : null,
-                  ),
                 ),
               ),
             ),
@@ -115,10 +140,7 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
                             description:
                                 'Tidak ada pembangkit atau materi pembelajaran yang cocok dengan kata kunci "$query".',
                             actionLabel: 'Hapus Kata Kunci',
-                            onAction: () {
-                              _controller.clear();
-                              ref.read(searchQueryProvider.notifier).clear();
-                            },
+                            onAction: _clearSearch,
                           );
                         }
 

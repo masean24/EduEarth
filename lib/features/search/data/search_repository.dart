@@ -23,6 +23,27 @@ class GlobalSearchResults {
 class SearchRepository {
   const SearchRepository();
 
+  /// Menyanitasi input pengguna agar aman terhadap parser filter `.or()` PostgREST
+  /// (menghapus koma, kurung, titik, kutip) serta meng-escape karakter wildcard
+  /// SQL `ILIKE` (`\`, `%`, dan `_`).
+  static String sanitizeForPostgrestIlike(String rawInput) {
+    // 1. Ganti karakter pemisah sintaks PostgREST (koma, kurung, titik, kutip) dengan spasi
+    final withoutSyntaxChars = rawInput
+        .replaceAll(RegExp(r'[,().":;]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    if (withoutSyntaxChars.isEmpty) {
+      return '';
+    }
+
+    // 2. Escape backslash terlebih dahulu, lalu karakter wildcard % dan _
+    return withoutSyntaxChars
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_');
+  }
+
   Future<GlobalSearchResults> search(String rawQuery) async {
     final query = rawQuery.trim();
     if (query.isEmpty) {
@@ -49,7 +70,10 @@ class SearchRepository {
     }
 
     try {
-      final sanitized = query.replaceAll(',', ' ').trim();
+      final sanitized = sanitizeForPostgrestIlike(query);
+      if (sanitized.isEmpty) {
+        return const GlobalSearchResults();
+      }
       final pattern = '%$sanitized%';
 
       final plantsFuture = SupabaseService.client

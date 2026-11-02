@@ -398,8 +398,19 @@ class _EditProfileBottomSheetState
             TextFormField(
               controller: _avatarController,
               keyboardType: TextInputType.url,
+              validator: (value) {
+                final trimmed = value?.trim() ?? '';
+                if (trimmed.isEmpty) return null;
+                final uri = Uri.tryParse(trimmed);
+                if (uri == null ||
+                    !uri.hasAbsolutePath ||
+                    (uri.scheme != 'https' && uri.scheme != 'http')) {
+                  return 'Masukkan URL gambar yang valid (diawali https://).';
+                }
+                return null;
+              },
               decoration: const InputDecoration(
-                hintText: 'https://...',
+                hintText: 'https://... (kosongkan untuk avatar bawaan)',
                 prefixIcon: Icon(Icons.image_outlined),
               ),
             ),
@@ -416,3 +427,4 @@ class _EditProfileBottomSheetState
     );
   }
 }
+
