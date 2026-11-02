@@ -274,3 +274,4 @@ class LearningDashboardPage extends ConsumerWidget {
     );
   }
 }
+

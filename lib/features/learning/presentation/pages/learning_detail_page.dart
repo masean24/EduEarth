@@ -311,3 +311,4 @@ class LearningDetailPage extends ConsumerWidget {
     );
   }
 }
+

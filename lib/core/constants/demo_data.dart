@@ -1,11 +1,13 @@
 // DEMO DATA — bukan data nyata.
 // Hanya digunakan sebagai fallback lokal apabila aplikasi dijalankan tanpa
 // kredensial Supabase (AppConfig.isSupabaseConfigured == false).
-// Apabila Supabase sudah dikonfigurasi dan query gagal, UI wajib menampilkan ErrorView.
+// PENTING: Sesuai aturan keamanan Fase 4, file ini TIDAK menyimpan kunci jawaban kuis.
 
 import '../../models/energy_category.dart';
 import '../../models/learning_material.dart';
 import '../../models/power_plant.dart';
+import '../../models/quiz.dart';
+import '../../models/quiz_question.dart';
 
 class DemoData {
   const DemoData._();
@@ -189,6 +191,49 @@ class DemoData {
           '## Pengertian Umum\n\n**Pembangkit Listrik Tenaga Air (PLTA)** memanfaatkan aliran atau terjunan air untuk memutar turbin dan generator listrik.',
       readMinutes: 5,
       difficulty: 'beginner',
+      sortOrder: 1,
+    ),
+  ];
+
+  // DEMO DATA — daftar kuis & soal TANPA kunci jawaban
+  static const List<Quiz> quizzes = [
+    Quiz(
+      id: '11111111-1111-4111-8111-111111111101',
+      title: '[DRAF] Dasar-Dasar Energi Terbarukan',
+      description:
+          '[DRAF - Perlu Review] Uji pemahaman konsep fundamental tentang cara kerja PLTS, PLTA, PLTB, PLTP, dan Bioenergi.',
+      difficulty: 'beginner',
+      timeLimitSeconds: 180,
+      isPublished: true,
+    ),
+  ];
+
+  static const List<QuizQuestion> quizQuestions = [
+    QuizQuestion(
+      id: '22222222-2222-4222-8222-222222222101',
+      quizId: '11111111-1111-4111-8111-111111111101',
+      question:
+          'Fenomena fisika apa yang dimanfaatkan oleh sel surya pada PLTS untuk mengubah cahaya matahari secara langsung menjadi listrik?',
+      options: [
+        QuizOption(
+          id: 'a',
+          text: 'Efek fotovoltaik pada material semikonduktor',
+        ),
+        QuizOption(
+          id: 'b',
+          text: 'Pembakaran termokimia biomassa padat',
+        ),
+        QuizOption(
+          id: 'c',
+          text: 'Fermentasi anaerobik mikroorganisme',
+        ),
+        QuizOption(
+          id: 'd',
+          text: 'Tekanan hidrostatik air pada pipa pesat',
+        ),
+      ],
+      explanation:
+          'Sel surya bekerja menggunakan efek fotovoltaik pada material semikonduktor.',
       sortOrder: 1,
     ),
   ];

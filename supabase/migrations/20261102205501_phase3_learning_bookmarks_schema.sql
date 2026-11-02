@@ -54,3 +54,4 @@ create unique index if not exists uq_bookmarks_user_material
 create unique index if not exists uq_bookmarks_user_plant
   on public.bookmarks (user_id, plant_id)
   where plant_id is not null;
+

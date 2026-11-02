@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/constants/app_constants.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 import '../core/theme/app_theme.dart';
@@ -25,7 +24,11 @@ import '../features/map/presentation/pages/nearby_plants_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/onboarding/presentation/providers/onboarding_provider.dart';
 import '../features/plants/presentation/pages/plant_detail_page.dart';
+import '../features/quiz/presentation/pages/quiz_dashboard_page.dart';
+import '../features/quiz/presentation/pages/quiz_gameplay_page.dart';
+import '../features/quiz/presentation/pages/quiz_result_page.dart';
 import '../features/splash/presentation/pages/splash_page.dart';
+import '../models/quiz_attempt.dart';
 import '../services/supabase_service.dart';
 import 'route_names.dart';
 
@@ -151,6 +154,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteNames.bookmarksPath,
         builder: (context, state) => const BookmarksPage(),
       ),
+      GoRoute(
+        name: RouteNames.quizGameplayName,
+        path: RouteNames.quizGameplayPath,
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return QuizGameplayPage(quizId: id);
+        },
+      ),
+      GoRoute(
+        name: RouteNames.quizResultName,
+        path: RouteNames.quizResultPath,
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          final extraResult = state.extra is QuizSubmissionResult
+              ? state.extra as QuizSubmissionResult
+              : null;
+          return QuizResultPage(
+            quizId: id,
+            initialResult: extraResult,
+          );
+        },
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return _MainShellScaffold(navigationShell: navigationShell);
@@ -188,14 +213,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 name: RouteNames.quizName,
                 path: RouteNames.quizPath,
-                builder: (context, state) => const _PlaceholderScreen(
-                  title: 'Quiz Dashboard',
-                  phaseLabel: 'Fase 4 — Kuis',
-                  description:
-                      'Uji pemahaman energi terbarukan dengan penilaian aman di sisi server (Supabase RPC).',
-                  icon: Icons.quiz_rounded,
-                  showShowcaseButton: true,
-                ),
+                builder: (context, state) => const QuizDashboardPage(),
               ),
             ],
           ),
@@ -429,119 +447,6 @@ class _Phase1ProfileScreen extends ConsumerWidget {
               ],
             );
           },
-        ),
-      ),
-    );
-  }
-}
-
-class _PlaceholderScreen extends ConsumerWidget {
-  const _PlaceholderScreen({
-    required this.title,
-    required this.phaseLabel,
-    required this.description,
-    required this.icon,
-    this.showShowcaseButton = false,
-  });
-
-  final String title;
-  final String phaseLabel;
-  final String description;
-  final IconData icon;
-  final bool showShowcaseButton;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isAuthenticated = ref.watch(isAuthenticatedProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        actions: [
-          if (showShowcaseButton)
-            IconButton(
-              tooltip: 'Buka Demo Komponen & Design System',
-              onPressed: () => context.push(RouteNames.designShowcasePath),
-              icon: const Icon(Icons.palette_outlined),
-            ),
-          if (isAuthenticated)
-            IconButton(
-              tooltip: 'Keluar (Logout)',
-              onPressed: () =>
-                  ref.read(authControllerProvider.notifier).signOut(),
-              icon: const Icon(Icons.logout_rounded),
-            ),
-        ],
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: const BoxDecoration(
-                    color: AppColors.mintGreen,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, size: 36, color: AppColors.forestGreen),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.mintGreen,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    phaseLabel,
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.forestGreen,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  title,
-                  style: AppTextStyles.display,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  AppConstants.appTagline,
-                  style: AppTextStyles.subtitle.copyWith(
-                    color: AppColors.freshGreen,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  description,
-                  style: AppTextStyles.body.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                if (showShowcaseButton) ...[
-                  const SizedBox(height: 24),
-                  PrimaryButton(
-                    label: 'Buka Demo Komponen & Glass UI',
-                    icon: Icons.auto_awesome_rounded,
-                    isExpanded: false,
-                    onPressed: () =>
-                        context.push(RouteNames.designShowcasePath),
-                  ),
-                ],
-              ],
-            ),
-          ),
         ),
       ),
     );

@@ -238,3 +238,4 @@ on conflict (slug) do update set
   sort_order = excluded.sort_order,
   is_published = excluded.is_published,
   updated_at = now();
+

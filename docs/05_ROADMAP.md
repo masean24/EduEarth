@@ -3,7 +3,7 @@
 > Agent: kerjakan **satu fase sekali**, urut. Centang item yang selesai dan terverifikasi.
 > Jangan mulai fase berikutnya sebelum "Kriteria selesai" fase saat ini terpenuhi dan pemilik menyetujui.
 
-**Status saat ini:** Fase 3 (sedang dikerjakan)
+**Status saat ini:** Fase 4 (sedang dikerjakan)
 
 ---
 
@@ -46,11 +46,11 @@
 **Kriteria selesai:** peta menampilkan pembangkit dari Supabase, filter bekerja, preview → detail → buka Google Maps berfungsi.
 
 ## Fase 3 — Pembelajaran dan Bookmark
-- [ ] Migrasi: `learning_materials`, `bookmarks` + RLS
-- [ ] Learning Dashboard
-- [ ] Energy Category (daftar materi per kategori)
-- [ ] Learning Detail (render Markdown)
-- [ ] Bookmark materi dan pembangkit (toggle, daftar bookmark)
+- [x] Migrasi: `learning_materials`, `bookmarks` + RLS
+- [x] Learning Dashboard
+- [x] Energy Category (daftar materi per kategori)
+- [x] Learning Detail (render Markdown)
+- [x] Bookmark materi dan pembangkit (toggle, daftar bookmark)
 
 **Kriteria selesai:** user bisa membaca materi dan menyimpan bookmark yang tersimpan per akun.
 
@@ -83,3 +83,4 @@
 - **2026-11-02 (Fase 0):** Fondasi proyek (`com.eduearth.app`), struktur arsitektur feature-based, design system *Nature Tech + Liquid Glass*, `GlassContainer` dengan fallback tanpa blur, tiga state UI (`LoadingView`, `ErrorView`, `EmptyView`), halaman demo komponen, dan GoRouter 5 tab selesai dan terverifikasi.
 - **2026-11-02 (Fase 1):** Migrasi SQL (`energy_categories`, `user_profiles`, trigger `set_updated_at` & `handle_new_user`, RLS, seed 5 kategori energi), alur Splash → Onboarding (`SharedPreferences`) → Login/Register/Logout Supabase Auth, dan redirect dinamis GoRouter selesai dan terverifikasi.
 - **2026-11-02 (Fase 2):** Migrasi PostGIS `power_plants` + RPC `nearby_plants` + seed demo, Home Dashboard, Explore Map (OSM + glass filter chips + marker per kategori), Plant Preview bottom sheet, Plant Detail (dengan tombol Google Maps), dan Nearby Plants selesai dan terverifikasi.
+- **2026-11-02 (Fase 3):** Migrasi `learning_materials` & `bookmarks` (`num_nonnulls`, partial unique index, RLS), seed 5 materi draf konsep dasar, Learning Dashboard, Energy Category, Learning Detail (`flutter_markdown_plus`), dan fitur Bookmark selesai dan terverifikasi.

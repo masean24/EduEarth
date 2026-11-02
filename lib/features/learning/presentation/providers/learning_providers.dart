@@ -30,3 +30,4 @@ final learningMaterialDetailProvider =
   final repo = ref.watch(learningRepositoryProvider);
   return repo.getMaterialBySlug(slug);
 });
+

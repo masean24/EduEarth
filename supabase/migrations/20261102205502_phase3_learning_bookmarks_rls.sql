@@ -38,3 +38,4 @@ create policy "bookmarks_delete_own"
   for delete
   to authenticated
   using (user_id = (select auth.uid()));
+

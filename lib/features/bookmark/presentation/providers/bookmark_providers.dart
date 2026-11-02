@@ -68,3 +68,4 @@ class BookmarkController extends AsyncNotifier<void> {
 
 final bookmarkControllerProvider =
     AsyncNotifierProvider<BookmarkController, void>(BookmarkController.new);
+
