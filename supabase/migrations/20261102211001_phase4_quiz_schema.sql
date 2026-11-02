@@ -66,3 +66,4 @@ create table if not exists public.quiz_attempts (
 
 create index if not exists idx_quiz_attempts_user_quiz
   on public.quiz_attempts (user_id, quiz_id);
+

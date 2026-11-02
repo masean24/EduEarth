@@ -10,16 +10,18 @@ import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/primary_button.dart';
+import '../../../../core/widgets/common/secondary_button.dart';
 import '../../../../models/quiz.dart';
 import '../../../../models/quiz_attempt.dart';
 import '../../../../routes/route_names.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/quiz_providers.dart';
 
-/// Halaman Utama Kuis (Quiz Dashboard) Fase 4.
+/// Halaman Utama Kuis (Quiz Dashboard).
 ///
-/// Menampilkan daftar kuis terpublikasi, informasi tingkat kesulitan & batas waktu,
-/// serta riwayat skor percobaan kuis milik pengguna yang sedang login.
+/// Menampilkan daftar kuis dengan pembeda visual antara kuis yang belum dikerjakan
+/// ("Mulai Kuis" — `PrimaryButton`) dan kuis yang sudah dikerjakan (badge "Selesai",
+/// skor terbaik, skor terakhir, jumlah percobaan, serta tombol "Ulangi Kuis" — `SecondaryButton`).
 class QuizDashboardPage extends ConsumerWidget {
   const QuizDashboardPage({super.key});
 
@@ -44,11 +46,24 @@ class QuizDashboardPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final quizzesAsync = ref.watch(publishedQuizzesProvider);
     final attemptsAsync = ref.watch(userQuizAttemptsProvider);
+    final groupedSummariesAsync = ref.watch(quizAttemptsByQuizIdProvider);
     final isAuthenticated = ref.watch(isAuthenticatedProvider);
+
+    final summariesMap = isAuthenticated
+        ? (groupedSummariesAsync.asData?.value ??
+            const <String, QuizAttemptSummary>{})
+        : const <String, QuizAttemptSummary>{};
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Kuis Energi Terbarukan'),
+        actions: [
+          IconButton(
+            tooltip: 'Pencarian Global',
+            onPressed: () => context.push(RouteNames.searchPath),
+            icon: const Icon(Icons.search_rounded),
+          ),
+        ],
       ),
       body: SafeArea(
         child: RefreshIndicator(
@@ -88,15 +103,17 @@ class QuizDashboardPage extends ConsumerWidget {
                   Text('Pilih Kuis untuk Dimulai', style: AppTextStyles.title),
                   const SizedBox(height: 6),
                   Text(
-                    'Setiap jawaban dinilai di server dan dilengkapi pembahasan konsep setelah selesai.',
+                    'Setiap jawaban dinilai di server dan dilengkapi pembahasan konsep tepat setelah selesai.',
                     style: AppTextStyles.caption,
                   ),
                   const SizedBox(height: 12),
                   ...quizzes.map((quiz) {
+                    final summary = summariesMap[quiz.id];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 14),
                       child: _QuizCard(
                         quiz: quiz,
+                        attemptSummary: summary,
                         onStart: () => _startQuiz(context, ref, quiz),
                       ),
                     );
@@ -153,7 +170,7 @@ class QuizDashboardPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Skor dan kunci jawaban dievaluasi secara aman setelah Anda menyelesaikan seluruh soal.',
+                  'Skor dan kunci jawaban dievaluasi secara aman di sisi server setelah Anda menyelesaikan soal.',
                   style: AppTextStyles.caption,
                 ),
               ],
@@ -200,31 +217,25 @@ class QuizDashboardPage extends ConsumerWidget {
     return attemptsAsync.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 16),
-        child: LoadingView(message: 'Memuat riwayat kuis...'),
+        child: LoadingView(message: 'Memuat riwayat percobaan kuis...'),
       ),
       error: (error, _) => ErrorView(
+        title: 'Gagal Memuat Riwayat Kuis',
         message: error.toString(),
         onRetry: () => ref.invalidate(userQuizAttemptsProvider),
       ),
       data: (attempts) {
         if (attempts.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceWhite,
-              borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-              border: Border.all(color: AppColors.divider),
-            ),
-            child: Text(
-              'Anda belum memiliki riwayat pengerjaan kuis. Pilih salah satu kuis di atas untuk mulai!',
-              style: AppTextStyles.caption,
-              textAlign: TextAlign.center,
-            ),
+          return EmptyView(
+            icon: Icons.history_edu_rounded,
+            title: 'Belum Ada Riwayat Percobaan',
+            description:
+                'Anda belum pernah menyelesaikan kuis. Pilih salah satu kuis di atas untuk mulai berlatih!',
           );
         }
 
         return Column(
-          children: attempts.take(8).map((attempt) {
+          children: attempts.take(10).map((attempt) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Container(
@@ -287,9 +298,11 @@ class _QuizCard extends StatelessWidget {
   const _QuizCard({
     required this.quiz,
     required this.onStart,
+    this.attemptSummary,
   });
 
   final Quiz quiz;
+  final QuizAttemptSummary? attemptSummary;
   final VoidCallback onStart;
 
   @override
@@ -297,8 +310,16 @@ class _QuizCard extends StatelessWidget {
     final categoryColor = quiz.categorySlug != null
         ? AppColors.colorForCategorySlug(quiz.categorySlug!)
         : AppColors.freshGreen;
+    final isCompleted = attemptSummary != null;
 
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        side: BorderSide(
+          color: isCompleted ? AppColors.freshGreen : AppColors.divider,
+          width: isCompleted ? 1.4 : 1.0,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -307,6 +328,7 @@ class _QuizCard extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -337,6 +359,36 @@ class _QuizCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (isCompleted)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.mintGreen,
+                      borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                      border: Border.all(color: AppColors.freshGreen),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          size: 14,
+                          color: AppColors.forestGreen,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Selesai',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.forestGreen,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 if (quiz.isDraft)
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -394,15 +446,106 @@ class _QuizCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (attemptSummary != null) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.mintGreen.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.sageGreen),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _AttemptMetricItem(
+                      label: 'Skor Terbaik',
+                      value: '${attemptSummary!.bestScore}',
+                      icon: Icons.emoji_events_outlined,
+                    ),
+                    Container(
+                      width: 1,
+                      height: 28,
+                      color: AppColors.sageGreen,
+                    ),
+                    _AttemptMetricItem(
+                      label: 'Skor Terakhir',
+                      value: '${attemptSummary!.latestScore}',
+                      icon: Icons.history_rounded,
+                    ),
+                    Container(
+                      width: 1,
+                      height: 28,
+                      color: AppColors.sageGreen,
+                    ),
+                    _AttemptMetricItem(
+                      label: 'Percobaan',
+                      value: '${attemptSummary!.attemptCount}x',
+                      icon: Icons.repeat_rounded,
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
-            PrimaryButton(
-              label: 'Mulai Kerjakan Kuis',
-              icon: Icons.play_arrow_rounded,
-              onPressed: onStart,
-            ),
+            if (isCompleted)
+              SecondaryButton(
+                label: 'Ulangi Kuis',
+                icon: Icons.replay_rounded,
+                onPressed: onStart,
+              )
+            else
+              PrimaryButton(
+                label: 'Mulai Kuis',
+                icon: Icons.play_arrow_rounded,
+                onPressed: onStart,
+              ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AttemptMetricItem extends StatelessWidget {
+  const _AttemptMetricItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: AppColors.forestGreen),
+            const SizedBox(width: 4),
+            Text(
+              value,
+              style: AppTextStyles.subtitle.copyWith(
+                color: AppColors.forestGreen,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: AppTextStyles.caption.copyWith(fontSize: 11),
+        ),
+      ],
     );
   }
 }

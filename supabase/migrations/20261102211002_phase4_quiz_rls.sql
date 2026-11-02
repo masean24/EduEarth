@@ -49,3 +49,4 @@ create policy "quiz_attempts_select_own"
   using (user_id = (select auth.uid()));
 
 revoke insert, update, delete on table public.quiz_attempts from public, anon, authenticated;
+

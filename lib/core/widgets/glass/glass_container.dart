@@ -2,21 +2,38 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../constants/app_constants.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_theme.dart';
 
-/// Notifier global untuk mengatur apakah efek blur (Liquid Glass) dikurangi.
-///
-/// Berguna untuk perangkat berspesifikasi rendah atau saat pengguna mengaktifkan
-/// pengaturan "Kurangi efek glass".
+/// Notifier global untuk mengatur apakah efek blur (Liquid Glass) dikurangi,
+/// sekaligus mempersistensikan pilihannya ke `SharedPreferences`.
 class ReduceGlassEffectNotifier extends Notifier<bool> {
   @override
-  bool build() => false;
+  bool build() {
+    _loadSavedPreference();
+    return false;
+  }
 
-  void toggle() => state = !state;
+  Future<void> _loadSavedPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getBool(AppConstants.prefReduceMotionAndGlass) ?? false;
+    if (state != saved) {
+      state = saved;
+    }
+  }
 
-  void setReduceEffect(bool value) => state = value;
+  Future<void> toggle() async {
+    await setReduceEffect(!state);
+  }
+
+  Future<void> setReduceEffect(bool value) async {
+    state = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(AppConstants.prefReduceMotionAndGlass, value);
+  }
 }
 
 final reduceGlassEffectProvider =
@@ -113,4 +130,3 @@ class GlassContainer extends ConsumerWidget {
     return content;
   }
 }
-

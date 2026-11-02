@@ -170,3 +170,4 @@ $$;
 -- Cabut dari PUBLIC dan anon, berikan HANYA kepada authenticated.
 revoke all on function public.submit_quiz_attempt(uuid, jsonb) from public, anon;
 grant execute on function public.submit_quiz_attempt(uuid, jsonb) to authenticated;
+

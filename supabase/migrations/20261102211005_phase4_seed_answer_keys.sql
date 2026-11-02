@@ -22,3 +22,4 @@ values
   ('22222222-2222-4222-8222-222222222205', 'a')
 on conflict (question_id) do update set
   correct_option_id = excluded.correct_option_id;
+

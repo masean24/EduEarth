@@ -33,6 +33,11 @@ class LearningDashboardPage extends ConsumerWidget {
         title: const Text('Belajar Energi Bersih'),
         actions: [
           IconButton(
+            tooltip: 'Pencarian Global',
+            onPressed: () => context.push(RouteNames.searchPath),
+            icon: const Icon(Icons.search_rounded),
+          ),
+          IconButton(
             tooltip: 'Daftar Bookmark Saya',
             onPressed: () => context.push(RouteNames.bookmarksPath),
             icon: const Icon(Icons.bookmark_outline_rounded),

@@ -56,6 +56,11 @@ class HomeDashboardPage extends ConsumerWidget {
         ),
         actions: [
           IconButton(
+            tooltip: 'Pencarian Global',
+            onPressed: () => context.push(RouteNames.searchPath),
+            icon: const Icon(Icons.search_rounded),
+          ),
+          IconButton(
             tooltip: 'Pembangkit Terdekat',
             onPressed: () => context.push(RouteNames.nearbyPlantsPath),
             icon: const Icon(Icons.near_me_outlined),

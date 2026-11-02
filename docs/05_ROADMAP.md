@@ -3,7 +3,7 @@
 > Agent: kerjakan **satu fase sekali**, urut. Centang item yang selesai dan terverifikasi.
 > Jangan mulai fase berikutnya sebelum "Kriteria selesai" fase saat ini terpenuhi dan pemilik menyetujui.
 
-**Status saat ini:** Fase 4 (sedang dikerjakan)
+**Status saat ini:** Fase 5 (sedang dikerjakan)
 
 ---
 
@@ -55,12 +55,12 @@
 **Kriteria selesai:** user bisa membaca materi dan menyimpan bookmark yang tersimpan per akun.
 
 ## Fase 4 — Kuis
-- [ ] Migrasi: `quizzes`, `quiz_questions`, `quiz_answer_keys`, `quiz_attempts` + RLS
-- [ ] RPC `submit_quiz_attempt` (penilaian server-side)
-- [ ] Quiz Dashboard
-- [ ] Quiz Gameplay (timer opsional, progres)
-- [ ] Quiz Result (skor, jawaban benar, penjelasan)
-- [ ] Verifikasi: client **tidak bisa** membaca `quiz_answer_keys` dan tidak bisa insert `quiz_attempts` langsung
+- [x] Migrasi: `quizzes`, `quiz_questions`, `quiz_answer_keys`, `quiz_attempts` + RLS
+- [x] RPC `submit_quiz_attempt` (penilaian server-side)
+- [x] Quiz Dashboard
+- [x] Quiz Gameplay (timer opsional, progres)
+- [x] Quiz Result (skor, jawaban benar, penjelasan)
+- [x] Verifikasi: client **tidak bisa** membaca `quiz_answer_keys` dan tidak bisa insert `quiz_attempts` langsung
 
 ## Fase 5 — Profil dan Kelengkapan
 - [ ] Profile (edit nama, avatar opsional)
@@ -84,3 +84,4 @@
 - **2026-11-02 (Fase 1):** Migrasi SQL (`energy_categories`, `user_profiles`, trigger `set_updated_at` & `handle_new_user`, RLS, seed 5 kategori energi), alur Splash → Onboarding (`SharedPreferences`) → Login/Register/Logout Supabase Auth, dan redirect dinamis GoRouter selesai dan terverifikasi.
 - **2026-11-02 (Fase 2):** Migrasi PostGIS `power_plants` + RPC `nearby_plants` + seed demo, Home Dashboard, Explore Map (OSM + glass filter chips + marker per kategori), Plant Preview bottom sheet, Plant Detail (dengan tombol Google Maps), dan Nearby Plants selesai dan terverifikasi.
 - **2026-11-02 (Fase 3):** Migrasi `learning_materials` & `bookmarks` (`num_nonnulls`, partial unique index, RLS), seed 5 materi draf konsep dasar, Learning Dashboard, Energy Category, Learning Detail (`flutter_markdown_plus`), dan fitur Bookmark selesai dan terverifikasi.
+- **2026-11-02 (Fase 4):** Migrasi tabel kuis (`quizzes`, `quiz_questions`, `quiz_answer_keys` tertutup dari client, `quiz_attempts` read-only bagi client), RPC `submit_quiz_attempt` (`security definer`), seed kuis draf & kunci jawaban terpisah, serta UI Quiz Dashboard, Gameplay, dan Result selesai dan terverifikasi.

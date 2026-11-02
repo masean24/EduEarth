@@ -4,12 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
-import '../core/theme/app_theme.dart';
 import '../core/widgets/common/design_system_showcase_page.dart';
-import '../core/widgets/common/error_view.dart';
-import '../core/widgets/common/loading_view.dart';
-import '../core/widgets/common/primary_button.dart';
-import '../core/widgets/common/secondary_button.dart';
 import '../core/widgets/glass/glass_container.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/register_page.dart';
@@ -24,9 +19,14 @@ import '../features/map/presentation/pages/nearby_plants_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/onboarding/presentation/providers/onboarding_provider.dart';
 import '../features/plants/presentation/pages/plant_detail_page.dart';
+import '../features/profile/presentation/pages/my_learning_page.dart';
+import '../features/profile/presentation/pages/profile_page.dart';
 import '../features/quiz/presentation/pages/quiz_dashboard_page.dart';
 import '../features/quiz/presentation/pages/quiz_gameplay_page.dart';
 import '../features/quiz/presentation/pages/quiz_result_page.dart';
+import '../features/search/presentation/pages/global_search_page.dart';
+import '../features/settings/presentation/pages/about_page.dart';
+import '../features/settings/presentation/pages/settings_page.dart';
 import '../features/splash/presentation/pages/splash_page.dart';
 import '../models/quiz_attempt.dart';
 import '../services/supabase_service.dart';
@@ -176,6 +176,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
+      GoRoute(
+        name: RouteNames.myLearningName,
+        path: RouteNames.myLearningPath,
+        builder: (context, state) => const MyLearningPage(),
+      ),
+      GoRoute(
+        name: RouteNames.settingsName,
+        path: RouteNames.settingsPath,
+        builder: (context, state) => const SettingsPage(),
+      ),
+      GoRoute(
+        name: RouteNames.aboutName,
+        path: RouteNames.aboutPath,
+        builder: (context, state) => const AboutPage(),
+      ),
+      GoRoute(
+        name: RouteNames.searchName,
+        path: RouteNames.searchPath,
+        builder: (context, state) => const GlobalSearchPage(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return _MainShellScaffold(navigationShell: navigationShell);
@@ -222,7 +242,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 name: RouteNames.profileName,
                 path: RouteNames.profilePath,
-                builder: (context, state) => const _Phase1ProfileScreen(),
+                builder: (context, state) => const ProfilePage(),
               ),
             ],
           ),
@@ -336,117 +356,6 @@ class _MainShellScaffold extends StatelessWidget {
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Phase1ProfileScreen extends ConsumerWidget {
-  const _Phase1ProfileScreen();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(currentSessionProvider);
-    final profileAsync = ref.watch(currentUserProfileProvider);
-    final authController = ref.watch(authControllerProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profil & Sesi Akun'),
-      ),
-      body: SafeArea(
-        child: profileAsync.when(
-          loading: () =>
-              const LoadingView(message: 'Memuat profil pengguna...'),
-          error: (error, _) => ErrorView(
-            message: error.toString(),
-            onRetry: () => ref.invalidate(currentUserProfileProvider),
-          ),
-          data: (profile) {
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 120),
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceWhite,
-                    borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-                    border: Border.all(color: AppColors.divider),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: const BoxDecoration(
-                          color: AppColors.mintGreen,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.person_rounded,
-                          size: 36,
-                          color: AppColors.forestGreen,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        profile?.displayName ??
-                            session?.user.email ??
-                            'Pengguna Tamu (Mode Lokal)',
-                        style: AppTextStyles.title,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        session?.user.email ??
-                            'Belum masuk dengan akun Supabase',
-                        style: AppTextStyles.caption,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SecondaryButton(
-                  label: 'Daftar Bookmark Saya',
-                  icon: Icons.bookmark_outline_rounded,
-                  onPressed: () => context.push(RouteNames.bookmarksPath),
-                ),
-                const SizedBox(height: 12),
-                if (session != null)
-                  PrimaryButton(
-                    label: 'Keluar (Logout)',
-                    icon: Icons.logout_rounded,
-                    isLoading: authController.isLoading,
-                    onPressed: () async {
-                      await ref
-                          .read(authControllerProvider.notifier)
-                          .signOut();
-                    },
-                  )
-                else
-                  PrimaryButton(
-                    label: 'Ke Halaman Masuk (Login)',
-                    icon: Icons.login_rounded,
-                    onPressed: () => context.push(RouteNames.loginPath),
-                  ),
-                const SizedBox(height: 12),
-                SecondaryButton(
-                  label: 'Ulangi Onboarding',
-                  icon: Icons.replay_rounded,
-                  onPressed: () async {
-                    await ref
-                        .read(onboardingStatusProvider.notifier)
-                        .resetOnboarding();
-                    if (context.mounted) {
-                      context.go(RouteNames.onboardingPath);
-                    }
-                  },
-                ),
-              ],
-            );
-          },
         ),
       ),
     );
