@@ -4,46 +4,42 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common/category_chip.dart';
 import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/material_card.dart';
+import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../models/energy_category.dart';
 import '../../../../models/learning_material.dart';
 import '../../../../routes/route_names.dart';
 import '../../../plants/presentation/providers/plants_providers.dart';
 import '../providers/learning_providers.dart';
 
-/// Halaman Utama Pembelajaran (Learning Dashboard) Fase 3.
+/// Halaman Utama Pembelajaran ("Pusat Edukasi") sesuai `docs/design/moodboard.png`.
 ///
-/// Menampilkan 5 kategori energi untuk dijelajahi dan daftar seluruh materi
-/// pembelajaran terpublikasi.
-class LearningDashboardPage extends ConsumerWidget {
+/// Menampilkan:
+/// - Header "Pusat Edukasi" dengan slot maskot Eco membaca buku
+/// - Baris chip filter kategori (`Semua`, `Surya`, `Air`, `Angin`, `Panas Bumi`, `Bioenergi`)
+/// - Daftar kartu materi bergambar (`MaterialCard`)
+class LearningDashboardPage extends ConsumerStatefulWidget {
   const LearningDashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LearningDashboardPage> createState() =>
+      _LearningDashboardPageState();
+}
+
+class _LearningDashboardPageState
+    extends ConsumerState<LearningDashboardPage> {
+  String? _selectedCategorySlug;
+
+  @override
+  Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(energyCategoriesProvider);
     final materialsAsync = ref.watch(allLearningMaterialsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Belajar Energi Bersih'),
-        actions: [
-          IconButton(
-            tooltip: 'Pencarian Global',
-            onPressed: () => context.push(RouteNames.searchPath),
-            icon: const Icon(Icons.search_rounded),
-          ),
-          IconButton(
-            tooltip: 'Daftar Bookmark Saya',
-            onPressed: () => context.push(RouteNames.bookmarksPath),
-            icon: const Icon(Icons.bookmark_outline_rounded),
-          ),
-        ],
-      ),
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.freshGreen,
@@ -53,7 +49,7 @@ class LearningDashboardPage extends ConsumerWidget {
           },
           child: categoriesAsync.when(
             loading: () => const LoadingView(
-              message: 'Memuat ruang belajar energi terbarukan...',
+              message: 'Memuat Pusat Edukasi...',
             ),
             error: (error, _) => ErrorView(
               message: error.toString(),
@@ -63,29 +59,24 @@ class LearningDashboardPage extends ConsumerWidget {
               },
             ),
             data: (categories) {
+              final selectedCategory = categories
+                  .where((c) => c.slug == _selectedCategorySlug)
+                  .firstOrNull;
+
               return ListView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
                 children: [
-                  _buildHeaderBanner(context),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Pilih Kategori Energi',
-                    style: AppTextStyles.title,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Pelajari cara kerja, kelebihan, dan keterbatasan setiap jenis pembangkit.',
-                    style: AppTextStyles.caption,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildCategoriesGrid(context, categories),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Semua Materi Pembelajaran',
-                    style: AppTextStyles.title,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildMaterialsList(context, ref, materialsAsync),
+                  _buildTopBarActions(context),
+                  const SizedBox(height: 8),
+                  _buildEducationHeader(),
+                  const SizedBox(height: 18),
+                  _buildCategoryChips(categories),
+                  if (selectedCategory != null) ...[
+                    const SizedBox(height: 14),
+                    _buildSelectedCategoryBanner(context, selectedCategory),
+                  ],
+                  const SizedBox(height: 18),
+                  _buildMaterialsList(context, materialsAsync),
                 ],
               );
             },
@@ -95,44 +86,139 @@ class LearningDashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeaderBanner(BuildContext context) {
+  Widget _buildTopBarActions(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        IconButton(
+          tooltip: 'Pencarian Global',
+          onPressed: () => context.push(RouteNames.searchPath),
+          icon: const Icon(
+            Icons.search_rounded,
+            color: AppColors.forestGreen,
+          ),
+        ),
+        IconButton(
+          tooltip: 'Daftar Bookmark Saya',
+          onPressed: () => context.push(RouteNames.bookmarksPath),
+          icon: const Icon(
+            Icons.bookmark_outline_rounded,
+            color: AppColors.forestGreen,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEducationHeader() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Pusat Edukasi',
+                style: AppTextStyles.display.copyWith(fontSize: 24),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Belajar lebih dalam tentang energi terbarukan!',
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        const SoftImagePlaceholder(
+          width: 84,
+          height: 84,
+          borderRadius: 42,
+          assetPath: 'assets/images/mascot/eco_reading.png',
+          backgroundColor: AppColors.mintGreen,
+          fallbackIcon: Icons.school_rounded,
+          iconColor: AppColors.forestGreen,
+          iconSize: 40,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryChips(List<EnergyCategory> categories) {
+    return SizedBox(
+      height: 38,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          CategoryChip(
+            label: 'Semua',
+            isSelected: _selectedCategorySlug == null,
+            onTap: () {
+              setState(() => _selectedCategorySlug = null);
+            },
+          ),
+          const SizedBox(width: 8),
+          ...categories.map((cat) {
+            final label = shortDisplayLabelForSlug(cat.slug, cat.name);
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: CategoryChip(
+                label: label,
+                categorySlug: cat.slug,
+                isSelected: _selectedCategorySlug == cat.slug,
+                onTap: () {
+                  setState(() {
+                    _selectedCategorySlug =
+                        _selectedCategorySlug == cat.slug ? null : cat.slug;
+                  });
+                },
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectedCategoryBanner(
+    BuildContext context,
+    EnergyCategory category,
+  ) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.mintGreen,
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.sageGreen),
       ),
       child: Row(
         children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceWhite,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.menu_book_rounded,
-              color: AppColors.forestGreen,
-              size: 28,
+          Icon(
+            iconForCategorySlug(category.slug),
+            size: 18,
+            color: AppColors.forestGreen,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${category.name} (${category.shortCode})',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.forestGreen,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Pustaka EduEarth',
-                  style: AppTextStyles.subtitle,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Simpan materi atau pembangkit penting ke Bookmark agar mudah dibaca kembali.',
-                  style: AppTextStyles.caption,
-                ),
-              ],
+          GestureDetector(
+            onTap: () => context.push('/learning/category/${category.slug}'),
+            child: Text(
+              'Detail Kategori →',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.forestGreen,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -140,108 +226,8 @@ class LearningDashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategoriesGrid(
-    BuildContext context,
-    List<EnergyCategory> categories,
-  ) {
-    if (categories.isEmpty) {
-      return const EmptyView(
-        title: 'Kategori Belum Tersedia',
-        description: 'Belum ada kategori energi yang terdaftar.',
-      );
-    }
-
-    return Column(
-      children: categories.map((cat) {
-        final color = AppColors.colorForCategorySlug(cat.slug);
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Card(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-              onTap: () => context.push('/learning/category/${cat.slug}'),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        iconForCategorySlug(cat.slug),
-                        color: AppColors.forestGreen,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  cat.name,
-                                  style: AppTextStyles.subtitle,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.mintGreen,
-                                  borderRadius: BorderRadius.circular(
-                                    AppTheme.pillRadius,
-                                  ),
-                                ),
-                                child: Text(
-                                  cat.shortCode,
-                                  style: AppTextStyles.caption.copyWith(
-                                    color: AppColors.forestGreen,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            cat.description,
-                            style: AppTextStyles.caption,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.textMuted,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
   Widget _buildMaterialsList(
     BuildContext context,
-    WidgetRef ref,
     AsyncValue<List<LearningMaterial>> materialsAsync,
   ) {
     return materialsAsync.when(
@@ -254,18 +240,33 @@ class LearningDashboardPage extends ConsumerWidget {
         onRetry: () => ref.invalidate(allLearningMaterialsProvider),
       ),
       data: (materials) {
-        if (materials.isEmpty) {
+        final filtered = _selectedCategorySlug == null
+            ? materials
+            : materials
+                .where((m) => m.categorySlug == _selectedCategorySlug)
+                .toList();
+
+        if (filtered.isEmpty) {
           return EmptyView(
             title: 'Belum Ada Materi Pembelajaran',
-            description:
-                'Jalankan file migrasi seed draf materi di Supabase SQL Editor untuk mengisi materi awal.',
-            actionLabel: 'Muat Ulang',
-            onAction: () => ref.invalidate(allLearningMaterialsProvider),
+            description: _selectedCategorySlug == null
+                ? 'Jalankan file migrasi seed draf materi di Supabase SQL Editor untuk mengisi materi awal.'
+                : 'Belum ada materi yang dipublikasikan untuk kategori yang dipilih.',
+            actionLabel: _selectedCategorySlug == null
+                ? 'Muat Ulang'
+                : 'Tampilkan Semua Kategori',
+            onAction: () {
+              if (_selectedCategorySlug != null) {
+                setState(() => _selectedCategorySlug = null);
+              } else {
+                ref.invalidate(allLearningMaterialsProvider);
+              }
+            },
           );
         }
 
         return Column(
-          children: materials.map((mat) {
+          children: filtered.map((mat) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: MaterialCard(
@@ -279,4 +280,3 @@ class LearningDashboardPage extends ConsumerWidget {
     );
   }
 }
-

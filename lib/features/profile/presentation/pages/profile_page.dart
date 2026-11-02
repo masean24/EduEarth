@@ -10,7 +10,7 @@ import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/primary_button.dart';
-import '../../../../core/widgets/common/secondary_button.dart';
+import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../models/user_profile.dart';
 import '../../../../routes/route_names.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -18,12 +18,14 @@ import '../../../bookmark/presentation/providers/bookmark_providers.dart';
 import '../../../quiz/presentation/providers/quiz_providers.dart';
 import '../providers/profile_providers.dart';
 
-/// Halaman Profil Pengguna (Tab Profile) Fase 5.
+/// Halaman Profil Pengguna (Tab Profile) sesuai `docs/design/moodboard.png`.
 ///
-/// Fitur:
-/// - Menampilkan informasi akun, avatar opsional, dan ringkasan progres.
-/// - Dialog / bottom sheet untuk mengedit `display_name` dan `avatar_url`.
-/// - Navigasi cepat ke My Learning, Bookmark Saya, Pencarian, Pengaturan, dan Tentang EduEarth.
+/// Ketentuan:
+/// - Menampilkan avatar bulat di tengah (dengan slot `eco_happy.png` / `avatar_url`),
+///   nama tampilan, dan email (TANPA Level/XP).
+/// - Menampilkan statistik dari data nyata yang sudah ada: "Tersimpan" (jumlah bookmark)
+///   dan "Kuis" (jumlah percobaan kuis); kolom "Badge" disembunyikan bila belum ada.
+/// - Daftar menu berikon lembut bergaya moodboard.
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
@@ -54,16 +56,6 @@ class ProfilePage extends ConsumerWidget {
     final authController = ref.watch(authControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profil Saya'),
-        actions: [
-          IconButton(
-            tooltip: 'Pengaturan',
-            onPressed: () => context.push(RouteNames.settingsPath),
-            icon: const Icon(Icons.settings_outlined),
-          ),
-        ],
-      ),
       body: SafeArea(
         child: profileAsync.when(
           loading: () => const LoadingView(
@@ -88,6 +80,7 @@ class ProfilePage extends ConsumerWidget {
             final bookmarkCount = bookmarksAsync.asData?.value.length ?? 0;
             final quizAttemptCount = attemptsAsync.asData?.value.length ?? 0;
             final avatarUrl = profile?.avatarUrl?.trim() ?? '';
+            const int? badgeCount = null; // Disembunyikan sampai Fase 6 (Achievement)
 
             return RefreshIndicator(
               color: AppColors.freshGreen,
@@ -97,10 +90,142 @@ class ProfilePage extends ConsumerWidget {
                 ref.invalidate(userQuizAttemptsProvider);
               },
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
                 children: [
+                  // 1. Header Avatar + Nama (Tanpa Level/XP)
+                  Center(
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.sageGreen,
+                              width: 2,
+                            ),
+                          ),
+                          child: SoftImagePlaceholder(
+                            width: 96,
+                            height: 96,
+                            borderRadius: 48,
+                            networkImageUrl: avatarUrl,
+                            assetPath: 'assets/images/mascot/eco_happy.png',
+                            backgroundColor: AppColors.mintGreen,
+                            fallbackIcon: Icons.person_rounded,
+                            iconColor: AppColors.forestGreen,
+                            iconSize: 46,
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Tooltip(
+                            message: 'Edit Profil',
+                            child: Material(
+                              color: AppColors.forestGreen,
+                              shape: const CircleBorder(),
+                              child: InkWell(
+                                customBorder: const CircleBorder(),
+                                onTap: () => _showEditProfileSheet(
+                                  context,
+                                  ref,
+                                  profile,
+                                ),
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: AppColors.surfaceWhite,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.edit_rounded,
+                                    size: 15,
+                                    color: AppColors.surfaceWhite,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    profile?.displayName ??
+                        session.user.email ??
+                        'Pengguna EduEarth',
+                    style: AppTextStyles.display.copyWith(fontSize: 22),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    session.user.email ?? '',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // 2. Kartu Statistik (Tersimpan & Kuis, + Badge bila tersedia)
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceWhite,
+                      borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+                      border: Border.all(color: AppColors.divider),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: _StatItem(
+                            value: '$bookmarkCount',
+                            label: 'Tersimpan',
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          height: 36,
+                          color: AppColors.divider,
+                        ),
+                        Expanded(
+                          child: _StatItem(
+                            value: '$quizAttemptCount',
+                            label: 'Kuis',
+                          ),
+                        ),
+                        if (badgeCount != null) ...[
+                          Container(
+                            width: 1,
+                            height: 36,
+                            color: AppColors.divider,
+                          ),
+                          Expanded(
+                            child: _StatItem(
+                              value: '$badgeCount',
+                              label: 'Badge',
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // 3. Grup Menu Utama (My Learning, Bookmark, Pencarian)
+                  Container(
                     decoration: BoxDecoration(
                       color: AppColors.surfaceWhite,
                       borderRadius: BorderRadius.circular(AppTheme.cardRadius),
@@ -108,104 +233,72 @@ class ProfilePage extends ConsumerWidget {
                     ),
                     child: Column(
                       children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundColor: AppColors.mintGreen,
-                          backgroundImage: avatarUrl.isNotEmpty
-                              ? NetworkImage(avatarUrl)
-                              : null,
-                          onBackgroundImageError: avatarUrl.isNotEmpty
-                              ? (_, _) {}
-                              : null,
-                          child: avatarUrl.isEmpty
-                              ? const Icon(
-                                  Icons.person_rounded,
-                                  size: 40,
-                                  color: AppColors.forestGreen,
-                                )
-                              : null,
+                        _MoodboardMenuTile(
+                          icon: Icons.menu_book_rounded,
+                          iconBackground: const Color(0xFFFEF9C3),
+                          iconColor: const Color(0xFFD97706),
+                          title: 'My Learning',
+                          onTap: () => context.push(RouteNames.myLearningPath),
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          profile?.displayName ??
-                              session.user.email ??
-                              'Pengguna EduEarth',
-                          style: AppTextStyles.title,
-                          textAlign: TextAlign.center,
+                        const Divider(height: 1, indent: 64),
+                        _MoodboardMenuTile(
+                          icon: Icons.bookmark_rounded,
+                          iconBackground: AppColors.mintGreen,
+                          iconColor: AppColors.forestGreen,
+                          title: 'Bookmark',
+                          onTap: () => context.push(RouteNames.bookmarksPath),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          session.user.email ?? '',
-                          style: AppTextStyles.caption,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _StatBadge(
-                              label: 'Percobaan Kuis',
-                              value: '$quizAttemptCount',
-                              icon: Icons.quiz_outlined,
-                            ),
-                            Container(
-                              width: 1,
-                              height: 32,
-                              color: AppColors.divider,
-                            ),
-                            _StatBadge(
-                              label: 'Bookmark',
-                              value: '$bookmarkCount',
-                              icon: Icons.bookmark_outline_rounded,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        SecondaryButton(
-                          label: 'Edit Nama & Avatar Profil',
-                          icon: Icons.edit_outlined,
-                          onPressed: () =>
-                              _showEditProfileSheet(context, ref, profile),
+                        const Divider(height: 1, indent: 64),
+                        _MoodboardMenuTile(
+                          icon: Icons.search_rounded,
+                          iconBackground: const Color(0xFFE0F2FE),
+                          iconColor: AppColors.skyBlue,
+                          title: 'Pencarian Global',
+                          onTap: () => context.push(RouteNames.searchPath),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  Text('Aktivitas & Menu', style: AppTextStyles.title),
-                  const SizedBox(height: 12),
-                  _MenuTile(
-                    icon: Icons.school_outlined,
-                    title: 'Progres Belajar Saya (My Learning)',
-                    subtitle: 'Riwayat kuis, statistik skor, dan materi tersimpan',
-                    onTap: () => context.push(RouteNames.myLearningPath),
-                  ),
-                  const SizedBox(height: 10),
-                  _MenuTile(
-                    icon: Icons.bookmark_outline_rounded,
-                    title: 'Bookmark Saya',
-                    subtitle: 'Daftar materi dan pembangkit yang disimpan',
-                    onTap: () => context.push(RouteNames.bookmarksPath),
-                  ),
-                  const SizedBox(height: 10),
-                  _MenuTile(
-                    icon: Icons.search_rounded,
-                    title: 'Pencarian Global',
-                    subtitle: 'Cari pembangkit energi dan materi pembelajaran',
-                    onTap: () => context.push(RouteNames.searchPath),
-                  ),
-                  const SizedBox(height: 10),
-                  _MenuTile(
-                    icon: Icons.settings_outlined,
-                    title: 'Pengaturan Aplikasi',
-                    subtitle: 'Kurangi efek glass (Liquid Glass) & preferensi',
-                    onTap: () => context.push(RouteNames.settingsPath),
-                  ),
-                  const SizedBox(height: 10),
-                  _MenuTile(
-                    icon: Icons.info_outline_rounded,
-                    title: 'Tentang EduEarth',
-                    subtitle: 'Visi edukasi energi terbarukan & prinsip sumber data',
-                    onTap: () => context.push(RouteNames.aboutPath),
+                  const SizedBox(height: 14),
+
+                  // 4. Grup Menu Pengaturan & Tentang
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceWhite,
+                      borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+                      border: Border.all(color: AppColors.divider),
+                    ),
+                    child: Column(
+                      children: [
+                        _MoodboardMenuTile(
+                          icon: Icons.edit_outlined,
+                          iconBackground: AppColors.mintGreen,
+                          iconColor: AppColors.forestGreen,
+                          title: 'Edit Nama & Avatar Profil',
+                          onTap: () => _showEditProfileSheet(
+                            context,
+                            ref,
+                            profile,
+                          ),
+                        ),
+                        const Divider(height: 1, indent: 64),
+                        _MoodboardMenuTile(
+                          icon: Icons.settings_outlined,
+                          iconBackground: AppColors.offWhite,
+                          iconColor: AppColors.forestGreen,
+                          title: 'Settings',
+                          onTap: () => context.push(RouteNames.settingsPath),
+                        ),
+                        const Divider(height: 1, indent: 64),
+                        _MoodboardMenuTile(
+                          icon: Icons.info_outline_rounded,
+                          iconBackground: AppColors.offWhite,
+                          iconColor: AppColors.forestGreen,
+                          title: 'About EduEarth',
+                          onTap: () => context.push(RouteNames.aboutPath),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 24),
                   PrimaryButton(
@@ -228,72 +321,77 @@ class ProfilePage extends ConsumerWidget {
   }
 }
 
-class _StatBadge extends StatelessWidget {
-  const _StatBadge({
-    required this.label,
+class _StatItem extends StatelessWidget {
+  const _StatItem({
     required this.value,
-    required this.icon,
+    required this.label,
   });
 
-  final String label;
   final String value;
-  final IconData icon;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: AppColors.forestGreen),
-            const SizedBox(width: 6),
-            Text(value, style: AppTextStyles.title),
-          ],
+        Text(
+          value,
+          style: AppTextStyles.display.copyWith(fontSize: 22),
         ),
         const SizedBox(height: 2),
-        Text(label, style: AppTextStyles.caption),
+        Text(
+          label,
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
 }
 
-class _MenuTile extends StatelessWidget {
-  const _MenuTile({
+class _MoodboardMenuTile extends StatelessWidget {
+  const _MoodboardMenuTile({
     required this.icon,
+    required this.iconBackground,
+    required this.iconColor,
     required this.title,
-    required this.subtitle,
     required this.onTap,
   });
 
   final IconData icon;
+  final Color iconBackground;
+  final Color iconColor;
   final String title;
-  final String subtitle;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        onTap: onTap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: iconBackground,
+          borderRadius: BorderRadius.circular(12),
         ),
-        leading: Container(
-          width: 42,
-          height: 42,
-          decoration: const BoxDecoration(
-            color: AppColors.mintGreen,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: AppColors.forestGreen, size: 22),
+        child: Icon(icon, color: iconColor, size: 20),
+      ),
+      title: Text(
+        title,
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.forestGreen,
+          fontWeight: FontWeight.w600,
         ),
-        title: Text(title, style: AppTextStyles.bodyMedium),
-        subtitle: Text(subtitle, style: AppTextStyles.caption),
-        trailing: const Icon(
-          Icons.chevron_right_rounded,
-          color: AppColors.textMuted,
-        ),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right_rounded,
+        color: AppColors.textSecondary,
+        size: 20,
       ),
     );
   }
@@ -427,4 +525,3 @@ class _EditProfileBottomSheetState
     );
   }
 }
-

@@ -10,7 +10,6 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
-import '../../../../core/widgets/common/primary_button.dart';
 import '../../../../core/widgets/common/secondary_button.dart';
 import '../../../../models/quiz.dart';
 import '../../../../models/quiz_question.dart';
@@ -18,14 +17,14 @@ import '../../../../routes/route_names.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/quiz_providers.dart';
 
-/// Halaman Pengerjaan Kuis (Quiz Gameplay).
+/// Halaman Pengerjaan Kuis (Quiz Gameplay) sesuai gaya `docs/design/moodboard.png`.
 ///
-/// Fitur:
+/// Keamanan & Aturan:
 /// - Wajib login.
-/// - Menampilkan progres soal, navigasi antar soal, dan indikator terjawab.
-/// - Menampilkan timer hitung mundur HANYA bila `quiz.timeLimitSeconds != null`.
-/// - Mencegah keluar tidak sengaja dengan `PopScope` + dialog konfirmasi.
-/// - Mengirim jawaban ke RPC `submit_quiz_attempt` untuk dinilai di server.
+/// - Menampilkan progres soal (`Quiz [===] 3/10`), pilihan jawaban bergaya moodboard,
+///   dan timer opsional bila `quiz.timeLimitSeconds != null`.
+/// - TIDAK menampilkan umpan balik benar/salah sebelum submit; penilaian dilakukan
+///   sepenuhnya di server saat submit melalui RPC `submit_quiz_attempt`.
 class QuizGameplayPage extends ConsumerStatefulWidget {
   const QuizGameplayPage({
     super.key,
@@ -118,7 +117,9 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
     if (isAutoSubmitOnTimeout && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Waktu habis! Jawaban Anda sedang dinilai di server...'),
+          content: Text(
+            'Waktu habis! Jawaban Anda sedang dinilai di server...',
+          ),
         ),
       );
     }
@@ -143,7 +144,8 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            err?.toString() ?? 'Gagal mengirim jawaban kuis. Silakan coba lagi.',
+            err?.toString() ??
+                'Gagal mengirim jawaban kuis. Silakan coba lagi.',
           ),
         ),
       );
@@ -182,65 +184,6 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            tooltip: 'Keluar dari Kuis',
-            icon: const Icon(Icons.close_rounded),
-            onPressed: () async {
-              final confirmed = await _confirmExit();
-              if (confirmed && context.mounted) {
-                context.pop();
-              }
-            },
-          ),
-          title: Text(
-            quizAsync.asData?.value.title ?? 'Mengerjakan Kuis',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          actions: [
-            if (_remainingSeconds != null)
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: (_remainingSeconds ?? 0) <= 30
-                          ? AppColors.errorLight
-                          : AppColors.mintGreen,
-                      borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.timer_outlined,
-                          size: 16,
-                          color: (_remainingSeconds ?? 0) <= 30
-                              ? AppColors.errorRed
-                              : AppColors.forestGreen,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _formatTime(_remainingSeconds!),
-                          style: AppTextStyles.caption.copyWith(
-                            color: (_remainingSeconds ?? 0) <= 30
-                                ? AppColors.errorRed
-                                : AppColors.forestGreen,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
         body: SafeArea(
           child: quizAsync.when(
             loading: () => const LoadingView(
@@ -289,34 +232,24 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildProgressHeader(
+                      _buildMoodboardHeader(
                         currentIndex: safeIndex,
                         totalQuestions: questions.length,
-                        answeredCount: _selectedAnswers.length,
                       ),
                       Expanded(
                         child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(20),
+                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: AppColors.surfaceWhite,
-                                  borderRadius: BorderRadius.circular(
-                                    AppTheme.cardRadius,
-                                  ),
-                                  border: Border.all(color: AppColors.divider),
-                                ),
-                                child: Text(
-                                  currentQuestion.question,
-                                  style: AppTextStyles.title.copyWith(
-                                    height: 1.4,
-                                  ),
+                              Text(
+                                currentQuestion.question,
+                                style: AppTextStyles.display.copyWith(
+                                  fontSize: 21,
+                                  height: 1.35,
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 20),
                               ...currentQuestion.options.map((option) {
                                 final isSelected =
                                     selectedOptionId == option.id;
@@ -343,7 +276,6 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
                       ),
                       _buildBottomActions(
                         safeIndex: safeIndex,
-                        totalQuestions: questions.length,
                         isLastQuestion: isLastQuestion,
                       ),
                     ],
@@ -357,45 +289,100 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
     );
   }
 
-  Widget _buildProgressHeader({
+  Widget _buildMoodboardHeader({
     required int currentIndex,
     required int totalQuestions,
-    required int answeredCount,
   }) {
     final progress = (currentIndex + 1) / totalQuestions;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-      color: AppColors.surfaceWhite,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 20, 8),
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Soal ${currentIndex + 1} dari $totalQuestions',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w700,
+              IconButton(
+                tooltip: 'Keluar dari Kuis',
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: AppColors.forestGreen,
                 ),
+                onPressed: () async {
+                  final confirmed = await _confirmExit();
+                  if (confirmed && mounted) {
+                    context.pop();
+                  }
+                },
               ),
               Text(
-                'Terjawab: $answeredCount/$totalQuestions',
-                style: AppTextStyles.caption,
+                'Quiz',
+                style: AppTextStyles.subtitle.copyWith(fontSize: 17),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                    backgroundColor: AppColors.divider,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.freshGreen,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Text(
+                '${currentIndex + 1}/$totalQuestions',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 8,
-              backgroundColor: AppColors.mintGreen,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.freshGreen,
+          if (_remainingSeconds != null) ...[
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: (_remainingSeconds ?? 0) <= 30
+                      ? AppColors.errorLight
+                      : AppColors.mintGreen,
+                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.timer_outlined,
+                      size: 14,
+                      color: (_remainingSeconds ?? 0) <= 30
+                          ? AppColors.errorRed
+                          : AppColors.forestGreen,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatTime(_remainingSeconds!),
+                      style: AppTextStyles.caption.copyWith(
+                        color: (_remainingSeconds ?? 0) <= 30
+                            ? AppColors.errorRed
+                            : AppColors.forestGreen,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -403,15 +390,10 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
 
   Widget _buildBottomActions({
     required int safeIndex,
-    required int totalQuestions,
     required bool isLastQuestion,
   }) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceWhite,
-        border: Border(top: BorderSide(color: AppColors.divider)),
-      ),
       child: Row(
         children: [
           if (safeIndex > 0) ...[
@@ -430,24 +412,51 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
           ],
           Expanded(
             flex: 2,
-            child: isLastQuestion
-                ? PrimaryButton(
-                    label: 'Kirim Jawaban',
-                    icon: Icons.check_circle_outline_rounded,
-                    isLoading: _isSubmitting,
-                    onPressed: () => _submitQuiz(),
-                  )
-                : PrimaryButton(
-                    label: 'Soal Berikutnya',
-                    icon: Icons.arrow_forward_rounded,
-                    onPressed: _isSubmitting
-                        ? null
-                        : () {
-                            setState(
-                              () => _currentQuestionIndex = safeIndex + 1,
-                            );
-                          },
+            child: SizedBox(
+              height: 52,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.forestGreen,
+                  foregroundColor: AppColors.surfaceWhite,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                   ),
+                ),
+                onPressed: _isSubmitting
+                    ? null
+                    : () {
+                        if (isLastQuestion) {
+                          _submitQuiz();
+                        } else {
+                          setState(
+                            () => _currentQuestionIndex = safeIndex + 1,
+                          );
+                        }
+                      },
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.surfaceWhite,
+                          ),
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            isLastQuestion ? 'Kirim Jawaban' : 'Lanjut',
+                            style: AppTextStyles.button,
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.arrow_forward_rounded, size: 18),
+                        ],
+                      ),
+              ),
+            ),
           ),
         ],
       ),
@@ -476,60 +485,67 @@ class _OptionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: isSelected ? AppColors.mintGreen : AppColors.surfaceWhite,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: isSelected ? AppColors.freshGreen : AppColors.divider,
               width: isSelected ? 1.8 : 1.0,
             ),
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.freshGreen
-                      : AppColors.offWhite,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected
-                        ? AppColors.freshGreen
-                        : AppColors.sageGreen,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  option.id.toUpperCase(),
-                  style: AppTextStyles.caption.copyWith(
-                    color: isSelected
-                        ? AppColors.surfaceWhite
-                        : AppColors.forestGreen,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 3),
-                  child: Text(
-                    option.text,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w400,
+              if (isSelected)
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.freshGreen,
+                  size: 26,
+                )
+              else
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: AppColors.offWhite,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.divider,
+                      width: 2,
                     ),
                   ),
                 ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  option.text,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.forestGreen,
+                    fontWeight:
+                        isSelected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
               ),
+              if (isSelected) ...[
+                const SizedBox(width: 8),
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: const BoxDecoration(
+                    color: AppColors.freshGreen,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: AppColors.surfaceWhite,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -537,4 +553,3 @@ class _OptionTile extends StatelessWidget {
     );
   }
 }
-

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -11,18 +10,22 @@ import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/plant_card.dart';
-import '../../../../core/widgets/common/primary_button.dart';
-import '../../../../core/widgets/common/secondary_button.dart';
+import '../../../../core/widgets/common/soft_image_placeholder.dart';
+import '../../../../core/widgets/glass/glass_container.dart';
 import '../../../../models/energy_category.dart';
 import '../../../../models/power_plant.dart';
 import '../../../../routes/route_names.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../plants/presentation/providers/plants_providers.dart';
 
-/// Halaman Beranda (Home Dashboard) Fase 2.
+/// Halaman Beranda (Home Dashboard) sesuai referensi `docs/design/moodboard.png`.
 ///
-/// Menampilkan ringkasan energi terbarukan Indonesia, akses cepat ke Explore Map
-/// & Pembangkit Terdekat, daftar 5 kategori energi, serta pratinjau pembangkit.
+/// Menampilkan:
+/// 1. Sapaan pengguna ("Selamat datang, `<Nama>`! 👋")
+/// 2. Search bar berbasis `GlassContainer` ("Cari pembangkit, materi...")
+/// 3. Banner "Explore Renewable Energy" dengan tombol "Mulai Jelajah →"
+/// 4. Baris "Kategori Energi" dengan ikon bulat per kategori
+/// 5. Bagian "Rekomendasi Pembangkit" dengan kartu bergambar gaya moodboard
 class HomeDashboardPage extends ConsumerWidget {
   const HomeDashboardPage({super.key});
 
@@ -31,47 +34,17 @@ class HomeDashboardPage extends ConsumerWidget {
     final categoriesAsync = ref.watch(energyCategoriesProvider);
     final plantsAsync = ref.watch(allPlantsListProvider);
     final profileAsync = ref.watch(currentUserProfileProvider);
+    final session = ref.watch(currentSessionProvider);
 
-    final greetingName = profileAsync.asData?.value?.displayName;
+    final rawName = profileAsync.asData?.value?.displayName?.trim();
+    final emailPrefix = session?.user.email?.split('@').first;
+    final greetingName = (rawName != null && rawName.isNotEmpty)
+        ? rawName
+        : (emailPrefix != null && emailPrefix.isNotEmpty)
+            ? emailPrefix
+            : 'Penjelajah';
 
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              greetingName != null && greetingName.isNotEmpty
-                  ? 'Halo, $greetingName'
-                  : AppConstants.appName,
-              style: AppTextStyles.title,
-            ),
-            Text(
-              AppConstants.appTagline,
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.freshGreen,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Pencarian Global',
-            onPressed: () => context.push(RouteNames.searchPath),
-            icon: const Icon(Icons.search_rounded),
-          ),
-          IconButton(
-            tooltip: 'Pembangkit Terdekat',
-            onPressed: () => context.push(RouteNames.nearbyPlantsPath),
-            icon: const Icon(Icons.near_me_outlined),
-          ),
-          IconButton(
-            tooltip: 'Demo Komponen & Design System',
-            onPressed: () => context.push(RouteNames.designShowcasePath),
-            icon: const Icon(Icons.palette_outlined),
-          ),
-        ],
-      ),
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.freshGreen,
@@ -102,32 +75,29 @@ class HomeDashboardPage extends ConsumerWidget {
               }
 
               return ListView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
                 children: [
-                  _buildHeroBanner(context, plantsAsync),
+                  _buildGreetingHeader(context, greetingName),
+                  const SizedBox(height: 16),
+                  _buildSearchBarTrigger(context),
+                  const SizedBox(height: 18),
+                  _buildExploreBanner(context),
                   const SizedBox(height: 24),
-                  Text('5 Kategori Energi Bersih', style: AppTextStyles.title),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Ketuk salah satu kategori untuk langsung memfilter peta pembangkit.',
-                    style: AppTextStyles.caption,
+                  _buildSectionHeader(
+                    title: 'Kategori Energi',
+                    actionLabel: 'Lihat Semua →',
+                    onAction: () => context.go(RouteNames.learningPath),
                   ),
                   const SizedBox(height: 12),
-                  _buildCategoriesHorizontalList(context, ref, categories),
+                  _buildCircularCategoriesRow(context, ref, categories),
                   const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Pembangkit Terdaftar', style: AppTextStyles.title),
-                      TextButton.icon(
-                        onPressed: () => context.go(RouteNames.exploreMapPath),
-                        icon: const Icon(Icons.map_outlined, size: 18),
-                        label: const Text('Buka Peta'),
-                      ),
-                    ],
+                  _buildSectionHeader(
+                    title: 'Rekomendasi Pembangkit',
+                    actionLabel: 'Peta →',
+                    onAction: () => context.go(RouteNames.exploreMapPath),
                   ),
-                  const SizedBox(height: 8),
-                  _buildPlantsSection(context, ref, plantsAsync),
+                  const SizedBox(height: 12),
+                  _buildRecommendedPlants(context, ref, plantsAsync),
                 ],
               );
             },
@@ -137,177 +107,288 @@ class HomeDashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeroBanner(
-    BuildContext context,
-    AsyncValue<List<PowerPlant>> plantsAsync,
-  ) {
-    final totalPlants = plantsAsync.asData?.value.length ?? 0;
+  Widget _buildGreetingHeader(BuildContext context, String greetingName) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Selamat datang,',
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '$greetingName! 👋',
+                style: AppTextStyles.display.copyWith(fontSize: 22),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        _HeaderIconButton(
+          tooltip: 'Pembangkit Terdekat',
+          icon: Icons.near_me_outlined,
+          onTap: () => context.push(RouteNames.nearbyPlantsPath),
+        ),
+        const SizedBox(width: 8),
+        _HeaderIconButton(
+          tooltip: 'Bookmark Tersimpan',
+          icon: Icons.bookmark_outline_rounded,
+          onTap: () => context.push(RouteNames.bookmarksPath),
+        ),
+      ],
+    );
+  }
 
+  Widget _buildSearchBarTrigger(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push(RouteNames.searchPath),
+      behavior: HitTestBehavior.opaque,
+      child: GlassContainer(
+        borderRadius: AppTheme.pillRadius,
+        blur: 14,
+        tintOpacity: 0.85,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.search_rounded,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Cari pembangkit, materi...',
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExploreBanner(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      height: 168,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
         gradient: const LinearGradient(
           colors: [
             AppColors.forestGreen,
-            Color(0xFF1E7A44),
+            Color(0xFF237A48),
+            Color(0xFF56B870),
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.mintGreen,
-              borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+          // Slot ilustrasi sebelah kanan (fallback ikon energi bersih lembut)
+          Positioned(
+            right: -8,
+            top: 0,
+            bottom: 0,
+            width: 170,
+            child: SoftImagePlaceholder(
+              borderRadius: 0,
+              assetPath:
+                  'assets/images/illustrations/banner_explore_energy.png',
+              backgroundColor: AppColors.mintGreen.withValues(alpha: 0.18),
+              fallbackIcon: Icons.solar_power_rounded,
+              iconColor: AppColors.surfaceWhite.withValues(alpha: 0.85),
+              iconSize: 64,
             ),
-            child: Text(
-              'Eksplorasi Nusantara • $totalPlants Titik Aktif',
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.forestGreen,
-                fontWeight: FontWeight.w700,
+          ),
+          // Badge bulat hijau + di kanan atas sesuai moodboard
+          Positioned(
+            top: 12,
+            right: 12,
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: AppColors.freshGreen,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.surfaceWhite, width: 1.5),
+              ),
+              child: const Icon(
+                Icons.eco_rounded,
+                size: 16,
+                color: AppColors.surfaceWhite,
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Peta Pembangkit Energi Terbarukan Indonesia',
-            style: AppTextStyles.title.copyWith(
-              color: AppColors.surfaceWhite,
-              fontSize: 22,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Temukan sebaran PLTS, PLTA, PLTB, PLTP, dan Bioenergi beserta lokasi terdekat dari posisi Anda.',
-            style: AppTextStyles.body.copyWith(
-              color: AppColors.mintGreen,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: PrimaryButton(
-                  label: 'Jelajahi Peta',
-                  icon: Icons.map_rounded,
-                  onPressed: () => context.go(RouteNames.exploreMapPath),
+          // Konten teks & tombol kiri
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Explore\nRenewable\nEnergy',
+                  style: AppTextStyles.title.copyWith(
+                    color: AppColors.surfaceWhite,
+                    fontSize: 21,
+                    height: 1.2,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: SecondaryButton(
-                  label: 'Terdekat',
-                  icon: Icons.near_me_rounded,
-                  onPressed: () => context.push(RouteNames.nearbyPlantsPath),
+                Material(
+                  color: AppColors.surfaceWhite,
+                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                    onTap: () => context.go(RouteNames.exploreMapPath),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Mulai Jelajah',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.forestGreen,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 15,
+                            color: AppColors.forestGreen,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCategoriesHorizontalList(
+  Widget _buildSectionHeader({
+    required String title,
+    required String actionLabel,
+    required VoidCallback onAction,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: AppTextStyles.subtitle.copyWith(fontSize: 17)),
+        GestureDetector(
+          onTap: onAction,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(
+              actionLabel,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.forestGreen,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCircularCategoriesRow(
     BuildContext context,
     WidgetRef ref,
     List<EnergyCategory> categories,
   ) {
-    return SizedBox(
-      height: 148,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          final color = AppColors.colorForCategorySlug(category.slug);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: categories.map((category) {
+          final slug = category.slug;
+          final softBg = AppColors.softBackgroundForCategorySlug(slug);
+          final accentColor = AppColors.colorForCategorySlug(slug);
+          final shortLabel = shortDisplayLabelForSlug(slug, category.name);
 
-          return SizedBox(
-            width: 168,
-            child: Card(
-              child: InkWell(
-                borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-                onTap: () {
-                  ref
-                      .read(selectedCategoryFilterProvider.notifier)
-                      .selectCategory(category.slug);
-                  context.go(RouteNames.exploreMapPath);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.18),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              iconForCategorySlug(category.slug),
-                              color: AppColors.forestGreen,
-                              size: 20,
-                            ),
-                          ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.mintGreen,
-                              borderRadius: BorderRadius.circular(
-                                AppTheme.pillRadius,
-                              ),
-                            ),
-                            child: Text(
-                              category.shortCode,
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.forestGreen,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Text(
-                        category.name,
-                        style: AppTextStyles.subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        category.description,
-                        style: AppTextStyles.caption,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+          return Expanded(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () {
+                ref
+                    .read(selectedCategoryFilterProvider.notifier)
+                    .selectCategory(slug);
+                context.go(RouteNames.exploreMapPath);
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: softBg,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      iconForCategorySlug(slug),
+                      color: slug == 'solar'
+                          ? const Color(0xFFD97706)
+                          : accentColor == AppColors.freshGreen
+                              ? AppColors.forestGreen
+                              : accentColor,
+                      size: 26,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    shortLabel,
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.forestGreen,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      height: 1.15,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
           );
-        },
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildPlantsSection(
+  Widget _buildRecommendedPlants(
     BuildContext context,
     WidgetRef ref,
     AsyncValue<List<PowerPlant>> plantsAsync,
@@ -315,7 +396,7 @@ class HomeDashboardPage extends ConsumerWidget {
     return plantsAsync.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 24),
-        child: LoadingView(message: 'Memuat daftar pembangkit...'),
+        child: LoadingView(message: 'Memuat rekomendasi pembangkit...'),
       ),
       error: (error, _) => ErrorView(
         message: error.toString(),
@@ -330,19 +411,57 @@ class HomeDashboardPage extends ConsumerWidget {
           );
         }
 
+        final displayPlants = plants.take(4).toList();
         return Column(
-          children: plants.take(5).map((plant) {
+          children: List.generate(displayPlants.length, (index) {
+            final plant = displayPlants[index];
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: PlantCard(
                 plant: plant,
+                isFeaturedBanner: index == 0,
                 onTap: () => context.push('/plants/${plant.id}'),
               ),
             );
-          }).toList(),
+          }),
         );
       },
     );
   }
 }
 
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: AppColors.surfaceWhite,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.divider),
+            ),
+            child: Icon(icon, color: AppColors.forestGreen, size: 20),
+          ),
+        ),
+      ),
+    );
+  }
+}

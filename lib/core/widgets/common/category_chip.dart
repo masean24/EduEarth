@@ -15,7 +15,7 @@ IconData iconForCategorySlug(String? slug) {
     case 'wind':
       return Icons.air_rounded;
     case 'geothermal':
-      return Icons.thermostat_rounded;
+      return Icons.local_fire_department_rounded;
     case 'bioenergy':
       return Icons.eco_rounded;
     default:
@@ -23,8 +23,46 @@ IconData iconForCategorySlug(String? slug) {
   }
 }
 
-/// Chip filter kategori energi yang mendukung mode standar maupun mode Liquid Glass
-/// (dipakai di atas peta Explore Map).
+/// Helper path slot aset ilustrasi kategori sesuai `docs/design/ASSETS.md`.
+String assetForCategorySlug(String? slug) {
+  switch (slug?.toLowerCase().trim()) {
+    case 'solar':
+      return 'assets/images/illustrations/cat_solar.png';
+    case 'hydro':
+      return 'assets/images/illustrations/cat_hydro.png';
+    case 'wind':
+      return 'assets/images/illustrations/cat_wind.png';
+    case 'geothermal':
+      return 'assets/images/illustrations/cat_geothermal.png';
+    case 'bioenergy':
+      return 'assets/images/illustrations/cat_bioenergy.png';
+    default:
+      return '';
+  }
+}
+
+/// Label singkat kategori energi sesuai gaya `moodboard.png`
+/// (Surya, Air, Angin, Panas Bumi, Bioenergi).
+String shortDisplayLabelForSlug(String? slug, String fallbackName) {
+  switch (slug?.toLowerCase().trim()) {
+    case 'solar':
+      return 'Surya';
+    case 'hydro':
+      return 'Air';
+    case 'wind':
+      return 'Angin';
+    case 'geothermal':
+      return 'Panas Bumi';
+    case 'bioenergy':
+      return 'Bioenergi';
+    default:
+      return fallbackName;
+  }
+}
+
+/// Chip filter kategori energi bergaya moodboard:
+/// - Saat terpilih (`isSelected == true`): pill hijau tua solid (`forestGreen`) dengan teks putih.
+/// - Saat tidak terpilih: `GlassContainer` (jika `useGlass == true` di atas peta) atau pill putih bersih.
 class CategoryChip extends StatelessWidget {
   const CategoryChip({
     super.key,
@@ -33,6 +71,7 @@ class CategoryChip extends StatelessWidget {
     required this.onTap,
     this.categorySlug,
     this.useGlass = false,
+    this.showIcon = false,
   });
 
   final String label;
@@ -40,6 +79,7 @@ class CategoryChip extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final bool useGlass;
+  final bool showIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -50,52 +90,69 @@ class CategoryChip extends StatelessWidget {
     final chipContent = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          categorySlug != null
-              ? iconForCategorySlug(categorySlug)
-              : Icons.layers_rounded,
-          size: 16,
-          color: isSelected ? AppColors.forestGreen : accentColor,
-        ),
-        const SizedBox(width: 6),
+        if (showIcon) ...[
+          Icon(
+            categorySlug != null
+                ? iconForCategorySlug(categorySlug)
+                : Icons.layers_rounded,
+            size: 15,
+            color: isSelected ? AppColors.surfaceWhite : accentColor,
+          ),
+          const SizedBox(width: 6),
+        ],
         Text(
           label,
           style: AppTextStyles.caption.copyWith(
-            color: AppColors.forestGreen,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? AppColors.surfaceWhite : AppColors.forestGreen,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+            fontSize: 13,
           ),
         ),
       ],
     );
 
-    if (useGlass && !isSelected) {
+    if (isSelected) {
+      return Material(
+        color: AppColors.forestGreen,
+        borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            alignment: Alignment.center,
+            child: chipContent,
+          ),
+        ),
+      );
+    }
+
+    if (useGlass) {
       return GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: GlassContainer(
           borderRadius: AppTheme.pillRadius,
           blur: 14,
-          tintOpacity: 0.72,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          child: chipContent,
+          tintOpacity: 0.78,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Center(child: chipContent),
         ),
       );
     }
 
     return Material(
-      color: isSelected ? AppColors.mintGreen : AppColors.surfaceWhite,
+      color: AppColors.surfaceWhite,
       borderRadius: BorderRadius.circular(AppTheme.pillRadius),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.pillRadius),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-            border: Border.all(
-              color: isSelected ? accentColor : AppColors.divider,
-              width: isSelected ? 1.5 : 1.0,
-            ),
+            border: Border.all(color: AppColors.divider),
           ),
           child: chipContent,
         ),
@@ -103,4 +160,3 @@ class CategoryChip extends StatelessWidget {
     );
   }
 }
-

@@ -252,14 +252,45 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-/// Kerangka navigasi bawah 5 tab menggunakan efek Liquid Glass selektif.
+/// Kerangka navigasi bawah 5 tab menggunakan efek Liquid Glass selektif
+/// dan indikator tab aktif bergaya `docs/design/moodboard.png`.
 class _MainShellScaffold extends StatelessWidget {
   const _MainShellScaffold({required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
+  static const List<_NavTabItemData> _tabs = <_NavTabItemData>[
+    _NavTabItemData(
+      label: 'Home',
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+    ),
+    _NavTabItemData(
+      label: 'Explore',
+      icon: Icons.search_rounded,
+      activeIcon: Icons.search_rounded,
+    ),
+    _NavTabItemData(
+      label: 'Learn',
+      icon: Icons.menu_book_outlined,
+      activeIcon: Icons.menu_book_rounded,
+    ),
+    _NavTabItemData(
+      label: 'Quiz',
+      icon: Icons.verified_user_outlined,
+      activeIcon: Icons.verified_user_rounded,
+    ),
+    _NavTabItemData(
+      label: 'Profile',
+      icon: Icons.person_outline_rounded,
+      activeIcon: Icons.person_rounded,
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final currentIndex = navigationShell.currentIndex;
+
     return Scaffold(
       extendBody: true,
       body: navigationShell,
@@ -268,96 +299,95 @@ class _MainShellScaffold extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: GlassContainer(
-            borderRadius: 24,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: NavigationBarTheme(
-              data: NavigationBarThemeData(
-                backgroundColor: Colors.transparent,
-                indicatorColor: AppColors.mintGreen,
-                labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                  final isSelected = states.contains(WidgetState.selected);
-                  return AppTextStyles.caption.copyWith(
-                    color: isSelected
-                        ? AppColors.forestGreen
-                        : AppColors.textMuted,
-                    fontWeight:
-                        isSelected ? FontWeight.w700 : FontWeight.w500,
-                  );
-                }),
-              ),
-              child: NavigationBar(
-                height: 60,
-                elevation: 0,
-                backgroundColor: Colors.transparent,
-                selectedIndex: navigationShell.currentIndex,
-                onDestinationSelected: (index) {
-                  navigationShell.goBranch(
-                    index,
-                    initialLocation: index == navigationShell.currentIndex,
-                  );
-                },
-                destinations: const [
-                  NavigationDestination(
-                    icon: Icon(
-                      Icons.home_outlined,
-                      color: AppColors.textMuted,
+            borderRadius: 26,
+            blur: 18,
+            tintOpacity: 0.85,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(_tabs.length, (index) {
+                final item = _tabs[index];
+                final isSelected = index == currentIndex;
+
+                return Expanded(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () {
+                      navigationShell.goBranch(
+                        index,
+                        initialLocation: index == currentIndex,
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 34,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.forestGreen
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              isSelected ? item.activeIcon : item.icon,
+                              size: 20,
+                              color: isSelected
+                                  ? AppColors.surfaceWhite
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            item.label,
+                            style: AppTextStyles.caption.copyWith(
+                              fontSize: 11,
+                              color: isSelected
+                                  ? AppColors.forestGreen
+                                  : AppColors.textSecondary,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: isSelected ? 18 : 0,
+                            height: 2.5,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.forestGreen
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    selectedIcon: Icon(
-                      Icons.home_rounded,
-                      color: AppColors.forestGreen,
-                    ),
-                    label: 'Home',
                   ),
-                  NavigationDestination(
-                    icon: Icon(
-                      Icons.map_outlined,
-                      color: AppColors.textMuted,
-                    ),
-                    selectedIcon: Icon(
-                      Icons.map_rounded,
-                      color: AppColors.forestGreen,
-                    ),
-                    label: 'Explore',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(
-                      Icons.menu_book_outlined,
-                      color: AppColors.textMuted,
-                    ),
-                    selectedIcon: Icon(
-                      Icons.menu_book_rounded,
-                      color: AppColors.forestGreen,
-                    ),
-                    label: 'Learn',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(
-                      Icons.quiz_outlined,
-                      color: AppColors.textMuted,
-                    ),
-                    selectedIcon: Icon(
-                      Icons.quiz_rounded,
-                      color: AppColors.forestGreen,
-                    ),
-                    label: 'Quiz',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(
-                      Icons.person_outline_rounded,
-                      color: AppColors.textMuted,
-                    ),
-                    selectedIcon: Icon(
-                      Icons.person_rounded,
-                      color: AppColors.forestGreen,
-                    ),
-                    label: 'Profile',
-                  ),
-                ],
-              ),
+                );
+              }),
             ),
           ),
         ),
       ),
     );
   }
+}
+
+class _NavTabItemData {
+  const _NavTabItemData({
+    required this.label,
+    required this.icon,
+    required this.activeIcon,
+  });
+
+  final String label;
+  final IconData icon;
+  final IconData activeIcon;
 }

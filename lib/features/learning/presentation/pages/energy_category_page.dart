@@ -11,6 +11,7 @@ import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/material_card.dart';
 import '../../../../core/widgets/common/secondary_button.dart';
+import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../routes/route_names.dart';
 import '../../../plants/presentation/providers/plants_providers.dart';
 import '../providers/learning_providers.dart';
@@ -35,7 +36,7 @@ class EnergyCategoryPage extends ConsumerWidget {
         .where((c) => c.slug == categorySlug)
         .firstOrNull;
 
-    final accentColor = AppColors.colorForCategorySlug(categorySlug);
+    final softBg = AppColors.softBackgroundForCategorySlug(categorySlug);
 
     return Scaffold(
       appBar: AppBar(
@@ -56,26 +57,24 @@ class EnergyCategoryPage extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: AppColors.surfaceWhite,
                     borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-                    border: Border.all(color: accentColor, width: 1.4),
+                    border: Border.all(color: AppColors.divider),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: accentColor.withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              iconForCategorySlug(categorySlug),
-                              color: AppColors.forestGreen,
-                            ),
+                          SoftImagePlaceholder(
+                            width: 60,
+                            height: 60,
+                            borderRadius: 16,
+                            assetPath: assetForCategorySlug(categorySlug),
+                            backgroundColor: softBg,
+                            fallbackIcon: iconForCategorySlug(categorySlug),
+                            iconColor: AppColors.forestGreen,
+                            iconSize: 30,
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,6 +83,7 @@ class EnergyCategoryPage extends ConsumerWidget {
                                   matchedCategory.name,
                                   style: AppTextStyles.title,
                                 ),
+                                const SizedBox(height: 2),
                                 Text(
                                   'Singkatan Pembangkit: ${matchedCategory.shortCode}',
                                   style: AppTextStyles.caption.copyWith(
@@ -99,11 +99,14 @@ class EnergyCategoryPage extends ConsumerWidget {
                       const SizedBox(height: 12),
                       Text(
                         matchedCategory.description,
-                        style: AppTextStyles.body,
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       SecondaryButton(
-                        label: 'Lihat Pembangkit ${matchedCategory.shortCode} di Peta',
+                        label:
+                            'Lihat Pembangkit ${matchedCategory.shortCode} di Peta',
                         icon: Icons.map_outlined,
                         onPressed: () {
                           ref
@@ -165,4 +168,3 @@ class EnergyCategoryPage extends ConsumerWidget {
     );
   }
 }
-

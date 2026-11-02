@@ -3,7 +3,7 @@
 > Agent: kerjakan **satu fase sekali**, urut. Centang item yang selesai dan terverifikasi.
 > Jangan mulai fase berikutnya sebelum "Kriteria selesai" fase saat ini terpenuhi dan pemilik menyetujui.
 
-**Status saat ini:** Fase 5 (sedang dikerjakan)
+**Status saat ini:** Fase 5 selesai & terverifikasi — Putaran Polish UI #1 (Moodboard)
 
 ---
 
@@ -63,11 +63,11 @@
 - [x] Verifikasi: client **tidak bisa** membaca `quiz_answer_keys` dan tidak bisa insert `quiz_attempts` langsung
 
 ## Fase 5 — Profil dan Kelengkapan
-- [ ] Profile (edit nama, avatar opsional)
-- [ ] My Learning (riwayat kuis, bookmark, progres)
-- [ ] Settings (termasuk opsi "Kurangi efek glass")
-- [ ] About EduEarth
-- [ ] Global Search (materi + pembangkit)
+- [x] Profile (edit nama, avatar opsional)
+- [x] My Learning (riwayat kuis, bookmark, progres)
+- [x] Settings (termasuk opsi "Kurangi efek glass")
+- [x] About EduEarth
+- [x] Global Search (materi + pembangkit)
 
 ## Fase 6 — Fitur Lanjutan dan Rilis
 - [ ] Achievement (`achievements`, `user_achievements`, RPC award)
@@ -85,3 +85,4 @@
 - **2026-11-02 (Fase 2):** Migrasi PostGIS `power_plants` + RPC `nearby_plants` + seed demo, Home Dashboard, Explore Map (OSM + glass filter chips + marker per kategori), Plant Preview bottom sheet, Plant Detail (dengan tombol Google Maps), dan Nearby Plants selesai dan terverifikasi.
 - **2026-11-02 (Fase 3):** Migrasi `learning_materials` & `bookmarks` (`num_nonnulls`, partial unique index, RLS), seed 5 materi draf konsep dasar, Learning Dashboard, Energy Category, Learning Detail (`flutter_markdown_plus`), dan fitur Bookmark selesai dan terverifikasi.
 - **2026-11-02 (Fase 4):** Migrasi tabel kuis (`quizzes`, `quiz_questions`, `quiz_answer_keys` tertutup dari client, `quiz_attempts` read-only bagi client), RPC `submit_quiz_attempt` (`security definer`), seed kuis draf & kunci jawaban terpisah, serta UI Quiz Dashboard, Gameplay, dan Result selesai dan terverifikasi.
+- **2026-11-03 (Fase 5):** UX riwayat kuis di Quiz Dashboard, halaman Profile (`user_profiles`), My Learning, Settings (toggle persisten "Kurangi efek glass"), About EduEarth, dan Global Search (sanitasi PostgREST + escape wildcard + debounce 350 ms) selesai dan terverifikasi.

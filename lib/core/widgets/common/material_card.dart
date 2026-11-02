@@ -5,9 +5,12 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme.dart';
 import 'category_chip.dart';
+import 'soft_image_placeholder.dart';
 
-/// Kartu materi pembelajaran reusable untuk Learning Dashboard, Energy Category,
-/// dan halaman Bookmark.
+/// Kartu materi pembelajaran bergambar sesuai gaya `docs/design/moodboard.png`.
+///
+/// Menampilkan kotak ilustrasi/gambar lembut di sisi kiri, judul & ringkasan
+/// di tengah, serta indikator panah di sisi kanan.
 class MaterialCard extends StatelessWidget {
   const MaterialCard({
     super.key,
@@ -20,141 +23,105 @@ class MaterialCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final categoryColor = AppColors.colorForCategorySlug(
-      material.categorySlug ?? '',
-    );
+    final slug = material.categorySlug ?? '';
+    final softBg = AppColors.softBackgroundForCategorySlug(slug);
+    final accentColor = AppColors.colorForCategorySlug(slug);
 
     return Card(
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: categoryColor.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-                      border: Border.all(color: categoryColor),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          iconForCategorySlug(material.categorySlug),
-                          size: 14,
-                          color: AppColors.forestGreen,
+              SoftImagePlaceholder(
+                width: 72,
+                height: 72,
+                borderRadius: 16,
+                networkImageUrl: material.coverImageUrl,
+                assetPath: assetForCategorySlug(slug),
+                backgroundColor: softBg,
+                fallbackIcon: iconForCategorySlug(slug),
+                iconColor: slug == 'solar'
+                    ? const Color(0xFFD97706)
+                    : accentColor == AppColors.freshGreen
+                        ? AppColors.forestGreen
+                        : accentColor,
+                iconSize: 34,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (material.isDraft) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          material.categoryShortCode ??
-                              material.categoryName ??
-                              'Materi Energi',
+                        decoration: BoxDecoration(
+                          color: AppColors.warmYellow.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.pillRadius,
+                          ),
+                          border: Border.all(color: AppColors.warmYellow),
+                        ),
+                        child: Text(
+                          'DRAF REVIEW',
                           style: AppTextStyles.caption.copyWith(
                             color: AppColors.forestGreen,
                             fontWeight: FontWeight.w700,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
+                    Text(
+                      material.title,
+                      style: AppTextStyles.subtitle.copyWith(fontSize: 16),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      material.summary,
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                        height: 1.35,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.schedule_rounded,
+                          size: 13,
+                          color: AppColors.textMuted,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${material.readMinutes} mnt • ${material.difficultyLabel}',
+                          style: AppTextStyles.caption.copyWith(
+                            fontSize: 11,
+                            color: AppColors.textMuted,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  if (material.isDraft) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.warmYellow.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(
-                          AppTheme.pillRadius,
-                        ),
-                        border: Border.all(color: AppColors.warmYellow),
-                      ),
-                      child: Text(
-                        'DRAF REVIEW',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.forestGreen,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
                   ],
-                  const Spacer(),
-                  Icon(
-                    Icons.schedule_rounded,
-                    size: 14,
-                    color: AppColors.textMuted,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${material.readMinutes} mnt baca',
-                    style: AppTextStyles.caption,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                material.title,
-                style: AppTextStyles.subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                material.summary,
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.textSecondary,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.mintGreen,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Tingkat: ${material.difficultyLabel}',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.forestGreen,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'Baca selengkapnya',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.freshGreen,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 14,
-                    color: AppColors.freshGreen,
-                  ),
-                ],
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                size: 18,
+                color: AppColors.textMuted,
               ),
             ],
           ),
@@ -163,4 +130,3 @@ class MaterialCard extends StatelessWidget {
     );
   }
 }
-
