@@ -3,7 +3,7 @@
 > Agent: kerjakan **satu fase sekali**, urut. Centang item yang selesai dan terverifikasi.
 > Jangan mulai fase berikutnya sebelum "Kriteria selesai" fase saat ini terpenuhi dan pemilik menyetujui.
 
-**Status saat ini:** Fase 1 (sedang dikerjakan)
+**Status saat ini:** Fase 2 (sedang dikerjakan)
 
 ---
 
@@ -22,13 +22,13 @@
 **Kriteria selesai:** app berjalan di Android/iOS, tema dan glass tampil benar, navigasi placeholder berfungsi, `flutter analyze` bersih.
 
 ## Fase 1 — Database dan Autentikasi
-- [ ] Migrasi: ekstensi, `energy_categories`, `user_profiles` + trigger, RLS dasar
-- [ ] Seed 5 kategori energi (data pasti, bukan data pembangkit)
-- [ ] Splash screen
-- [ ] Onboarding (simpan status selesai di `shared_preferences`)
-- [ ] Register, Login, Logout, sesi persisten
-- [ ] Redirect auth di GoRouter
-- [ ] Pesan error auth yang ramah (Bahasa Indonesia)
+- [x] Migrasi: ekstensi, `energy_categories`, `user_profiles` + trigger, RLS dasar
+- [x] Seed 5 kategori energi (data pasti, bukan data pembangkit)
+- [x] Splash screen
+- [x] Onboarding (simpan status selesai di `shared_preferences`)
+- [x] Register, Login, Logout, sesi persisten
+- [x] Redirect auth di GoRouter
+- [x] Pesan error auth yang ramah (Bahasa Indonesia)
 
 **Kriteria selesai:** user bisa daftar, login, keluar; profil terbuat otomatis; RLS terverifikasi.
 
@@ -81,3 +81,4 @@
 
 ## Catatan kemajuan
 - **2026-11-02 (Fase 0):** Fondasi proyek (`com.eduearth.app`), struktur arsitektur feature-based, design system *Nature Tech + Liquid Glass*, `GlassContainer` dengan fallback tanpa blur, tiga state UI (`LoadingView`, `ErrorView`, `EmptyView`), halaman demo komponen, dan GoRouter 5 tab selesai dan terverifikasi.
+- **2026-11-02 (Fase 1):** Migrasi SQL (`energy_categories`, `user_profiles`, trigger `set_updated_at` & `handle_new_user`, RLS, seed 5 kategori energi), alur Splash → Onboarding (`SharedPreferences`) → Login/Register/Logout Supabase Auth, dan redirect dinamis GoRouter selesai dan terverifikasi.

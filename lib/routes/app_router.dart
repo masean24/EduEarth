@@ -15,8 +15,12 @@ import '../core/widgets/glass/glass_container.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/register_page.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
+import '../features/home/presentation/pages/home_dashboard_page.dart';
+import '../features/map/presentation/pages/explore_map_page.dart';
+import '../features/map/presentation/pages/nearby_plants_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/onboarding/presentation/providers/onboarding_provider.dart';
+import '../features/plants/presentation/pages/plant_detail_page.dart';
 import '../features/splash/presentation/pages/splash_page.dart';
 import '../services/supabase_service.dart';
 import 'route_names.dart';
@@ -27,8 +31,7 @@ class _RouterRefreshListenable extends ChangeNotifier {
   void notify() => notifyListeners();
 }
 
-/// Provider GoRouter utama untuk aplikasi EduEarth dengan redirect dinamis
-/// berbasis status onboarding dan sesi autentikasi Supabase.
+/// Provider GoRouter utama untuk aplikasi EduEarth.
 final appRouterProvider = Provider<GoRouter>((ref) {
   final refreshListenable = _RouterRefreshListenable();
   ref.onDispose(refreshListenable.dispose);
@@ -43,7 +46,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final location = state.matchedLocation;
 
-      // Izinkan halaman demo komponen diakses kapan saja untuk verifikasi UI
       if (location == RouteNames.designShowcasePath) {
         return null;
       }
@@ -59,7 +61,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isSupabaseReady = ref.read(isSupabaseInitializedProvider);
       final isAuthenticated = ref.read(isAuthenticatedProvider);
 
-      // 1. Belum selesai onboarding -> arahkan ke /onboarding
       if (!isOnboardingDone) {
         if (location == RouteNames.onboardingPath ||
             location == RouteNames.splashPath) {
@@ -68,7 +69,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return RouteNames.onboardingPath;
       }
 
-      // 2. Sudah onboarding, Supabase aktif, tetapi belum login -> arahkan ke /login
       final isAuthRoute =
           location == RouteNames.loginPath ||
           location == RouteNames.registerPath;
@@ -80,7 +80,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return RouteNames.loginPath;
       }
 
-      // 3. Sudah login tetapi mencoba membuka halaman login/register/onboarding
       if (isAuthenticated &&
           (isAuthRoute || location == RouteNames.onboardingPath)) {
         return RouteNames.homePath;
@@ -114,6 +113,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteNames.designShowcasePath,
         builder: (context, state) => const DesignSystemShowcasePage(),
       ),
+      GoRoute(
+        name: RouteNames.plantDetailName,
+        path: RouteNames.plantDetailPath,
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return PlantDetailPage(plantId: id);
+        },
+      ),
+      GoRoute(
+        name: RouteNames.nearbyPlantsName,
+        path: RouteNames.nearbyPlantsPath,
+        builder: (context, state) => const NearbyPlantsPage(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return _MainShellScaffold(navigationShell: navigationShell);
@@ -124,14 +136,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 name: RouteNames.homeName,
                 path: RouteNames.homePath,
-                builder: (context, state) => const _PlaceholderScreen(
-                  title: 'Home Dashboard',
-                  phaseLabel: 'Fase 1 — Database & Autentikasi Aktif',
-                  description:
-                      'Autentikasi Supabase, profil pengguna otomatis (handle_new_user), dan seed 5 kategori energi telah siap. Isi lengkap Home hadir di Fase 2.',
-                  icon: Icons.home_rounded,
-                  showShowcaseButton: true,
-                ),
+                builder: (context, state) => const HomeDashboardPage(),
               ),
             ],
           ),
@@ -140,14 +145,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 name: RouteNames.exploreMapName,
                 path: RouteNames.exploreMapPath,
-                builder: (context, state) => const _PlaceholderScreen(
-                  title: 'Explore Map (OSM)',
-                  phaseLabel: 'Fase 2 — Peta dan Pembangkit',
-                  description:
-                      'Peta interaktif flutter_map + OpenStreetMap dengan marker per kategori energi dan filter chip Liquid Glass.',
-                  icon: Icons.map_rounded,
-                  showShowcaseButton: true,
-                ),
+                builder: (context, state) => const ExploreMapPage(),
               ),
             ],
           ),
@@ -308,7 +306,6 @@ class _MainShellScaffold extends StatelessWidget {
   }
 }
 
-/// Layar tab Profil untuk menguji sesi, trigger `user_profiles`, dan Logout di Fase 1.
 class _Phase1ProfileScreen extends ConsumerWidget {
   const _Phase1ProfileScreen();
 
@@ -324,7 +321,8 @@ class _Phase1ProfileScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: profileAsync.when(
-          loading: () => const LoadingView(message: 'Memuat profil pengguna...'),
+          loading: () =>
+              const LoadingView(message: 'Memuat profil pengguna...'),
           error: (error, _) => ErrorView(
             message: error.toString(),
             onRetry: () => ref.invalidate(currentUserProfileProvider),
@@ -365,7 +363,8 @@ class _Phase1ProfileScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        session?.user.email ?? 'Belum masuk dengan akun Supabase',
+                        session?.user.email ??
+                            'Belum masuk dengan akun Supabase',
                         style: AppTextStyles.caption,
                         textAlign: TextAlign.center,
                       ),
@@ -379,7 +378,9 @@ class _Phase1ProfileScreen extends ConsumerWidget {
                     icon: Icons.logout_rounded,
                     isLoading: authController.isLoading,
                     onPressed: () async {
-                      await ref.read(authControllerProvider.notifier).signOut();
+                      await ref
+                          .read(authControllerProvider.notifier)
+                          .signOut();
                     },
                   )
                 else
@@ -410,7 +411,6 @@ class _Phase1ProfileScreen extends ConsumerWidget {
   }
 }
 
-/// Layar placeholder untuk tab yang baru diisi penuh di fase berikutnya.
 class _PlaceholderScreen extends ConsumerWidget {
   const _PlaceholderScreen({
     required this.title,
