@@ -9,6 +9,7 @@ import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/material_card.dart';
+import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../routes/route_names.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../bookmark/presentation/providers/bookmark_providers.dart';
@@ -29,8 +30,16 @@ class MyLearningPage extends ConsumerWidget {
     final bookmarksAsync = ref.watch(userBookmarksProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Progres Belajar Saya'),
+      appBar: ScreenHeaderBar(
+        title: 'Progres Belajar Saya',
+        subtitle: 'Statistik skor kuis dan materi tersimpan',
+        actions: [
+          ScreenHeaderAction(
+            tooltip: 'Bookmark Saya',
+            icon: Icons.bookmark_outline_rounded,
+            onTap: () => context.push(RouteNames.bookmarksPath),
+          ),
+        ],
       ),
       body: SafeArea(
         child: !isAuthenticated

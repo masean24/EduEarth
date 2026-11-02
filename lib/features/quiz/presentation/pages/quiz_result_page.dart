@@ -9,6 +9,7 @@ import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/primary_button.dart';
+import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/common/secondary_button.dart';
 import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../models/quiz_attempt.dart';
@@ -37,8 +38,9 @@ class QuizResultPage extends ConsumerWidget {
     final result = initialResult ?? storedResult;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Hasil & Pembahasan Kuis'),
+      appBar: const ScreenHeaderBar(
+        title: 'Hasil & Pembahasan',
+        subtitle: 'Skor dan ulasan jawaban dari server',
       ),
       body: SafeArea(
         child: quizAsync.when(

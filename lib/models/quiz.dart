@@ -11,6 +11,7 @@ class Quiz {
     this.difficulty = 'beginner',
     this.timeLimitSeconds,
     this.isPublished = true,
+    this.isDraft = false,
     this.createdAt,
     this.updatedAt,
   });
@@ -25,6 +26,7 @@ class Quiz {
   final String difficulty;
   final int? timeLimitSeconds;
   final bool isPublished;
+  final bool isDraft;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -51,6 +53,7 @@ class Quiz {
       difficulty: (json['difficulty'] as String?) ?? 'beginner',
       timeLimitSeconds: (json['time_limit_seconds'] as num?)?.toInt(),
       isPublished: (json['is_published'] as bool?) ?? true,
+      isDraft: (json['is_draft'] as bool?) ?? false,
       createdAt: _parseDate(json['created_at']),
       updatedAt: _parseDate(json['updated_at']),
     );
@@ -68,6 +71,7 @@ class Quiz {
       'difficulty': difficulty,
       'time_limit_seconds': timeLimitSeconds,
       'is_published': isPublished,
+      'is_draft': isDraft,
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
     };
@@ -93,10 +97,6 @@ class Quiz {
     final minutes = (timeLimitSeconds! / 60).ceil();
     return '$minutes menit';
   }
-
-  bool get isDraft =>
-      title.toUpperCase().contains('[DRAF]') ||
-      description.toUpperCase().contains('[DRAF');
 
   static DateTime? _parseDate(Object? value) {
     if (value is String && value.isNotEmpty) {

@@ -10,6 +10,7 @@ import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/primary_button.dart';
+import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/common/secondary_button.dart';
 import '../../../../models/quiz.dart';
 import '../../../../models/quiz_attempt.dart';
@@ -55,17 +56,8 @@ class QuizDashboardPage extends ConsumerWidget {
         : const <String, QuizAttemptSummary>{};
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Kuis Energi Terbarukan'),
-        actions: [
-          IconButton(
-            tooltip: 'Pencarian Global',
-            onPressed: () => context.push(RouteNames.searchPath),
-            icon: const Icon(Icons.search_rounded),
-          ),
-        ],
-      ),
       body: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           color: AppColors.freshGreen,
           onRefresh: () async {
@@ -95,9 +87,34 @@ class QuizDashboardPage extends ConsumerWidget {
                 );
               }
 
+              final bottomSafe = MediaQuery.viewPaddingOf(context).bottom;
+
               return ListView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  16,
+                  20,
+                  AppTheme.bottomNavScrollPadding + bottomSafe,
+                ),
                 children: [
+                  ScreenHeader(
+                    title: 'Kuis Energi Terbarukan',
+                    subtitle:
+                        'Uji pemahaman konsep pembangkit energi bersih Anda',
+                    actions: [
+                      ScreenHeaderAction(
+                        tooltip: 'Pencarian Global',
+                        icon: Icons.search_rounded,
+                        onTap: () => context.push(RouteNames.searchPath),
+                      ),
+                      ScreenHeaderAction(
+                        tooltip: 'Progres Belajar Saya',
+                        icon: Icons.school_outlined,
+                        onTap: () => context.push(RouteNames.myLearningPath),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   _buildSecurityInfoBanner(),
                   const SizedBox(height: 24),
                   Text('Pilih Kuis untuk Dimulai', style: AppTextStyles.title),
@@ -311,46 +328,68 @@ class _QuizCard extends StatelessWidget {
         ? AppColors.colorForCategorySlug(quiz.categorySlug!)
         : AppColors.freshGreen;
     final isCompleted = attemptSummary != null;
+    final categoryLabel = quiz.categorySlug != null
+        ? shortDisplayLabelForSlug(
+            quiz.categorySlug,
+            quiz.categoryName ?? 'Umum',
+          )
+        : (quiz.categoryName ?? 'Lintas Kategori');
 
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        side: BorderSide(
-          color: isCompleted ? AppColors.freshGreen : AppColors.divider,
-          width: isCompleted ? 1.4 : 1.0,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
+    return Container(
+      padding: AppTheme.cardPadding,
+      decoration: AppTheme.cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Maksimal 2 chip: (1) Kategori, dan (2) Status "Selesai" ATAU "DRAF REVIEW"
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Container(
+                padding: AppTheme.badgePadding,
+                decoration: AppTheme.badgeDecoration(
+                  backgroundColor: categoryColor.withValues(alpha: 0.16),
+                  borderColor: categoryColor.withValues(alpha: 0.55),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      iconForCategorySlug(quiz.categorySlug),
+                      size: 14,
+                      color: AppColors.forestGreen,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      categoryLabel,
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.forestGreen,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isCompleted)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: categoryColor.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-                    border: Border.all(color: categoryColor),
+                  padding: AppTheme.badgePadding,
+                  decoration: AppTheme.badgeDecoration(
+                    backgroundColor: AppColors.mintGreen,
+                    borderColor: AppColors.sageGreen,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        iconForCategorySlug(quiz.categorySlug),
+                      const Icon(
+                        Icons.check_circle_rounded,
                         size: 14,
                         color: AppColors.forestGreen,
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        quiz.categoryName ?? 'Umum • Lintas Kategori',
+                        'Selesai',
                         style: AppTextStyles.caption.copyWith(
                           color: AppColors.forestGreen,
                           fontWeight: FontWeight.w700,
@@ -358,94 +397,91 @@ class _QuizCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                )
+              else if (quiz.isDraft)
+                Container(
+                  padding: AppTheme.badgePadding,
+                  decoration: AppTheme.badgeDecoration(
+                    backgroundColor: AppColors.warmYellow.withValues(
+                      alpha: 0.25,
+                    ),
+                    borderColor: AppColors.warmYellow,
+                  ),
+                  child: Text(
+                    'DRAF REVIEW',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.forestGreen,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 10,
+                    ),
+                  ),
                 ),
-                if (isCompleted)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.mintGreen,
-                      borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-                      border: Border.all(color: AppColors.freshGreen),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.check_circle_rounded,
-                          size: 14,
-                          color: AppColors.forestGreen,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Selesai',
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.forestGreen,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (quiz.isDraft)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.warmYellow.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-                      border: Border.all(color: AppColors.warmYellow),
-                    ),
-                    child: Text(
-                      'DRAF REVIEW',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.forestGreen,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(quiz.title, style: AppTextStyles.title),
+          const SizedBox(height: 6),
+          Text(
+            quiz.description,
+            style: AppTextStyles.body.copyWith(
+              color: AppColors.textSecondary,
             ),
-            const SizedBox(height: 12),
-            Text(quiz.title, style: AppTextStyles.title),
-            const SizedBox(height: 6),
-            Text(
-              quiz.description,
-              style: AppTextStyles.body.copyWith(
-                color: AppColors.textSecondary,
+          ),
+          const SizedBox(height: 14),
+          // Baris info metadata (tingkat kesulitan, batas waktu, dan status draf bila sudah selesai)
+          Wrap(
+            spacing: 14,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.bar_chart_rounded,
+                    size: 15,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Tingkat: ${quiz.difficultyLabel}',
+                    style: AppTextStyles.caption,
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                const Icon(
-                  Icons.bar_chart_rounded,
-                  size: 16,
-                  color: AppColors.textSecondary,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.timer_outlined,
+                    size: 15,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    quiz.timeLimitLabel,
+                    style: AppTextStyles.caption,
+                  ),
+                ],
+              ),
+              if (isCompleted && quiz.isDraft)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.edit_note_rounded,
+                      size: 15,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Draf review',
+                      style: AppTextStyles.caption,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  'Tingkat: ${quiz.difficultyLabel}',
-                  style: AppTextStyles.caption,
-                ),
-                const SizedBox(width: 16),
-                const Icon(
-                  Icons.timer_outlined,
-                  size: 16,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  quiz.timeLimitLabel,
-                  style: AppTextStyles.caption,
-                ),
-              ],
-            ),
+            ],
+          ),
             if (attemptSummary != null) ...[
               const SizedBox(height: 14),
               Container(
@@ -505,7 +541,6 @@ class _QuizCard extends StatelessWidget {
               ),
           ],
         ),
-      ),
     );
   }
 }

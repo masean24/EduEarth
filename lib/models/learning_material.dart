@@ -15,6 +15,7 @@ class LearningMaterial {
     this.difficulty = 'beginner',
     this.sortOrder = 0,
     this.isPublished = true,
+    this.isDraft = false,
     this.createdAt,
     this.updatedAt,
   });
@@ -33,6 +34,7 @@ class LearningMaterial {
   final String difficulty;
   final int sortOrder;
   final bool isPublished;
+  final bool isDraft;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -63,6 +65,7 @@ class LearningMaterial {
       difficulty: (json['difficulty'] as String?) ?? 'beginner',
       sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
       isPublished: (json['is_published'] as bool?) ?? true,
+      isDraft: (json['is_draft'] as bool?) ?? false,
       createdAt: _parseDate(json['created_at']),
       updatedAt: _parseDate(json['updated_at']),
     );
@@ -84,6 +87,7 @@ class LearningMaterial {
       'difficulty': difficulty,
       'sort_order': sortOrder,
       'is_published': isPublished,
+      'is_draft': isDraft,
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
     };
@@ -104,6 +108,7 @@ class LearningMaterial {
     String? difficulty,
     int? sortOrder,
     bool? isPublished,
+    bool? isDraft,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -122,6 +127,7 @@ class LearningMaterial {
       difficulty: difficulty ?? this.difficulty,
       sortOrder: sortOrder ?? this.sortOrder,
       isPublished: isPublished ?? this.isPublished,
+      isDraft: isDraft ?? this.isDraft,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -139,10 +145,6 @@ class LearningMaterial {
         return 'Pemula';
     }
   }
-
-  bool get isDraft =>
-      title.toUpperCase().contains('[DRAF]') ||
-      summary.toUpperCase().contains('[DRAF');
 
   static DateTime? _parseDate(Object? value) {
     if (value is String && value.isNotEmpty) {

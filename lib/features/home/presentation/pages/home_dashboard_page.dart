@@ -10,6 +10,7 @@ import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/plant_card.dart';
+import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../core/widgets/glass/glass_container.dart';
 import '../../../../models/energy_category.dart';
@@ -44,8 +45,11 @@ class HomeDashboardPage extends ConsumerWidget {
             ? emailPrefix
             : 'Penjelajah';
 
+    final bottomSafe = MediaQuery.viewPaddingOf(context).bottom;
+
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           color: AppColors.freshGreen,
           onRefresh: () async {
@@ -75,9 +79,30 @@ class HomeDashboardPage extends ConsumerWidget {
               }
 
               return ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  16,
+                  20,
+                  AppTheme.bottomNavScrollPadding + bottomSafe,
+                ),
                 children: [
-                  _buildGreetingHeader(context, greetingName),
+                  ScreenHeader(
+                    title: '$greetingName! 👋',
+                    subtitle: 'Selamat datang,',
+                    subtitleAboveTitle: true,
+                    actions: [
+                      ScreenHeaderAction(
+                        tooltip: 'Pembangkit Terdekat',
+                        icon: Icons.near_me_outlined,
+                        onTap: () => context.push(RouteNames.nearbyPlantsPath),
+                      ),
+                      ScreenHeaderAction(
+                        tooltip: 'Bookmark Tersimpan',
+                        icon: Icons.bookmark_outline_rounded,
+                        onTap: () => context.push(RouteNames.bookmarksPath),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 16),
                   _buildSearchBarTrigger(context),
                   const SizedBox(height: 18),
@@ -104,47 +129,6 @@ class HomeDashboardPage extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildGreetingHeader(BuildContext context, String greetingName) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Selamat datang,',
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '$greetingName! 👋',
-                style: AppTextStyles.display.copyWith(fontSize: 22),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        _HeaderIconButton(
-          tooltip: 'Pembangkit Terdekat',
-          icon: Icons.near_me_outlined,
-          onTap: () => context.push(RouteNames.nearbyPlantsPath),
-        ),
-        const SizedBox(width: 8),
-        _HeaderIconButton(
-          tooltip: 'Bookmark Tersimpan',
-          icon: Icons.bookmark_outline_rounded,
-          onTap: () => context.push(RouteNames.bookmarksPath),
-        ),
-      ],
     );
   }
 
@@ -426,42 +410,6 @@ class HomeDashboardPage extends ConsumerWidget {
           }),
         );
       },
-    );
-  }
-}
-
-class _HeaderIconButton extends StatelessWidget {
-  const _HeaderIconButton({
-    required this.tooltip,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: AppColors.surfaceWhite,
-        shape: const CircleBorder(),
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.divider),
-            ),
-            child: Icon(icon, color: AppColors.forestGreen, size: 20),
-          ),
-        ),
-      ),
     );
   }
 }

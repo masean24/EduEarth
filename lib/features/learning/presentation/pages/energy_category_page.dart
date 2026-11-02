@@ -10,6 +10,7 @@ import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/material_card.dart';
+import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/common/secondary_button.dart';
 import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../routes/route_names.dart';
@@ -37,10 +38,29 @@ class EnergyCategoryPage extends ConsumerWidget {
         .firstOrNull;
 
     final softBg = AppColors.softBackgroundForCategorySlug(categorySlug);
+    final categoryDisplayTitle = fullDisplayLabelForSlug(
+      categorySlug,
+      shortCode: matchedCategory?.shortCode,
+      fallbackName: matchedCategory?.name ?? 'Kategori Energi',
+    );
+    final categoryShortName = shortDisplayLabelForSlug(
+      categorySlug,
+      matchedCategory?.name ?? 'Kategori Energi',
+    );
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(matchedCategory?.name ?? 'Kategori Energi'),
+      appBar: ScreenHeaderBar(
+        title: 'Energi $categoryShortName',
+        subtitle: matchedCategory != null
+            ? 'Pembangkit ${matchedCategory.shortCode}'
+            : 'Daftar materi pembelajaran per kategori',
+        actions: [
+          ScreenHeaderAction(
+            tooltip: 'Pencarian Global',
+            icon: Icons.search_rounded,
+            onTap: () => context.push(RouteNames.searchPath),
+          ),
+        ],
       ),
       body: SafeArea(
         child: RefreshIndicator(
@@ -80,7 +100,7 @@ class EnergyCategoryPage extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  matchedCategory.name,
+                                  categoryDisplayTitle,
                                   style: AppTextStyles.title,
                                 ),
                                 const SizedBox(height: 2),

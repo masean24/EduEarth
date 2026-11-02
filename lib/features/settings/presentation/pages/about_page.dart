@@ -5,6 +5,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/common/secondary_button.dart';
 import '../../../../services/external_map_service.dart';
 
@@ -17,8 +18,9 @@ class AboutPage extends ConsumerWidget {
     final externalMapService = ref.watch(externalMapServiceProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tentang EduEarth'),
+      appBar: const ScreenHeaderBar(
+        title: 'Tentang EduEarth',
+        subtitle: 'Misi edukasi energi bersih & sumber data',
       ),
       body: SafeArea(
         child: ListView(

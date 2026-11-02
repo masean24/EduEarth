@@ -44,16 +44,16 @@ final reduceGlassEffectProvider =
 /// Kontainer iOS Liquid Glass / Glassmorphism untuk penggunaan selektif
 /// (search bar, filter chip di atas peta, bottom navigation, modal, bottom sheet).
 ///
-/// Mendukung fallback tanpa `BackdropFilter` blur secara otomatis lewat
+/// Mendukung fallback solid tanpa `BackdropFilter` blur secara otomatis lewat
 /// `reduceGlassEffectProvider` atau parameter eksplisit `enableBlur`.
 class GlassContainer extends ConsumerWidget {
   const GlassContainer({
     super.key,
     required this.child,
     this.borderRadius = AppTheme.cardRadius,
-    this.blur = 16.0,
-    this.tintOpacity = 0.65,
-    this.borderOpacity = 0.38,
+    this.blur = 20.0,
+    this.tintOpacity = 0.62,
+    this.borderOpacity = 0.55,
     this.padding = const EdgeInsets.all(16),
     this.margin,
     this.tintColor = AppColors.surfaceWhite,
@@ -79,45 +79,84 @@ class GlassContainer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reduceEffectGlobal = ref.watch(reduceGlassEffectProvider);
-    final shouldBlur = enableBlur ?? !reduceEffectGlobal;
+    final shouldBlur = (enableBlur ?? !reduceEffectGlobal) && blur > 0;
 
-    final effectiveOpacity = shouldBlur
-        ? tintOpacity.clamp(0.0, 1.0)
-        : (tintOpacity + 0.25).clamp(0.85, 0.96);
+    final clampedTint = tintOpacity.clamp(0.0, 1.0);
 
-    final decoration = BoxDecoration(
-      color: tintColor.withValues(alpha: effectiveOpacity),
-      borderRadius: BorderRadius.circular(borderRadius),
-      border: Border.all(
-        color: AppColors.surfaceWhite.withValues(
-          alpha: shouldBlur ? borderOpacity.clamp(0.0, 1.0) : 0.7,
-        ),
-        width: 1.2,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: AppColors.forestGreen.withValues(alpha: 0.06),
-          blurRadius: 16,
-          offset: const Offset(0, 6),
-        ),
-      ],
-    );
+    // Saat mode glass aktif: gunakan gradasi kaca semi-transparan dengan rim border
+    // sageGreen lembut agar kontras di atas latar putih maupun di atas peta.
+    // Saat mode "Kurangi efek glass" aktif: gunakan permukaan putih solid bersih.
+    final BoxDecoration surfaceDecoration = shouldBlur
+        ? BoxDecoration(
+            borderRadius: BorderRadius.circular(borderRadius),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                tintColor.withValues(
+                  alpha: (clampedTint + 0.08).clamp(0.0, 0.82),
+                ),
+                AppColors.mintGreen.withValues(
+                  alpha: (clampedTint * 0.42).clamp(0.18, 0.45),
+                ),
+                tintColor.withValues(
+                  alpha: (clampedTint - 0.08).clamp(0.38, 0.72),
+                ),
+              ],
+            ),
+            border: Border.all(
+              color: AppColors.sageGreen.withValues(
+                alpha: borderOpacity.clamp(0.35, 0.75),
+              ),
+              width: 1.2,
+            ),
+          )
+        : BoxDecoration(
+            color: AppColors.surfaceWhite,
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border.all(
+              color: AppColors.divider,
+              width: 1.2,
+            ),
+          );
 
-    Widget content = Container(
+    Widget innerSurface = Container(
       padding: padding,
-      decoration: decoration,
+      decoration: surfaceDecoration,
       child: child,
     );
 
-    if (shouldBlur && blur > 0) {
-      content = ClipRRect(
+    if (shouldBlur) {
+      innerSurface = ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-          child: content,
+          child: innerSurface,
         ),
       );
     }
+
+    // Bayangan ambient + rim highlight di luar ClipRRect agar efek kaca mengapung jelas
+    Widget content = DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(borderRadius),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.forestGreen.withValues(alpha: 0.11),
+            blurRadius: 24,
+            spreadRadius: 0,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: AppColors.surfaceWhite.withValues(alpha: 0.65),
+            blurRadius: 2,
+            spreadRadius: 0,
+            offset: const Offset(0, -1),
+          ),
+        ],
+      ),
+      child: innerSurface,
+    );
 
     if (margin != null) {
       content = Padding(padding: margin!, child: content);

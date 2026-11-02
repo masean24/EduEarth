@@ -12,6 +12,7 @@ import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/material_card.dart';
 import '../../../../core/widgets/common/plant_card.dart';
+import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/glass/glass_container.dart';
 import '../providers/search_providers.dart';
 
@@ -67,8 +68,9 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
     final resultsAsync = ref.watch(globalSearchResultsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pencarian Global'),
+      appBar: const ScreenHeaderBar(
+        title: 'Pencarian Global',
+        subtitle: 'Cari pembangkit energi & materi pembelajaran',
       ),
       body: SafeArea(
         child: Column(

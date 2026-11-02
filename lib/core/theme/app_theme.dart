@@ -4,15 +4,84 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 import 'app_text_styles.dart';
 
-/// Konfigurasi `ThemeData` utama aplikasi EduEarth.
+/// Konfigurasi `ThemeData` utama dan token gaya (Design Tokens) aplikasi EduEarth.
 class AppTheme {
   const AppTheme._();
 
-  // Konstanta radius sesuai docs/03_DESIGN_SYSTEM.md
+  // Token radius sesuai docs/03_DESIGN_SYSTEM.md
   static const double cardRadius = 20.0;
   static const double buttonRadius = 16.0;
   static const double bottomSheetRadius = 28.0;
   static const double pillRadius = 999.0;
+
+  // Token border, padding, dan bayangan lembut untuk kartu & chip
+  static const double cardBorderWidth = 1.0;
+  static const EdgeInsets cardPadding = EdgeInsets.all(16.0);
+  static const EdgeInsets cardPaddingCompact = EdgeInsets.all(14.0);
+  static const EdgeInsets chipPadding = EdgeInsets.symmetric(
+    horizontal: 16.0,
+    vertical: 8.0,
+  );
+  static const EdgeInsets badgePadding = EdgeInsets.symmetric(
+    horizontal: 10.0,
+    vertical: 4.0,
+  );
+
+  /// Bayangan lembut standar untuk kartu di seluruh aplikasi.
+  static final List<BoxShadow> softCardShadow = <BoxShadow>[
+    BoxShadow(
+      color: AppColors.forestGreen.withValues(alpha: 0.04),
+      blurRadius: 14,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
+  /// Dekorasi kartu standar (radius 20, border tipis `divider`, bayangan lembut).
+  static BoxDecoration cardDecoration({
+    Color backgroundColor = AppColors.surfaceWhite,
+    Color borderColor = AppColors.divider,
+    double radius = cardRadius,
+    bool withShadow = true,
+  }) {
+    return BoxDecoration(
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: borderColor,
+        width: cardBorderWidth,
+      ),
+      boxShadow: withShadow ? softCardShadow : null,
+    );
+  }
+
+  /// Dekorasi badge/chip kecil berbentuk pill.
+  static BoxDecoration badgeDecoration({
+    required Color backgroundColor,
+    Color? borderColor,
+  }) {
+    return BoxDecoration(
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(pillRadius),
+      border: borderColor != null
+          ? Border.all(color: borderColor, width: 1.0)
+          : null,
+    );
+  }
+
+  // Konstanta dimensi & margin Bottom Navigation Glass
+  static const double bottomNavHeight = 68.0;
+  static const double bottomNavHorizontalMargin = 16.0;
+  static const double bottomNavBottomMargin = 12.0;
+
+  /// Jarak aman bawah untuk seluruh layar yang discroll di dalam shell 5 tab
+  /// (`bottomNavHeight` + `bottomNavBottomMargin` + ruang ekstra 28 dp).
+  static const double bottomNavScrollPadding =
+      bottomNavHeight + bottomNavBottomMargin + 28.0;
+
+  /// Jarak bawah untuk elemen apung di atas peta (`ExploreMapPage`) agar tepat
+  /// berada di atas Bottom Navigation.
+  static const double mapOverlayBottomPadding =
+      bottomNavHeight + bottomNavBottomMargin + 8.0;
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -56,10 +125,14 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: AppColors.surfaceWhite,
         elevation: 0,
+        shadowColor: AppColors.forestGreen.withValues(alpha: 0.06),
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(cardRadius),
-          side: const BorderSide(color: AppColors.divider, width: 1),
+          side: const BorderSide(
+            color: AppColors.divider,
+            width: cardBorderWidth,
+          ),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -132,4 +205,3 @@ class AppTheme {
     );
   }
 }
-

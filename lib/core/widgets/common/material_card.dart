@@ -27,13 +27,17 @@ class MaterialCard extends StatelessWidget {
     final softBg = AppColors.softBackgroundForCategorySlug(slug);
     final accentColor = AppColors.colorForCategorySlug(slug);
 
-    return Card(
-      child: InkWell(
-        onTap: onTap,
+    return DecoratedBox(
+      decoration: AppTheme.cardDecoration(),
+      child: Material(
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          child: Padding(
+            padding: AppTheme.cardPaddingCompact,
+            child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SoftImagePlaceholder(
@@ -127,6 +131,7 @@ class MaterialCard extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }

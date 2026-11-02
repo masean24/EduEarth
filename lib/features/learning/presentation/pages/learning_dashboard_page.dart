@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common/category_chip.dart';
 import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/material_card.dart';
+import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../models/energy_category.dart';
 import '../../../../models/learning_material.dart';
@@ -39,8 +41,11 @@ class _LearningDashboardPageState
     final categoriesAsync = ref.watch(energyCategoriesProvider);
     final materialsAsync = ref.watch(allLearningMaterialsProvider);
 
+    final bottomSafe = MediaQuery.viewPaddingOf(context).bottom;
+
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           color: AppColors.freshGreen,
           onRefresh: () async {
@@ -64,12 +69,32 @@ class _LearningDashboardPageState
                   .firstOrNull;
 
               return ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  16,
+                  20,
+                  AppTheme.bottomNavScrollPadding + bottomSafe,
+                ),
                 children: [
-                  _buildTopBarActions(context),
-                  const SizedBox(height: 8),
-                  _buildEducationHeader(),
-                  const SizedBox(height: 18),
+                  ScreenHeader(
+                    title: 'Pusat Edukasi',
+                    subtitle: 'Belajar lebih dalam tentang energi terbarukan!',
+                    actions: [
+                      ScreenHeaderAction(
+                        tooltip: 'Pencarian Global',
+                        icon: Icons.search_rounded,
+                        onTap: () => context.push(RouteNames.searchPath),
+                      ),
+                      ScreenHeaderAction(
+                        tooltip: 'Daftar Bookmark Saya',
+                        icon: Icons.bookmark_outline_rounded,
+                        onTap: () => context.push(RouteNames.bookmarksPath),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildEducationMascotBanner(),
+                  const SizedBox(height: 16),
                   _buildCategoryChips(categories),
                   if (selectedCategory != null) ...[
                     const SizedBox(height: 14),
@@ -86,64 +111,38 @@ class _LearningDashboardPageState
     );
   }
 
-  Widget _buildTopBarActions(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        IconButton(
-          tooltip: 'Pencarian Global',
-          onPressed: () => context.push(RouteNames.searchPath),
-          icon: const Icon(
-            Icons.search_rounded,
-            color: AppColors.forestGreen,
+  Widget _buildEducationMascotBanner() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.mintGreen.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppColors.sageGreen),
+      ),
+      child: Row(
+        children: [
+          const SoftImagePlaceholder(
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            assetPath: 'assets/images/mascot/eco_reading.png',
+            backgroundColor: AppColors.surfaceWhite,
+            fallbackIcon: Icons.school_rounded,
+            iconColor: AppColors.forestGreen,
+            iconSize: 28,
           ),
-        ),
-        IconButton(
-          tooltip: 'Daftar Bookmark Saya',
-          onPressed: () => context.push(RouteNames.bookmarksPath),
-          icon: const Icon(
-            Icons.bookmark_outline_rounded,
-            color: AppColors.forestGreen,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEducationHeader() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Pusat Edukasi',
-                style: AppTextStyles.display.copyWith(fontSize: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Pilih kategori di bawah untuk menyaring materi atau baca konsep dasar setiap pembangkit.',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.forestGreen,
+                fontWeight: FontWeight.w500,
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Belajar lebih dalam tentang energi terbarukan!',
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        const SoftImagePlaceholder(
-          width: 84,
-          height: 84,
-          borderRadius: 42,
-          assetPath: 'assets/images/mascot/eco_reading.png',
-          backgroundColor: AppColors.mintGreen,
-          fallbackIcon: Icons.school_rounded,
-          iconColor: AppColors.forestGreen,
-          iconSize: 40,
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -204,7 +203,11 @@ class _LearningDashboardPageState
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '${category.name} (${category.shortCode})',
+              fullDisplayLabelForSlug(
+                category.slug,
+                shortCode: category.shortCode,
+                fallbackName: category.name,
+              ),
               style: AppTextStyles.caption.copyWith(
                 color: AppColors.forestGreen,
                 fontWeight: FontWeight.w700,

@@ -165,33 +165,35 @@ class DemoData {
       id: 'demo-mat-solar',
       categoryId: 'demo-cat-solar',
       categorySlug: 'solar',
-      categoryName: 'Solar Energy',
+      categoryName: 'Energi Surya',
       categoryShortCode: 'PLTS',
-      title: '[DRAF] Konsep Dasar Pembangkit Listrik Tenaga Surya (PLTS)',
+      title: 'Konsep Dasar Pembangkit Listrik Tenaga Surya (PLTS)',
       slug: 'draf-konsep-dasar-plts',
       summary:
-          '[DRAF - Perlu Review] Pengenalan prinsip efek fotovoltaik, komponen utama sistem PLTS, serta kelebihan dan keterbatasan energi surya secara umum.',
+          'Pengenalan prinsip efek fotovoltaik, komponen utama sistem PLTS, serta kelebihan dan keterbatasan energi surya secara umum.',
       contentMd:
           '## Pengertian Umum\n\n**Pembangkit Listrik Tenaga Surya (PLTS)** mengubah radiasi cahaya matahari menjadi energi listrik melalui sel fotovoltaik.\n\n## Cara Kerja\n1. Penyerapan foton oleh semikonduktor.\n2. Timbul arus searah (DC).\n3. Konversi DC ke AC oleh inverter.',
       readMinutes: 4,
       difficulty: 'beginner',
       sortOrder: 1,
+      isDraft: true,
     ),
     LearningMaterial(
       id: 'demo-mat-hydro',
       categoryId: 'demo-cat-hydro',
       categorySlug: 'hydro',
-      categoryName: 'Hydropower',
+      categoryName: 'Energi Air',
       categoryShortCode: 'PLTA',
-      title: '[DRAF] Konsep Dasar Pembangkit Listrik Tenaga Air (PLTA)',
+      title: 'Konsep Dasar Pembangkit Listrik Tenaga Air (PLTA)',
       slug: 'draf-konsep-dasar-plta',
       summary:
-          '[DRAF - Perlu Review] Penjelasan konversi energi potensial dan kinetik air menjadi energi mekanik turbin dan listrik.',
+          'Penjelasan konversi energi potensial dan kinetik air menjadi energi mekanik turbin dan listrik.',
       contentMd:
           '## Pengertian Umum\n\n**Pembangkit Listrik Tenaga Air (PLTA)** memanfaatkan aliran atau terjunan air untuk memutar turbin dan generator listrik.',
       readMinutes: 5,
       difficulty: 'beginner',
       sortOrder: 1,
+      isDraft: true,
     ),
   ];
 
@@ -199,12 +201,13 @@ class DemoData {
   static const List<Quiz> quizzes = [
     Quiz(
       id: '11111111-1111-4111-8111-111111111101',
-      title: '[DRAF] Dasar-Dasar Energi Terbarukan',
+      title: 'Dasar-Dasar Energi Terbarukan',
       description:
-          '[DRAF - Perlu Review] Uji pemahaman konsep fundamental tentang cara kerja PLTS, PLTA, PLTB, PLTP, dan Bioenergi.',
+          'Uji pemahaman konsep fundamental tentang cara kerja PLTS, PLTA, PLTB, PLTP, dan Bioenergi.',
       difficulty: 'beginner',
       timeLimitSeconds: 180,
       isPublished: true,
+      isDraft: true,
     ),
   ];
 

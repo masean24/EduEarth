@@ -110,7 +110,10 @@ class PlantPreviewSheet extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '${plant.categoryName ?? 'Energi Terbarukan'} (${plant.categoryShortCode ?? '-'})',
+                          fullDisplayLabelForSlug(
+                            plant.categorySlug,
+                            shortCode: plant.categoryShortCode,
+                          ),
                           style: AppTextStyles.caption.copyWith(
                             color: AppColors.forestGreen,
                             fontWeight: FontWeight.w700,

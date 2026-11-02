@@ -12,6 +12,7 @@ import '../../../../core/widgets/common/category_chip.dart';
 import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
+import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../core/widgets/glass/glass_container.dart';
 import '../../../../models/energy_category.dart';
@@ -126,74 +127,97 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
             ],
           ),
 
-          // 2. Search Bar Glass & Chip Filter di Atas Peta
+          // 2. ScreenHeader + Search Bar Glass & Chip Filter di Atas Peta
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
                   child: GlassContainer(
-                    borderRadius: AppTheme.pillRadius,
-                    blur: 16,
-                    tintOpacity: 0.84,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 2,
-                    ),
-                    child: Row(
+                    borderRadius: AppTheme.cardRadius,
+                    blur: 20,
+                    tintOpacity: 0.68,
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                    child: Column(
                       children: [
-                        const Icon(
-                          Icons.search_rounded,
-                          color: AppColors.textSecondary,
-                          size: 20,
+                        ScreenHeader(
+                          title: 'Peta Pembangkit',
+                          subtitle:
+                              'Jelajahi titik energi terbarukan Indonesia',
+                          isCompact: true,
+                          actions: [
+                            ScreenHeaderAction(
+                              tooltip: 'Pembangkit Terdekat',
+                              icon: Icons.near_me_rounded,
+                              onTap: () =>
+                                  context.push(RouteNames.nearbyPlantsPath),
+                            ),
+                            ScreenHeaderAction(
+                              tooltip: 'Reset Posisi Peta',
+                              icon: Icons.center_focus_strong_rounded,
+                              onTap: _resetCamera,
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            onChanged: (val) {
-                              setState(() {
-                                _localSearchQuery = val;
-                                _isPreviewDismissed = false;
-                              });
-                            },
-                            style: AppTextStyles.body.copyWith(fontSize: 14),
-                            decoration: const InputDecoration(
-                              hintText: 'Cari lokasi pembangkit...',
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              filled: false,
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: 10,
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceWhite.withValues(
+                              alpha: 0.85,
+                            ),
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.pillRadius,
+                            ),
+                            border: Border.all(color: AppColors.divider),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.search_rounded,
+                                color: AppColors.textSecondary,
+                                size: 19,
                               ),
-                            ),
-                          ),
-                        ),
-                        if (_localSearchQuery.isNotEmpty)
-                          IconButton(
-                            tooltip: 'Bersihkan pencarian',
-                            visualDensity: VisualDensity.compact,
-                            icon: const Icon(
-                              Icons.close_rounded,
-                              size: 18,
-                              color: AppColors.textSecondary,
-                            ),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _localSearchQuery = '');
-                            },
-                          ),
-                        IconButton(
-                          tooltip: 'Reset Posisi Peta',
-                          visualDensity: VisualDensity.compact,
-                          onPressed: _resetCamera,
-                          icon: const Icon(
-                            Icons.center_focus_strong_rounded,
-                            size: 20,
-                            color: AppColors.forestGreen,
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: TextField(
+                                  controller: _searchController,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _localSearchQuery = val;
+                                      _isPreviewDismissed = false;
+                                    });
+                                  },
+                                  style: AppTextStyles.body.copyWith(
+                                    fontSize: 13.5,
+                                  ),
+                                  decoration: const InputDecoration(
+                                    hintText: 'Cari lokasi pembangkit...',
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    filled: false,
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      vertical: 9,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (_localSearchQuery.isNotEmpty)
+                                GestureDetector(
+                                  onTap: () {
+                                    _searchController.clear();
+                                    setState(() => _localSearchQuery = '');
+                                  },
+                                  child: const Icon(
+                                    Icons.close_rounded,
+                                    size: 18,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ],
@@ -258,15 +282,14 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
 
           // 4. Kartu Preview Pembangkit di Bawah + Tombol Terdekat + Atribusi OSM
           Positioned(
-            left: 16,
-            right: 16,
-            bottom: 92,
-            child: SafeArea(
-              top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+            left: AppTheme.bottomNavHorizontalMargin,
+            right: AppTheme.bottomNavHorizontalMargin,
+            bottom: AppTheme.mapOverlayBottomPadding +
+                MediaQuery.viewPaddingOf(context).bottom,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -349,7 +372,6 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
                   ],
                 ],
               ),
-            ),
           ),
         ],
       ),
@@ -479,23 +501,23 @@ class _MapPlantPreviewCard extends StatelessWidget {
 
     return GlassContainer(
       borderRadius: AppTheme.cardRadius,
-      blur: 18,
-      tintOpacity: 0.92,
-      padding: const EdgeInsets.all(12),
+      blur: 20,
+      tintOpacity: 0.72,
+      padding: const EdgeInsets.all(10),
       child: Row(
         children: [
           Stack(
             children: [
               SoftImagePlaceholder(
-                width: 88,
-                height: 88,
-                borderRadius: 14,
+                width: 72,
+                height: 72,
+                borderRadius: 12,
                 networkImageUrl: plant.imageUrl,
                 assetPath: assetForCategorySlug(slug),
                 backgroundColor: softBg,
                 fallbackIcon: iconForCategorySlug(slug),
                 iconColor: AppColors.forestGreen,
-                iconSize: 36,
+                iconSize: 30,
               ),
               if (plant.isDemo)
                 Positioned(
@@ -557,7 +579,7 @@ class _MapPlantPreviewCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
@@ -574,7 +596,7 @@ class _MapPlantPreviewCard extends StatelessWidget {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
-                              vertical: 8,
+                              vertical: 6,
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,

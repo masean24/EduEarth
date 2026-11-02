@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/common/secondary_button.dart';
 import '../../../../core/widgets/glass/glass_container.dart';
 import '../../../../routes/route_names.dart';
@@ -22,8 +23,9 @@ class SettingsPage extends ConsumerWidget {
     final reduceGlass = ref.watch(reduceGlassEffectProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pengaturan Aplikasi'),
+      appBar: const ScreenHeaderBar(
+        title: 'Pengaturan Aplikasi',
+        subtitle: 'Preferensi tampilan & informasi aplikasi',
       ),
       body: SafeArea(
         child: ListView(

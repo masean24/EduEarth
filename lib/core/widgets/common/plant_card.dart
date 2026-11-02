@@ -34,13 +34,17 @@ class PlantCard extends StatelessWidget {
     final softBg = AppColors.softBackgroundForCategorySlug(slug);
     final categoryColor = AppColors.colorForCategorySlug(slug);
 
-    return Card(
-      child: InkWell(
-        onTap: onTap,
+    return DecoratedBox(
+      decoration: AppTheme.cardDecoration(),
+      child: Material(
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          child: Padding(
+            padding: AppTheme.cardPaddingCompact,
+            child: Row(
             children: [
               SoftImagePlaceholder(
                 width: 68,
@@ -72,9 +76,10 @@ class PlantCard extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            plant.categoryShortCode ??
-                                plant.categoryName ??
-                                'Energi Bersih',
+                            shortDisplayLabelForSlug(
+                              slug,
+                              plant.categoryShortCode ?? 'Energi Bersih',
+                            ),
                             style: AppTextStyles.caption.copyWith(
                               color: AppColors.forestGreen,
                               fontWeight: FontWeight.w700,
@@ -132,6 +137,7 @@ class PlantCard extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 

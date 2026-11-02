@@ -9,6 +9,7 @@ import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/plant_card.dart';
+import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../services/location_service.dart';
 import '../../../plants/presentation/providers/plants_providers.dart';
 
@@ -35,13 +36,14 @@ class NearbyPlantsPage extends ConsumerWidget {
     final locationService = ref.watch(locationServiceProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pembangkit Terdekat'),
+      appBar: ScreenHeaderBar(
+        title: 'Pembangkit Terdekat',
+        subtitle: 'Pencarian radius lokasi GPS Anda',
         actions: [
-          IconButton(
+          ScreenHeaderAction(
             tooltip: 'Perbarui Lokasi',
-            onPressed: () => ref.invalidate(nearbyPlantsStateProvider),
-            icon: const Icon(Icons.my_location_rounded),
+            icon: Icons.my_location_rounded,
+            onTap: () => ref.invalidate(nearbyPlantsStateProvider),
           ),
         ],
       ),

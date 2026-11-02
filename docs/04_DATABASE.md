@@ -26,10 +26,10 @@ Dokumen ini adalah **rencana skema**. SQL final dibuat per fase sebagai file mig
 Aturan data: kolom yang tidak diketahui dibiarkan `null`/`unknown`, **tidak diisi tebakan**. Baris contoh untuk pengembangan wajib `is_demo = true`.
 
 ### `learning_materials`
-`id`, `category_id`, `title`, `slug` (unique), `summary`, `content_md` (Markdown), `cover_image_url`, `read_minutes`, `difficulty` (check: beginner/intermediate/advanced), `sort_order`, `is_published`, timestamps.
+`id`, `category_id`, `title`, `slug` (unique), `summary`, `content_md` (Markdown), `cover_image_url`, `read_minutes`, `difficulty` (check: beginner/intermediate/advanced), `sort_order`, `is_published`, `is_draft` (boolean default false), timestamps.
 
 ### `quizzes`
-`id`, `category_id` (nullable), `title`, `description`, `difficulty`, `time_limit_seconds` (nullable), `is_published`, timestamps.
+`id`, `category_id` (nullable), `title`, `description`, `difficulty`, `time_limit_seconds` (nullable), `is_published`, `is_draft` (boolean default false), timestamps.
 
 ### `quiz_questions`
 `id`, `quiz_id`, `question`, `options` (jsonb array `[{ "id": "a", "text": "..." }]`), `explanation`, `sort_order`.

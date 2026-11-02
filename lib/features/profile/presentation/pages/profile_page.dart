@@ -10,6 +10,7 @@ import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/primary_button.dart';
+import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../models/user_profile.dart';
 import '../../../../routes/route_names.dart';
@@ -55,8 +56,11 @@ class ProfilePage extends ConsumerWidget {
     final attemptsAsync = ref.watch(userQuizAttemptsProvider);
     final authController = ref.watch(authControllerProvider);
 
+    final bottomSafe = MediaQuery.viewPaddingOf(context).bottom;
+
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: profileAsync.when(
           loading: () => const LoadingView(
             message: 'Memuat profil pengguna...',
@@ -90,8 +94,25 @@ class ProfilePage extends ConsumerWidget {
                 ref.invalidate(userQuizAttemptsProvider);
               },
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  16,
+                  20,
+                  AppTheme.bottomNavScrollPadding + bottomSafe,
+                ),
                 children: [
+                  ScreenHeader(
+                    title: 'Profil Saya',
+                    subtitle: 'Kelola akun dan pantau progres belajar Anda',
+                    actions: [
+                      ScreenHeaderAction(
+                        tooltip: 'Pengaturan Aplikasi',
+                        icon: Icons.settings_outlined,
+                        onTap: () => context.push(RouteNames.settingsPath),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
                   // 1. Header Avatar + Nama (Tanpa Level/XP)
                   Center(
                     child: Stack(
@@ -224,20 +245,16 @@ class ProfilePage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // 3. Grup Menu Utama (My Learning, Bookmark, Pencarian)
+                  // 3. Grup Menu Utama (Bahasa Indonesia konsisten)
                   Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceWhite,
-                      borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-                      border: Border.all(color: AppColors.divider),
-                    ),
+                    decoration: AppTheme.cardDecoration(),
                     child: Column(
                       children: [
                         _MoodboardMenuTile(
                           icon: Icons.menu_book_rounded,
                           iconBackground: const Color(0xFFFEF9C3),
                           iconColor: const Color(0xFFD97706),
-                          title: 'My Learning',
+                          title: 'Progres Belajar Saya',
                           onTap: () => context.push(RouteNames.myLearningPath),
                         ),
                         const Divider(height: 1, indent: 64),
@@ -245,7 +262,7 @@ class ProfilePage extends ConsumerWidget {
                           icon: Icons.bookmark_rounded,
                           iconBackground: AppColors.mintGreen,
                           iconColor: AppColors.forestGreen,
-                          title: 'Bookmark',
+                          title: 'Daftar Tersimpan',
                           onTap: () => context.push(RouteNames.bookmarksPath),
                         ),
                         const Divider(height: 1, indent: 64),
@@ -261,20 +278,16 @@ class ProfilePage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 14),
 
-                  // 4. Grup Menu Pengaturan & Tentang
+                  // 4. Grup Menu Pengaturan & Tentang (Bahasa Indonesia konsisten)
                   Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceWhite,
-                      borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-                      border: Border.all(color: AppColors.divider),
-                    ),
+                    decoration: AppTheme.cardDecoration(),
                     child: Column(
                       children: [
                         _MoodboardMenuTile(
                           icon: Icons.edit_outlined,
                           iconBackground: AppColors.mintGreen,
                           iconColor: AppColors.forestGreen,
-                          title: 'Edit Nama & Avatar Profil',
+                          title: 'Ubah Profil',
                           onTap: () => _showEditProfileSheet(
                             context,
                             ref,
@@ -286,7 +299,7 @@ class ProfilePage extends ConsumerWidget {
                           icon: Icons.settings_outlined,
                           iconBackground: AppColors.offWhite,
                           iconColor: AppColors.forestGreen,
-                          title: 'Settings',
+                          title: 'Pengaturan Aplikasi',
                           onTap: () => context.push(RouteNames.settingsPath),
                         ),
                         const Divider(height: 1, indent: 64),
@@ -294,7 +307,7 @@ class ProfilePage extends ConsumerWidget {
                           icon: Icons.info_outline_rounded,
                           iconBackground: AppColors.offWhite,
                           iconColor: AppColors.forestGreen,
-                          title: 'About EduEarth',
+                          title: 'Tentang EduEarth',
                           onTap: () => context.push(RouteNames.aboutPath),
                         ),
                       ],
@@ -302,7 +315,7 @@ class ProfilePage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
                   PrimaryButton(
-                    label: 'Keluar (Logout)',
+                    label: 'Keluar Akun',
                     icon: Icons.logout_rounded,
                     isLoading: authController.isLoading,
                     onPressed: () async {

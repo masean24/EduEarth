@@ -9,6 +9,7 @@ import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/material_card.dart';
 import '../../../../core/widgets/common/plant_card.dart';
+import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../routes/route_names.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/bookmark_providers.dart';
@@ -26,8 +27,16 @@ class BookmarksPage extends ConsumerWidget {
     final bookmarksAsync = ref.watch(userBookmarksProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Bookmark Saya'),
+      appBar: ScreenHeaderBar(
+        title: 'Bookmark Saya',
+        subtitle: 'Materi dan pembangkit yang Anda simpan',
+        actions: [
+          ScreenHeaderAction(
+            tooltip: 'Pencarian Global',
+            icon: Icons.search_rounded,
+            onTap: () => context.push(RouteNames.searchPath),
+          ),
+        ],
       ),
       body: SafeArea(
         child: !isAuthenticated

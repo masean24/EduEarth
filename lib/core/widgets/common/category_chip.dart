@@ -41,9 +41,12 @@ String assetForCategorySlug(String? slug) {
   }
 }
 
-/// Label singkat kategori energi sesuai gaya `moodboard.png`
+/// Label singkat kategori energi terpusat sesuai gaya `moodboard.png`
 /// (Surya, Air, Angin, Panas Bumi, Bioenergi).
-String shortDisplayLabelForSlug(String? slug, String fallbackName) {
+String shortDisplayLabelForSlug(
+  String? slug, [
+  String fallbackName = 'Energi Bersih',
+]) {
   switch (slug?.toLowerCase().trim()) {
     case 'solar':
       return 'Surya';
@@ -58,6 +61,44 @@ String shortDisplayLabelForSlug(String? slug, String fallbackName) {
     default:
       return fallbackName;
   }
+}
+
+/// Label lengkap kategori energi dalam Bahasa Indonesia secara terpusat
+/// (Energi Surya, Energi Air, Energi Angin, Energi Panas Bumi, Bioenergi).
+String fullDisplayLabelForSlug(
+  String? slug, {
+  String? shortCode,
+  String fallbackName = 'Energi Terbarukan',
+}) {
+  String base;
+  String defaultCode;
+  switch (slug?.toLowerCase().trim()) {
+    case 'solar':
+      base = 'Energi Surya';
+      defaultCode = 'PLTS';
+      break;
+    case 'hydro':
+      base = 'Energi Air';
+      defaultCode = 'PLTA';
+      break;
+    case 'wind':
+      base = 'Energi Angin';
+      defaultCode = 'PLTB';
+      break;
+    case 'geothermal':
+      base = 'Energi Panas Bumi';
+      defaultCode = 'PLTP';
+      break;
+    case 'bioenergy':
+      base = 'Bioenergi';
+      defaultCode = 'PLTBm/PLTBg';
+      break;
+    default:
+      return fallbackName;
+  }
+  final effectiveCode =
+      (shortCode != null && shortCode.trim().isNotEmpty) ? shortCode : defaultCode;
+  return '$base ($effectiveCode)';
 }
 
 /// Chip filter kategori energi bergaya moodboard:
@@ -119,7 +160,7 @@ class CategoryChip extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppTheme.pillRadius),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: AppTheme.chipPadding,
             alignment: Alignment.center,
             child: chipContent,
           ),
@@ -134,8 +175,8 @@ class CategoryChip extends StatelessWidget {
         child: GlassContainer(
           borderRadius: AppTheme.pillRadius,
           blur: 14,
-          tintOpacity: 0.78,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          tintOpacity: 0.72,
+          padding: AppTheme.chipPadding,
           child: Center(child: chipContent),
         ),
       );
@@ -148,11 +189,15 @@ class CategoryChip extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.pillRadius),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: AppTheme.chipPadding,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-            border: Border.all(color: AppColors.divider),
+            border: Border.all(
+              color: AppColors.divider,
+              width: AppTheme.cardBorderWidth,
+            ),
+            boxShadow: AppTheme.softCardShadow,
           ),
           child: chipContent,
         ),

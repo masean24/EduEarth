@@ -10,6 +10,7 @@ import '../../../../core/widgets/common/category_chip.dart';
 import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
+import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../routes/route_names.dart';
 import '../../../../services/external_map_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -108,8 +109,14 @@ class LearningDetailPage extends ConsumerWidget {
     final bookmarkController = ref.watch(bookmarkControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Materi Pembelajaran'),
+      appBar: ScreenHeaderBar(
+        title: 'Materi Pembelajaran',
+        subtitle: materialAsync.asData != null
+            ? shortDisplayLabelForSlug(
+                materialAsync.asData!.value.categorySlug,
+                'Konsep energi terbarukan',
+              )
+            : 'Konsep energi terbarukan',
         actions: [
           if (materialAsync.asData != null)
             Builder(
@@ -118,11 +125,17 @@ class LearningDetailPage extends ConsumerWidget {
                 final isBookmarked = ref.watch(
                   isMaterialBookmarkedProvider(material.id),
                 );
-                return IconButton(
+                return ScreenHeaderAction(
                   tooltip: isBookmarked
                       ? 'Hapus dari Bookmark'
                       : 'Simpan ke Bookmark',
-                  onPressed: bookmarkController.isLoading
+                  icon: isBookmarked
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
+                  iconColor: isBookmarked
+                      ? AppColors.freshGreen
+                      : AppColors.forestGreen,
+                  onTap: bookmarkController.isLoading
                       ? null
                       : () => _handleToggleBookmark(
                             context,
@@ -130,14 +143,6 @@ class LearningDetailPage extends ConsumerWidget {
                             material.id,
                             isBookmarked,
                           ),
-                  icon: Icon(
-                    isBookmarked
-                        ? Icons.bookmark_rounded
-                        : Icons.bookmark_border_rounded,
-                    color: isBookmarked
-                        ? AppColors.freshGreen
-                        : AppColors.forestGreen,
-                  ),
                 );
               },
             ),
@@ -228,7 +233,10 @@ class LearningDetailPage extends ConsumerWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            material.categoryName ?? 'Energi Bersih',
+                            shortDisplayLabelForSlug(
+                              material.categorySlug,
+                              'Energi Bersih',
+                            ),
                             style: AppTextStyles.caption.copyWith(
                               color: AppColors.forestGreen,
                               fontWeight: FontWeight.w700,
