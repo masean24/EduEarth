@@ -138,8 +138,8 @@ class HomeDashboardPage extends ConsumerWidget {
       behavior: HitTestBehavior.opaque,
       child: GlassContainer(
         borderRadius: AppTheme.pillRadius,
-        blur: 14,
-        tintOpacity: 0.85,
+        enableBlur: false,
+        tintOpacity: 0.92,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         child: Row(
           children: [

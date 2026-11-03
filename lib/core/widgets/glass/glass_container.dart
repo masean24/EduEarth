@@ -51,8 +51,8 @@ class GlassContainer extends ConsumerWidget {
     super.key,
     required this.child,
     this.borderRadius = AppTheme.cardRadius,
-    this.blur = 20.0,
-    this.tintOpacity = 0.62,
+    this.blur = 14.0,
+    this.tintOpacity = 0.65,
     this.borderOpacity = 0.55,
     this.padding = const EdgeInsets.all(16),
     this.margin,
@@ -136,22 +136,15 @@ class GlassContainer extends ConsumerWidget {
       );
     }
 
-    // Bayangan ambient + rim highlight di luar ClipRRect agar efek kaca mengapung jelas
+    // Bayangan ambient lembut di luar ClipRRect agar efek kaca mengapung jelas namun ringan
     Widget content = DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
-            color: AppColors.forestGreen.withValues(alpha: 0.11),
-            blurRadius: 24,
-            spreadRadius: 0,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: AppColors.surfaceWhite.withValues(alpha: 0.65),
-            blurRadius: 2,
-            spreadRadius: 0,
-            offset: const Offset(0, -1),
+            color: AppColors.forestGreen.withValues(alpha: 0.09),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),

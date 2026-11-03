@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import 'primary_button.dart';
+import 'soft_image_placeholder.dart';
 
 /// Tampilan standar ketika terjadi kegagalan memuat data (Error State).
 ///
@@ -29,19 +30,15 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: const BoxDecoration(
-                color: AppColors.errorLight,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.error_outline_rounded,
-                size: 32,
-                color: AppColors.errorRed,
-                semanticLabel: 'Ikon kendala pemuatan data',
-              ),
+            const SoftImagePlaceholder(
+              width: 96,
+              height: 96,
+              borderRadius: 24,
+              assetPath: 'assets/images/mascot/eco_sad.png',
+              backgroundColor: Colors.transparent,
+              fallbackIcon: Icons.error_outline_rounded,
+              iconColor: AppColors.errorRed,
+              iconSize: 36,
             ),
             const SizedBox(height: 16),
             Text(

@@ -41,20 +41,44 @@ class SoftImagePlaceholder extends StatelessWidget {
     Widget content = _buildFallback();
 
     if (trimmedNetwork.isNotEmpty) {
-      content = Image.network(
-        trimmedNetwork,
+      content = Container(
         width: width,
         height: height,
-        fit: fit,
-        errorBuilder: (_, _, _) => _buildFallback(),
+        color: backgroundColor,
+        child: Image.network(
+          trimmedNetwork,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (_, _, _) => _buildFallback(),
+        ),
       );
     } else if (trimmedAsset.isNotEmpty) {
-      content = Image.asset(
-        trimmedAsset,
+      final isSticker = trimmedAsset.contains('/mascot/') ||
+          trimmedAsset.contains('logo_eduearth') ||
+          trimmedAsset.contains('/cat_');
+      final dpr = MediaQuery.devicePixelRatioOf(context);
+      final int? targetCacheWidth =
+          (width != null && width!.isFinite && width! > 0)
+              ? (width! * dpr).round().clamp(64, 1024)
+              : null;
+      content = Container(
         width: width,
         height: height,
-        fit: fit,
-        errorBuilder: (_, _, _) => _buildFallback(),
+        color: backgroundColor,
+        padding: isSticker && backgroundColor.a > 0
+            ? const EdgeInsets.all(6)
+            : EdgeInsets.zero,
+        alignment: Alignment.center,
+        child: Image.asset(
+          trimmedAsset,
+          width: width,
+          height: height,
+          cacheWidth: targetCacheWidth,
+          filterQuality: FilterQuality.medium,
+          fit: isSticker ? BoxFit.contain : fit,
+          errorBuilder: (_, _, _) => _buildFallback(),
+        ),
       );
     }
 

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme.dart';
-import '../glass/glass_container.dart';
 
 /// Helper pemetaan ikon Material berdasarkan `slug` kategori energi.
 IconData iconForCategorySlug(String? slug) {
@@ -23,23 +22,10 @@ IconData iconForCategorySlug(String? slug) {
   }
 }
 
-/// Helper path slot aset ilustrasi kategori sesuai `docs/design/ASSETS.md`.
-String assetForCategorySlug(String? slug) {
-  switch (slug?.toLowerCase().trim()) {
-    case 'solar':
-      return 'assets/images/illustrations/cat_solar.png';
-    case 'hydro':
-      return 'assets/images/illustrations/cat_hydro.png';
-    case 'wind':
-      return 'assets/images/illustrations/cat_wind.png';
-    case 'geothermal':
-      return 'assets/images/illustrations/cat_geothermal.png';
-    case 'bioenergy':
-      return 'assets/images/illustrations/cat_bioenergy.png';
-    default:
-      return '';
-  }
-}
+/// Helper path slot aset ilustrasi kategori.
+/// Sesuai keputusan desain Putaran 2 Nomor 7, `cat_*` dibatalkan dan kategori
+/// menggunakan ikon vektor berwarna secara langsung agar tajam (HD) dan ringan.
+String assetForCategorySlug(String? slug) => '';
 
 /// Label singkat kategori energi terpusat sesuai gaya `moodboard.png`
 /// (Surya, Air, Angin, Panas Bumi, Bioenergi).
@@ -169,15 +155,31 @@ class CategoryChip extends StatelessWidget {
     }
 
     if (useGlass) {
-      return GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: GlassContainer(
-          borderRadius: AppTheme.pillRadius,
-          blur: 14,
-          tintOpacity: 0.72,
-          padding: AppTheme.chipPadding,
-          child: Center(child: chipContent),
+      return Material(
+        color: AppColors.surfaceWhite.withValues(alpha: 0.90),
+        borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+          child: Container(
+            padding: AppTheme.chipPadding,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+              border: Border.all(
+                color: AppColors.sageGreen.withValues(alpha: 0.65),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.forestGreen.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: chipContent,
+          ),
         ),
       );
     }

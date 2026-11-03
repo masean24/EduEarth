@@ -80,8 +80,8 @@ class GlassBottomNav extends StatelessWidget {
           height: AppTheme.bottomNavHeight,
           child: GlassContainer(
             borderRadius: 30,
-            blur: 22,
-            tintOpacity: 0.58,
+            blur: 14,
+            tintOpacity: 0.62,
             borderOpacity: 0.65,
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             child: Row(

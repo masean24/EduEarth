@@ -7,6 +7,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/common/secondary_button.dart';
+import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../services/external_map_service.dart';
 
 /// Halaman Tentang EduEarth (About EduEarth) Fase 5.
@@ -35,18 +36,15 @@ class AboutPage extends ConsumerWidget {
               ),
               child: Column(
                 children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: const BoxDecoration(
-                      color: AppColors.surfaceWhite,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.eco_rounded,
-                      size: 38,
-                      color: AppColors.forestGreen,
-                    ),
+                  const SoftImagePlaceholder(
+                    width: 84,
+                    height: 84,
+                    borderRadius: 42,
+                    assetPath: 'assets/images/branding/logo_eduearth.png',
+                    backgroundColor: AppColors.surfaceWhite,
+                    fallbackIcon: Icons.eco_rounded,
+                    iconColor: AppColors.forestGreen,
+                    iconSize: 38,
                   ),
                   const SizedBox(height: 16),
                   Text(AppConstants.appName, style: AppTextStyles.display),

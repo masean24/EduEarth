@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import 'secondary_button.dart';
+import 'soft_image_placeholder.dart';
 
 /// Tampilan standar ketika data yang dimuat kosong (Empty State).
 class EmptyView extends StatelessWidget {
@@ -29,19 +30,15 @@ class EmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: const BoxDecoration(
-                color: AppColors.mintGreen,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 32,
-                color: AppColors.forestGreen,
-                semanticLabel: title,
-              ),
+            SoftImagePlaceholder(
+              width: 96,
+              height: 96,
+              borderRadius: 24,
+              assetPath: 'assets/images/mascot/eco_sleepy.png',
+              backgroundColor: Colors.transparent,
+              fallbackIcon: icon,
+              iconColor: AppColors.forestGreen,
+              iconSize: 36,
             ),
             const SizedBox(height: 16),
             Text(
