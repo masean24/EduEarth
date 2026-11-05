@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/config/app_config.dart';
 import '../../../../models/energy_category.dart';
 import '../../../../models/power_plant.dart';
 import '../../../../services/location_service.dart';
@@ -31,24 +32,60 @@ final selectedCategoryFilterProvider =
   SelectedCategoryFilterNotifier.new,
 );
 
+/// Filter status operasional pembangkit di Explore Map.
+/// Default wajib HANYA `'operating'` (Beroperasi).
+class SelectedStatusesFilterNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => const <String>{'operating'};
+
+  void toggleStatus(String status) {
+    final normalized = status.trim().toLowerCase();
+    final next = Set<String>.from(state);
+    if (next.contains(normalized)) {
+      if (next.length > 1) {
+        next.remove(normalized);
+      }
+    } else {
+      next.add(normalized);
+    }
+    state = next;
+  }
+
+  void resetToDefault() {
+    state = const <String>{'operating'};
+  }
+}
+
+final selectedStatusesFilterProvider =
+    NotifierProvider<SelectedStatusesFilterNotifier, Set<String>>(
+  SelectedStatusesFilterNotifier.new,
+);
+
 /// Daftar seluruh pembangkit terpublikasi (tanpa filter).
 final allPlantsListProvider = FutureProvider<List<PowerPlant>>((ref) async {
   final repo = ref.watch(plantsRepositoryProvider);
   return repo.getPublishedPlants();
 });
 
-/// Daftar pembangkit terpublikasi sesuai filter kategori yang dipilih di peta.
+/// Daftar pembangkit terpublikasi sesuai filter kategori dan status yang dipilih di peta.
 final filteredPlantsListProvider =
     FutureProvider<List<PowerPlant>>((ref) async {
   final selectedSlug = ref.watch(selectedCategoryFilterProvider);
+  final selectedStatuses = ref.watch(selectedStatusesFilterProvider);
   final allPlants = await ref.watch(allPlantsListProvider.future);
 
-  if (selectedSlug == null || selectedSlug.isEmpty) {
-    return allPlants;
-  }
-  return allPlants
-      .where((plant) => plant.categorySlug == selectedSlug)
-      .toList();
+  return allPlants.where((plant) {
+    final matchesCategory = selectedSlug == null ||
+        selectedSlug.isEmpty ||
+        plant.categorySlug == selectedSlug;
+    if (!matchesCategory) return false;
+
+    final status = plant.operationalStatus.trim().toLowerCase();
+    if (!AppConfig.isSupabaseConfigured && status == 'unknown') {
+      return true;
+    }
+    return selectedStatuses.contains(status);
+  }).toList();
 });
 
 /// Detail satu pembangkit berdasarkan `id`.

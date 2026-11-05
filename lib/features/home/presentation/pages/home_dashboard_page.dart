@@ -11,12 +11,12 @@ import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/plant_card.dart';
 import '../../../../core/widgets/common/screen_header.dart';
-import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../core/widgets/glass/glass_container.dart';
 import '../../../../models/energy_category.dart';
 import '../../../../models/power_plant.dart';
 import '../../../../routes/route_names.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../notification/presentation/providers/notification_providers.dart';
 import '../../../plants/presentation/providers/plants_providers.dart';
 
 /// Halaman Beranda (Home Dashboard) sesuai referensi `docs/design/moodboard.png`.
@@ -36,6 +36,7 @@ class HomeDashboardPage extends ConsumerWidget {
     final plantsAsync = ref.watch(allPlantsListProvider);
     final profileAsync = ref.watch(currentUserProfileProvider);
     final session = ref.watch(currentSessionProvider);
+    final unreadNotifications = ref.watch(unreadNotificationsCountProvider);
 
     final rawName = profileAsync.asData?.value?.displayName?.trim();
     final emailPrefix = session?.user.email?.split('@').first;
@@ -92,6 +93,12 @@ class HomeDashboardPage extends ConsumerWidget {
                     subtitleAboveTitle: true,
                     actions: [
                       ScreenHeaderAction(
+                        tooltip: 'Pusat Informasi',
+                        icon: Icons.notifications_none_rounded,
+                        badgeCount: unreadNotifications,
+                        onTap: () => context.push(RouteNames.notificationsPath),
+                      ),
+                      ScreenHeaderAction(
                         tooltip: 'Pembangkit Terdekat',
                         icon: Icons.near_me_outlined,
                         onTap: () => context.push(RouteNames.nearbyPlantsPath),
@@ -114,7 +121,12 @@ class HomeDashboardPage extends ConsumerWidget {
                     onAction: () => context.go(RouteNames.learningPath),
                   ),
                   const SizedBox(height: 12),
-                  _buildCircularCategoriesRow(context, ref, categories),
+                  _buildCircularCategoriesRow(
+                    context,
+                    ref,
+                    categories,
+                    plantsAsync.asData?.value ?? const <PowerPlant>[],
+                  ),
                   const SizedBox(height: 24),
                   _buildSectionHeader(
                     title: 'Rekomendasi Pembangkit',
@@ -166,39 +178,52 @@ class HomeDashboardPage extends ConsumerWidget {
 
   Widget _buildExploreBanner(BuildContext context) {
     return Container(
-      height: 168,
+      height: 172,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        gradient: const LinearGradient(
-          colors: [
-            AppColors.forestGreen,
-            Color(0xFF237A48),
-            Color(0xFF56B870),
-          ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        color: AppColors.forestGreen,
+        boxShadow: AppTheme.softCardShadow,
       ),
       child: Stack(
+        fit: StackFit.expand,
         children: [
-          // Slot ilustrasi sebelah kanan (fallback ikon energi bersih lembut)
-          Positioned(
-            right: -8,
-            top: 0,
-            bottom: 0,
-            width: 170,
-            child: SoftImagePlaceholder(
-              borderRadius: 0,
-              assetPath:
-                  'assets/images/illustrations/banner_explore_energy.png',
-              backgroundColor: AppColors.mintGreen.withValues(alpha: 0.18),
-              fallbackIcon: Icons.solar_power_rounded,
-              iconColor: AppColors.surfaceWhite.withValues(alpha: 0.85),
-              iconSize: 64,
+          // 1. Ilustrasi panorama penuh (full-bleed) dari kiri ke kanan
+          Image.asset(
+            'assets/images/illustrations/banner_explore_energy.png',
+            fit: BoxFit.cover,
+            alignment: Alignment.centerRight,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (_, _, _) => Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.forestGreen,
+                    Color(0xFF237A48),
+                    Color(0xFF56B870),
+                  ],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+              ),
             ),
           ),
-          // Badge bulat hijau + di kanan atas sesuai moodboard
+          // 2. Gradasi halus di sisi kiri agar teks & tombol kontras sempurna
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                stops: const [0.0, 0.36, 0.58],
+                colors: [
+                  AppColors.forestGreen.withValues(alpha: 0.72),
+                  AppColors.forestGreen.withValues(alpha: 0.28),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+          // 3. Badge bulat hijau daun di kanan atas sesuai moodboard
           Positioned(
             top: 12,
             right: 12,
@@ -217,7 +242,7 @@ class HomeDashboardPage extends ConsumerWidget {
               ),
             ),
           ),
-          // Konten teks & tombol kiri
+          // 4. Konten teks & tombol kiri
           Padding(
             padding: const EdgeInsets.all(18),
             child: Column(
@@ -240,7 +265,7 @@ class HomeDashboardPage extends ConsumerWidget {
                     onTap: () => context.go(RouteNames.exploreMapPath),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
+                        horizontal: 15,
                         vertical: 8,
                       ),
                       child: Row(
@@ -251,10 +276,10 @@ class HomeDashboardPage extends ConsumerWidget {
                             style: AppTextStyles.caption.copyWith(
                               color: AppColors.forestGreen,
                               fontWeight: FontWeight.w700,
-                              fontSize: 13,
+                              fontSize: 12.5,
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 5),
                           const Icon(
                             Icons.arrow_forward_rounded,
                             size: 15,
@@ -304,7 +329,18 @@ class HomeDashboardPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     List<EnergyCategory> categories,
+    List<PowerPlant> allPlants,
   ) {
+    final opCount = allPlants
+        .where((p) => p.operationalStatus.toLowerCase() == 'operating')
+        .length;
+    final conCount = allPlants
+        .where((p) => p.operationalStatus.toLowerCase() == 'construction')
+        .length;
+    final planCount = allPlants
+        .where((p) => p.operationalStatus.toLowerCase() == 'planned')
+        .length;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       decoration: BoxDecoration(
@@ -312,62 +348,130 @@ class HomeDashboardPage extends ConsumerWidget {
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
         border: Border.all(color: AppColors.divider),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: categories.map((category) {
-          final slug = category.slug;
-          final softBg = AppColors.softBackgroundForCategorySlug(slug);
-          final accentColor = AppColors.colorForCategorySlug(slug);
-          final shortLabel = shortDisplayLabelForSlug(slug, category.name);
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: categories.map((category) {
+              final slug = category.slug;
+              final softBg = AppColors.softBackgroundForCategorySlug(slug);
+              final accentColor = AppColors.colorForCategorySlug(slug);
+              final shortLabel = shortDisplayLabelForSlug(slug, category.name);
+              final catPlants =
+                  allPlants.where((p) => p.categorySlug == slug).toList();
+              final catOperating = catPlants
+                  .where(
+                    (p) => p.operationalStatus.toLowerCase() == 'operating',
+                  )
+                  .length;
 
-          return Expanded(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () {
-                ref
-                    .read(selectedCategoryFilterProvider.notifier)
-                    .selectCategory(slug);
-                context.go(RouteNames.exploreMapPath);
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: softBg,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      iconForCategorySlug(slug),
-                      color: slug == 'solar'
-                          ? const Color(0xFFD97706)
-                          : accentColor == AppColors.freshGreen
-                              ? AppColors.forestGreen
-                              : accentColor,
-                      size: 26,
-                    ),
+              return Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () {
+                    ref
+                        .read(selectedCategoryFilterProvider.notifier)
+                        .selectCategory(slug);
+                    context.go(RouteNames.exploreMapPath);
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: softBg,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          iconForCategorySlug(slug),
+                          color: slug == 'solar'
+                              ? const Color(0xFFD97706)
+                              : accentColor == AppColors.freshGreen
+                                  ? AppColors.forestGreen
+                                  : accentColor,
+                          size: 26,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        shortLabel,
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.forestGreen,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          height: 1.15,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (allPlants.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '$catOperating/${catPlants.length} titik',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textMuted,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    shortLabel,
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.forestGreen,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      height: 1.15,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+                ),
+              );
+            }).toList(),
+          ),
+          if (allPlants.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(height: 1),
             ),
-          );
-        }).toList(),
+            Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              alignment: WrapAlignment.center,
+              children: [
+                Text(
+                  'Total ${allPlants.length} pembangkit:',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.forestGreen,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11.5,
+                  ),
+                ),
+                Text(
+                  'Beroperasi $opCount',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.forestGreen,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11.5,
+                  ),
+                ),
+                Text(
+                  '• Konstruksi $conCount',
+                  style: AppTextStyles.caption.copyWith(
+                    color: const Color(0xFFB45309),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11.5,
+                  ),
+                ),
+                Text(
+                  '• Rencana $planCount',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11.5,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -391,11 +495,19 @@ class HomeDashboardPage extends ConsumerWidget {
           return const EmptyView(
             title: 'Belum Ada Data Pembangkit',
             description:
-                'Tabel power_plants masih kosong. Jalankan seed demo atau tambahkan data pembangkit terverifikasi.',
+                'Tabel power_plants masih kosong. Jalankan migrasi seed pembangkit.',
           );
         }
 
-        final displayPlants = plants.take(4).toList();
+        final operatingFirst = [
+          ...plants.where(
+            (p) => p.operationalStatus.toLowerCase() == 'operating',
+          ),
+          ...plants.where(
+            (p) => p.operationalStatus.toLowerCase() != 'operating',
+          ),
+        ];
+        final displayPlants = operatingFirst.take(4).toList();
         return Column(
           children: List.generate(displayPlants.length, (index) {
             final plant = displayPlants[index];

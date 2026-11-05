@@ -29,6 +29,7 @@ class EnergyCategoryPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final categoriesAsync = ref.watch(energyCategoriesProvider);
+    final allPlantsAsync = ref.watch(allPlantsListProvider);
     final materialsAsync = ref.watch(
       materialsByCategorySlugProvider(categorySlug),
     );
@@ -36,6 +37,23 @@ class EnergyCategoryPage extends ConsumerWidget {
     final matchedCategory = categoriesAsync.asData?.value
         .where((c) => c.slug == categorySlug)
         .firstOrNull;
+
+    final categoryPlants = (allPlantsAsync.asData?.value ?? const [])
+        .where((p) => p.categorySlug == categorySlug)
+        .toList();
+    final opPlants = categoryPlants
+        .where((p) => p.operationalStatus.toLowerCase() == 'operating')
+        .toList();
+    final conCount = categoryPlants
+        .where((p) => p.operationalStatus.toLowerCase() == 'construction')
+        .length;
+    final planCount = categoryPlants
+        .where((p) => p.operationalStatus.toLowerCase() == 'planned')
+        .length;
+    final double opTotalMw = opPlants.fold<double>(
+      0.0,
+      (sum, p) => sum + (p.capacityMw ?? 0.0),
+    );
 
     final softBg = AppColors.softBackgroundForCategorySlug(categorySlug);
     final categoryDisplayTitle = fullDisplayLabelForSlug(
@@ -123,6 +141,48 @@ class EnergyCategoryPage extends ConsumerWidget {
                           color: AppColors.textSecondary,
                         ),
                       ),
+                      if (categoryPlants.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.offWhite,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.divider),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Data Pembangkit Tercatat (${categoryPlants.length} titik)',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.forestGreen,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Beroperasi: ${opPlants.length} • Konstruksi: $conCount • Rencana: $planCount',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (opTotalMw > 0) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Kapasitas terpasang beroperasi (menurut sumber): ${opTotalMw.toStringAsFixed(2)} MW',
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.forestGreen,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       SecondaryButton(
                         label:

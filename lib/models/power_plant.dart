@@ -1,22 +1,27 @@
-/// Model immutable untuk tabel `power_plants` beserta metadata kategori & jarak.
+/// Model immutable untuk tabel `power_plants` beserta metadata kategori,
+/// presisi koordinat, catatan sumber, dan jarak.
 class PowerPlant {
   const PowerPlant({
     required this.id,
     required this.categoryId,
     required this.name,
-    required this.description,
     required this.province,
     required this.latitude,
     required this.longitude,
+    this.description,
     this.categorySlug,
     this.categoryName,
     this.categoryShortCode,
     this.city,
+    this.coordinatePrecision = 'exact',
     this.capacityMw,
     this.operationalStatus = 'unknown',
     this.operatorName,
     this.imageUrl,
     this.sourceUrl,
+    this.sourceNotes,
+    this.externalRef,
+    this.dataAsOf,
     this.verifiedAt,
     this.isDemo = false,
     this.isPublished = true,
@@ -31,16 +36,20 @@ class PowerPlant {
   final String? categoryName;
   final String? categoryShortCode;
   final String name;
-  final String description;
+  final String? description;
   final String province;
   final String? city;
   final double latitude;
   final double longitude;
+  final String coordinatePrecision;
   final double? capacityMw;
   final String operationalStatus;
   final String? operatorName;
   final String? imageUrl;
   final String? sourceUrl;
+  final String? sourceNotes;
+  final String? externalRef;
+  final String? dataAsOf;
   final DateTime? verifiedAt;
   final bool isDemo;
   final bool isPublished;
@@ -49,6 +58,20 @@ class PowerPlant {
   final double? distanceMeters;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  /// Bernilai `true` apabila koordinat pembangkit merupakan lokasi perkiraan (`approximate`).
+  bool get isApproximate =>
+      coordinatePrecision.trim().toLowerCase() == 'approximate';
+
+  /// Query pencarian Google Maps berupa gabungan `nama pembangkit + kota + provinsi`.
+  String get googleMapsSearchQuery {
+    final parts = <String>[
+      name.trim(),
+      if (city != null && city!.trim().isNotEmpty) city!.trim(),
+      province.trim(),
+    ].where((s) => s.isNotEmpty).toList();
+    return parts.join(' ');
+  }
 
   factory PowerPlant.fromJson(Map<String, dynamic> json) {
     final nestedCategory = json['energy_categories'];
@@ -62,6 +85,9 @@ class PowerPlant {
       shortCode ??= nestedCategory['short_code'] as String?;
     }
 
+    final rawDesc = json['description'] as String?;
+    final rawPrecision = json['coordinate_precision'] as String?;
+
     return PowerPlant(
       id: (json['id'] as String?) ?? '',
       categoryId: (json['category_id'] as String?) ?? '',
@@ -69,17 +95,26 @@ class PowerPlant {
       categoryName: catName,
       categoryShortCode: shortCode,
       name: (json['name'] as String?) ?? '',
-      description: (json['description'] as String?) ?? '',
+      description: (rawDesc != null && rawDesc.trim().isNotEmpty)
+          ? rawDesc.trim()
+          : null,
       province: (json['province'] as String?) ?? '',
       city: json['city'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      coordinatePrecision:
+          (rawPrecision != null && rawPrecision.trim().isNotEmpty)
+              ? rawPrecision.trim().toLowerCase()
+              : 'exact',
       capacityMw: (json['capacity_mw'] as num?)?.toDouble(),
       operationalStatus:
           (json['operational_status'] as String?) ?? 'unknown',
       operatorName: json['operator_name'] as String?,
       imageUrl: json['image_url'] as String?,
       sourceUrl: json['source_url'] as String?,
+      sourceNotes: json['source_notes'] as String?,
+      externalRef: json['external_ref'] as String?,
+      dataAsOf: json['data_as_of'] as String?,
       verifiedAt: _parseDate(json['verified_at']),
       isDemo: (json['is_demo'] as bool?) ?? false,
       isPublished: (json['is_published'] as bool?) ?? true,
@@ -102,11 +137,15 @@ class PowerPlant {
       'city': city,
       'latitude': latitude,
       'longitude': longitude,
+      'coordinate_precision': coordinatePrecision,
       'capacity_mw': capacityMw,
       'operational_status': operationalStatus,
       'operator_name': operatorName,
       'image_url': imageUrl,
       'source_url': sourceUrl,
+      'source_notes': sourceNotes,
+      'external_ref': externalRef,
+      'data_as_of': dataAsOf,
       if (verifiedAt != null) 'verified_at': verifiedAt!.toIso8601String(),
       'is_demo': isDemo,
       'is_published': isPublished,
@@ -128,11 +167,15 @@ class PowerPlant {
     String? city,
     double? latitude,
     double? longitude,
+    String? coordinatePrecision,
     double? capacityMw,
     String? operationalStatus,
     String? operatorName,
     String? imageUrl,
     String? sourceUrl,
+    String? sourceNotes,
+    String? externalRef,
+    String? dataAsOf,
     DateTime? verifiedAt,
     bool? isDemo,
     bool? isPublished,
@@ -152,11 +195,15 @@ class PowerPlant {
       city: city ?? this.city,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      coordinatePrecision: coordinatePrecision ?? this.coordinatePrecision,
       capacityMw: capacityMw ?? this.capacityMw,
       operationalStatus: operationalStatus ?? this.operationalStatus,
       operatorName: operatorName ?? this.operatorName,
       imageUrl: imageUrl ?? this.imageUrl,
       sourceUrl: sourceUrl ?? this.sourceUrl,
+      sourceNotes: sourceNotes ?? this.sourceNotes,
+      externalRef: externalRef ?? this.externalRef,
+      dataAsOf: dataAsOf ?? this.dataAsOf,
       verifiedAt: verifiedAt ?? this.verifiedAt,
       isDemo: isDemo ?? this.isDemo,
       isPublished: isPublished ?? this.isPublished,
@@ -172,9 +219,9 @@ class PowerPlant {
       case 'operating':
         return 'Beroperasi';
       case 'construction':
-        return 'Dalam Konstruksi';
+        return 'Konstruksi';
       case 'planned':
-        return 'Direncanakan';
+        return 'Rencana';
       default:
         return 'Belum Diverifikasi';
     }
@@ -196,4 +243,3 @@ class PowerPlant {
     return null;
   }
 }
-

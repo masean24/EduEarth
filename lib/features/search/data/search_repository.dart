@@ -80,6 +80,7 @@ class SearchRepository {
           .from('power_plants')
           .select('*, energy_categories(slug, name, short_code)')
           .eq('is_published', true)
+          .eq('is_demo', false)
           .or(
             'name.ilike.$pattern,province.ilike.$pattern,city.ilike.$pattern,description.ilike.$pattern',
           )

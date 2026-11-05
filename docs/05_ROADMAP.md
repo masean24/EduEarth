@@ -70,12 +70,12 @@
 - [x] Global Search (materi + pembangkit)
 
 ## Fase 6 — Fitur Lanjutan dan Rilis
-- [ ] Achievement (`achievements`, `user_achievements`, RPC award)
-- [ ] Notification Center (butuh persetujuan tabel `notifications`)
-- [ ] Energy Comparison (dari `energy_categories.comparison`)
-- [ ] Optimasi performa (profiling, gambar, blur)
+- [x] Achievement (`achievements`, `user_achievements`, RPC award)
+- [x] Notification Center (butuh persetujuan tabel `notifications`)
+- [x] Energy Comparison (dari `energy_categories.comparison`)
+- [x] Optimasi performa (profiling, gambar, blur)
 - [ ] Uji di perangkat Android menengah dan iOS
-- [ ] Ikon app, splash native, versi, build rilis
+- [x] Ikon app, splash native, versi, build rilis
 
 ---
 
@@ -87,3 +87,4 @@
 - **2026-11-02 (Fase 4):** Migrasi tabel kuis (`quizzes`, `quiz_questions`, `quiz_answer_keys` tertutup dari client, `quiz_attempts` read-only bagi client), RPC `submit_quiz_attempt` (`security definer`), seed kuis draf & kunci jawaban terpisah, serta UI Quiz Dashboard, Gameplay, dan Result selesai dan terverifikasi.
 - **2026-11-03 (Fase 5):** UX riwayat kuis di Quiz Dashboard, halaman Profile (`user_profiles`), My Learning, Settings (toggle persisten "Kurangi efek glass"), About EduEarth, dan Global Search (sanitasi PostgREST + escape wildcard + debounce 350 ms) selesai dan terverifikasi.
 - **2026-11-03 (Polish UI #1 & #2):** Penyempurnaan visual berbasis `docs/design/moodboard.png` (`GlassBottomNav`, `ScreenHeader`, token kartu/chip, konsistensi label Bahasa Indonesia, kolom `is_draft`, redesain Splash/Onboarding/Login/Register, serta ekstraksi 11 aset HD `assets/images/`) selesai dan terverifikasi.
+- **2026-11-03 (Fase 6 — Bagian 1):** Migrasi `achievements`, `user_achievements`, RPC `check_and_award_achievements`, pengisian atribut JSONB `energy_categories.comparison`, halaman `AchievementsPage` & `EnergyComparisonPage`, serta optimasi performa blur/decoding gambar selesai dan terverifikasi.

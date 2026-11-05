@@ -81,6 +81,12 @@ class _LearningDashboardPageState
                     subtitle: 'Belajar lebih dalam tentang energi terbarukan!',
                     actions: [
                       ScreenHeaderAction(
+                        tooltip: 'Perbandingan Energi',
+                        icon: Icons.compare_arrows_rounded,
+                        onTap: () =>
+                            context.push(RouteNames.energyComparisonPath),
+                      ),
+                      ScreenHeaderAction(
                         tooltip: 'Pencarian Global',
                         icon: Icons.search_rounded,
                         onTap: () => context.push(RouteNames.searchPath),
@@ -93,7 +99,7 @@ class _LearningDashboardPageState
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _buildEducationMascotBanner(),
+                  _buildEducationMascotBanner(context),
                   const SizedBox(height: 16),
                   _buildCategoryChips(categories),
                   if (selectedCategory != null) ...[
@@ -111,7 +117,7 @@ class _LearningDashboardPageState
     );
   }
 
-  Widget _buildEducationMascotBanner() {
+  Widget _buildEducationMascotBanner(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -119,25 +125,68 @@ class _LearningDashboardPageState
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
         border: Border.all(color: AppColors.sageGreen),
       ),
-      child: Row(
+      child: Column(
         children: [
-          const SoftImagePlaceholder(
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            assetPath: 'assets/images/mascot/eco_reading.png',
-            backgroundColor: AppColors.surfaceWhite,
-            fallbackIcon: Icons.school_rounded,
-            iconColor: AppColors.forestGreen,
-            iconSize: 28,
+          Row(
+            children: [
+              const SoftImagePlaceholder(
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                assetPath: 'assets/images/mascot/eco_reading.png',
+                backgroundColor: AppColors.surfaceWhite,
+                fallbackIcon: Icons.school_rounded,
+                iconColor: AppColors.forestGreen,
+                iconSize: 28,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Pilih kategori di bawah untuk menyaring materi atau bandingkan karakteristik 5 sumber energi bersih.',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.forestGreen,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Pilih kategori di bawah untuk menyaring materi atau baca konsep dasar setiap pembangkit.',
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.forestGreen,
-                fontWeight: FontWeight.w500,
+          const SizedBox(height: 12),
+          Material(
+            color: AppColors.surfaceWhite,
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => context.push(RouteNames.energyComparisonPath),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.compare_arrows_rounded,
+                      size: 18,
+                      color: AppColors.forestGreen,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Bandingkan Karakteristik 5 Kategori Energi',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.forestGreen,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 16,
+                      color: AppColors.forestGreen,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

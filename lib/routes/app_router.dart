@@ -4,16 +4,19 @@ import 'package:go_router/go_router.dart';
 
 import '../core/widgets/common/design_system_showcase_page.dart';
 import '../core/widgets/glass/glass_bottom_nav.dart';
+import '../features/achievement/presentation/pages/achievements_page.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/register_page.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/bookmark/presentation/pages/bookmarks_page.dart';
 import '../features/home/presentation/pages/home_dashboard_page.dart';
 import '../features/learning/presentation/pages/energy_category_page.dart';
+import '../features/learning/presentation/pages/energy_comparison_page.dart';
 import '../features/learning/presentation/pages/learning_dashboard_page.dart';
 import '../features/learning/presentation/pages/learning_detail_page.dart';
 import '../features/map/presentation/pages/explore_map_page.dart';
 import '../features/map/presentation/pages/nearby_plants_page.dart';
+import '../features/notification/presentation/pages/notifications_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/onboarding/presentation/providers/onboarding_provider.dart';
 import '../features/plants/presentation/pages/plant_detail_page.dart';
@@ -193,6 +196,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: RouteNames.searchName,
         path: RouteNames.searchPath,
         builder: (context, state) => const GlobalSearchPage(),
+      ),
+      GoRoute(
+        name: RouteNames.achievementsName,
+        path: RouteNames.achievementsPath,
+        builder: (context, state) => const AchievementsPage(),
+      ),
+      GoRoute(
+        name: RouteNames.notificationsName,
+        path: RouteNames.notificationsPath,
+        builder: (context, state) => const NotificationsPage(),
+      ),
+      GoRoute(
+        name: RouteNames.energyComparisonName,
+        path: RouteNames.energyComparisonPath,
+        builder: (context, state) => const EnergyComparisonPage(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

@@ -23,13 +23,6 @@ import '../../../bookmark/presentation/providers/bookmark_providers.dart';
 import '../providers/plants_providers.dart';
 
 /// Halaman Detail Pembangkit Energi (Plant Detail).
-///
-/// Menampilkan:
-/// - Hero card visual pembangkit beserta lencana kategori, status, dan penanda `DATA DEMO`
-/// - Grid 2x2 ringkasan spesifikasi utama (Kapasitas, Status, Jenis Energi, Operator)
-/// - Kartu Deskripsi Pembangkit & edukasi singkat cara kerja kategori energi terkait
-/// - Peta lokasi interaktif OpenStreetMap dengan koordinat presisi
-/// - Kartu Sumber & Verifikasi Data serta tombol aksi "Buka di Google Maps"
 class PlantDetailPage extends ConsumerWidget {
   const PlantDetailPage({
     super.key,
@@ -38,15 +31,14 @@ class PlantDetailPage extends ConsumerWidget {
 
   final String plantId;
 
-  Future<void> _openGoogleMaps(
+  Future<void> _openCoordinatesInGoogleMaps(
     BuildContext context,
     ExternalMapService externalMapService,
     PowerPlant plant,
   ) async {
-    final launched = await externalMapService.openInGoogleMaps(
+    final launched = await externalMapService.openCoordinatesInGoogleMaps(
       latitude: plant.latitude,
       longitude: plant.longitude,
-      label: plant.name,
     );
 
     if (!context.mounted) return;
@@ -55,6 +47,29 @@ class PlantDetailPage extends ConsumerWidget {
         const SnackBar(
           content: Text(
             'Tidak dapat membuka Google Maps. Pastikan browser atau aplikasi peta tersedia.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _searchPlaceInGoogleMaps(
+    BuildContext context,
+    ExternalMapService externalMapService,
+    PowerPlant plant,
+  ) async {
+    final launched = await externalMapService.searchPlaceInGoogleMaps(
+      name: plant.name,
+      city: plant.city,
+      province: plant.province,
+    );
+
+    if (!context.mounted) return;
+    if (!launched) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Tidak dapat membuka pencarian Google Maps.',
           ),
         ),
       );
@@ -146,7 +161,7 @@ class PlantDetailPage extends ConsumerWidget {
     return Scaffold(
       appBar: ScreenHeaderBar(
         title: 'Detail Pembangkit',
-        subtitle: 'Informasi teknis & sumber verifikasi',
+        subtitle: 'Informasi teknis & atribusi sumber data',
         actions: [
           if (plantAsync.asData != null)
             ScreenHeaderAction(
@@ -208,7 +223,7 @@ class PlantDetailPage extends ConsumerWidget {
                       _buildLocationMapSection(plant, categoryColor),
                       const SizedBox(height: 20),
 
-                      // 5. Kartu Sumber & Verifikasi Data
+                      // 5. Kartu Sumber, Tanggal Data, & Catatan Metodologi
                       _buildSourceVerificationCard(
                         context: context,
                         externalMapService: externalMapService,
@@ -218,24 +233,72 @@ class PlantDetailPage extends ConsumerWidget {
                   ),
                 ),
 
-                // 6. Sticky Bottom Action Bar
-                Container(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-                  decoration: const BoxDecoration(
-                    color: AppColors.surfaceWhite,
-                    border: Border(top: BorderSide(color: AppColors.divider)),
-                  ),
-                  child: PrimaryButton(
-                    label: 'Buka Lokasi di Google Maps',
-                    icon: Icons.open_in_new_rounded,
-                    onPressed: () =>
-                        _openGoogleMaps(context, externalMapService, plant),
-                  ),
+                // 6. Sticky Bottom Action Bar (2 Tombol Google Maps sesuai presisi koordinat)
+                _buildBottomGoogleMapsBar(
+                  context: context,
+                  externalMapService: externalMapService,
+                  plant: plant,
                 ),
               ],
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildBottomGoogleMapsBar({
+    required BuildContext context,
+    required ExternalMapService externalMapService,
+    required PowerPlant plant,
+  }) {
+    final isApprox = plant.isApproximate;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      decoration: const BoxDecoration(
+        color: AppColors.surfaceWhite,
+        border: Border(top: BorderSide(color: AppColors.divider)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isApprox) ...[
+            PrimaryButton(
+              label: 'Cari di Google Maps',
+              icon: Icons.travel_explore_rounded,
+              onPressed: () =>
+                  _searchPlaceInGoogleMaps(context, externalMapService, plant),
+            ),
+            const SizedBox(height: 8),
+            SecondaryButton(
+              label: 'Lihat titik di Google Maps',
+              icon: Icons.pin_drop_outlined,
+              onPressed: () => _openCoordinatesInGoogleMaps(
+                context,
+                externalMapService,
+                plant,
+              ),
+            ),
+          ] else ...[
+            PrimaryButton(
+              label: 'Lihat titik di Google Maps',
+              icon: Icons.pin_drop_outlined,
+              onPressed: () => _openCoordinatesInGoogleMaps(
+                context,
+                externalMapService,
+                plant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SecondaryButton(
+              label: 'Cari di Google Maps',
+              icon: Icons.travel_explore_rounded,
+              onPressed: () =>
+                  _searchPlaceInGoogleMaps(context, externalMapService, plant),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -259,7 +322,7 @@ class PlantDetailPage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            height: 148,
+            height: 156,
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -279,7 +342,7 @@ class PlantDetailPage extends ConsumerWidget {
                       end: Alignment.bottomCenter,
                       colors: [
                         AppColors.forestGreen.withValues(alpha: 0.05),
-                        AppColors.forestGreen.withValues(alpha: 0.55),
+                        AppColors.forestGreen.withValues(alpha: 0.62),
                       ],
                     ),
                   ),
@@ -288,7 +351,10 @@ class PlantDetailPage extends ConsumerWidget {
                   top: 12,
                   left: 12,
                   right: 12,
-                  child: Row(
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    alignment: WrapAlignment.spaceBetween,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -320,29 +386,55 @@ class PlantDetailPage extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      const Spacer(),
-                      if (plant.isDemo)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.warmYellow,
-                            borderRadius: BorderRadius.circular(
-                              AppTheme.pillRadius,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.science_outlined,
-                                size: 13,
-                                color: AppColors.forestGreen,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (plant.isApproximate)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.pillRadius,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.location_searching_rounded,
+                                    size: 13,
+                                    color: Color(0xFFB45309),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Lokasi perkiraan',
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: const Color(0xFFB45309),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 10.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (plant.isDemo) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.warmYellow,
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.pillRadius,
+                                ),
+                              ),
+                              child: Text(
                                 'DATA DEMO',
                                 style: AppTextStyles.caption.copyWith(
                                   color: AppColors.forestGreen,
@@ -350,9 +442,10 @@ class PlantDetailPage extends ConsumerWidget {
                                   fontSize: 10,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -398,6 +491,30 @@ class PlantDetailPage extends ConsumerWidget {
               ],
             ),
           ),
+          if (plant.isApproximate)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              color: const Color(0xFFFEF3C7).withValues(alpha: 0.65),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    size: 16,
+                    color: Color(0xFFB45309),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Lokasi perkiraan: koordinat titik ini mewakili perkiraan administratif / wilayah sekitar dan bukan titik tapak presisi.',
+                      style: AppTextStyles.caption.copyWith(
+                        color: const Color(0xFF92400E),
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (plant.isDemo)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -429,11 +546,13 @@ class PlantDetailPage extends ConsumerWidget {
 
   Widget _buildQuickMetricsGrid(PowerPlant plant, Color categoryColor) {
     final capacityValue = plant.capacityMw != null
-        ? '${plant.capacityMw!.toStringAsFixed(1)} MW'
+        ? '${plant.capacityMw!.toStringAsFixed(2)} MW'
         : 'Belum tercatat';
     final operatorValue = plant.operatorName?.trim().isNotEmpty == true
         ? plant.operatorName!
         : 'Belum tercatat';
+    final coordLabel =
+        plant.isApproximate ? 'Koordinat (Lokasi perkiraan)' : 'Koordinat Peta';
 
     return Column(
       children: [
@@ -444,7 +563,7 @@ class PlantDetailPage extends ConsumerWidget {
                 icon: Icons.bolt_rounded,
                 iconBg: const Color(0xFFFEF9C3),
                 iconColor: const Color(0xFFD97706),
-                label: 'Kapasitas Terpasang',
+                label: 'Kapasitas terpasang (menurut sumber)',
                 value: capacityValue,
               ),
             ),
@@ -475,12 +594,18 @@ class PlantDetailPage extends ConsumerWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _MetricTile(
-                icon: Icons.my_location_rounded,
-                iconBg: AppColors.offWhite,
-                iconColor: AppColors.forestGreen,
-                label: 'Koordinat Peta',
+                icon: plant.isApproximate
+                    ? Icons.location_searching_rounded
+                    : Icons.my_location_rounded,
+                iconBg: plant.isApproximate
+                    ? const Color(0xFFFEF3C7)
+                    : AppColors.offWhite,
+                iconColor: plant.isApproximate
+                    ? const Color(0xFFB45309)
+                    : AppColors.forestGreen,
+                label: coordLabel,
                 value:
-                    '${plant.latitude.toStringAsFixed(2)}°, ${plant.longitude.toStringAsFixed(2)}°',
+                    '${plant.latitude.toStringAsFixed(4)}°, ${plant.longitude.toStringAsFixed(4)}°',
               ),
             ),
           ],
@@ -499,6 +624,10 @@ class PlantDetailPage extends ConsumerWidget {
       slug,
       plant.categoryName ?? 'Energi Terbarukan',
     );
+    final descText = (plant.description != null &&
+            plant.description!.trim().isNotEmpty)
+        ? plant.description!
+        : 'Deskripsi ringkas pembangkit belum tercantum pada sumber data.';
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -523,7 +652,7 @@ class PlantDetailPage extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            plant.description,
+            descText,
             style: AppTextStyles.body.copyWith(
               color: AppColors.textSecondary,
               height: 1.5,
@@ -618,37 +747,77 @@ class PlantDetailPage extends ConsumerWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-            child: Row(
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 6,
               children: [
-                const Icon(
-                  Icons.map_outlined,
-                  size: 19,
-                  color: AppColors.forestGreen,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Peta Lokasi Pembangkit',
-                    style: AppTextStyles.subtitle,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.offWhite,
-                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-                    border: Border.all(color: AppColors.divider),
-                  ),
-                  child: Text(
-                    '${plant.latitude.toStringAsFixed(4)}, ${plant.longitude.toStringAsFixed(4)}',
-                    style: AppTextStyles.caption.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.map_outlined,
+                      size: 19,
+                      color: AppColors.forestGreen,
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Peta Lokasi Pembangkit',
+                      style: AppTextStyles.subtitle,
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (plant.isApproximate) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.pillRadius),
+                          border: Border.all(
+                            color: const Color(0xFFF59E0B).withValues(
+                              alpha: 0.45,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'Lokasi perkiraan',
+                          style: AppTextStyles.caption.copyWith(
+                            color: const Color(0xFFB45309),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 10.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.offWhite,
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.pillRadius),
+                        border: Border.all(color: AppColors.divider),
+                      ),
+                      child: Text(
+                        '${plant.latitude.toStringAsFixed(4)}, ${plant.longitude.toStringAsFixed(4)}',
+                        style: AppTextStyles.caption.copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -740,9 +909,10 @@ class PlantDetailPage extends ConsumerWidget {
   }) {
     final hasSource =
         plant.sourceUrl != null && plant.sourceUrl!.trim().isNotEmpty;
-    final verifiedDate = plant.verifiedAt != null
-        ? '${plant.verifiedAt!.day.toString().padLeft(2, '0')}-${plant.verifiedAt!.month.toString().padLeft(2, '0')}-${plant.verifiedAt!.year}'
-        : 'Belum tercatat';
+    final hasDataAsOf =
+        plant.dataAsOf != null && plant.dataAsOf!.trim().isNotEmpty;
+    final hasSourceNotes =
+        plant.sourceNotes != null && plant.sourceNotes!.trim().isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -764,7 +934,7 @@ class PlantDetailPage extends ConsumerWidget {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.verified_outlined,
+                  Icons.source_outlined,
                   size: 18,
                   color: AppColors.forestGreen,
                 ),
@@ -775,12 +945,16 @@ class PlantDetailPage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Sumber & Verifikasi Data',
+                      'Sumber & Atribusi Data',
                       style: AppTextStyles.subtitle.copyWith(fontSize: 15),
                     ),
                     Text(
-                      'Tanggal Verifikasi: $verifiedDate',
-                      style: AppTextStyles.caption,
+                      hasDataAsOf
+                          ? 'Tanggal Data (data_as_of): ${plant.dataAsOf}'
+                          : 'Tanggal Data: Belum tercatat',
+                      style: AppTextStyles.caption.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -790,18 +964,65 @@ class PlantDetailPage extends ConsumerWidget {
           const SizedBox(height: 10),
           Text(
             hasSource
-                ? 'Sumber referensi: ${plant.sourceUrl}'
-                : 'Sumber referensi resmi belum dilampirkan karena baris ini merupakan data simulasi pengembangan (demo).',
+                ? 'Tautan sumber: ${plant.sourceUrl}'
+                : 'Sumber referensi belum dilampirkan pada baris ini.',
             style: AppTextStyles.caption.copyWith(
               color: AppColors.textSecondary,
               height: 1.4,
             ),
           ),
+          if (hasSourceNotes) ...[
+            const SizedBox(height: 10),
+            Theme(
+              data: Theme.of(context).copyWith(
+                dividerColor: Colors.transparent,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.offWhite,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: ExpansionTile(
+                  tilePadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 2,
+                  ),
+                  childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  leading: const Icon(
+                    Icons.notes_rounded,
+                    size: 18,
+                    color: AppColors.forestGreen,
+                  ),
+                  title: Text(
+                    'Catatan Sumber (source_notes)',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.forestGreen,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        plant.sourceNotes!,
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textPrimary,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           if (hasSource) ...[
             const SizedBox(height: 12),
             SecondaryButton(
-              label: 'Buka Tautan Sumber Data',
-              icon: Icons.link_rounded,
+              label: 'Lihat Sumber',
+              icon: Icons.open_in_new_rounded,
               onPressed: () => _openSourceUrl(
                 context,
                 externalMapService,
@@ -856,18 +1077,19 @@ class _MetricTile extends StatelessWidget {
             label,
             style: AppTextStyles.caption.copyWith(
               color: AppColors.textSecondary,
-              fontSize: 11.5,
+              fontSize: 11,
+              height: 1.25,
             ),
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             value,
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.forestGreen,
               fontWeight: FontWeight.w700,
-              fontSize: 14,
+              fontSize: 13.5,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

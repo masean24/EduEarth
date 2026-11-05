@@ -3,6 +3,8 @@
 // kredensial Supabase (AppConfig.isSupabaseConfigured == false).
 // PENTING: Sesuai aturan keamanan Fase 4, file ini TIDAK menyimpan kunci jawaban kuis.
 
+import '../../models/achievement.dart';
+import '../../models/app_notification.dart';
 import '../../models/energy_category.dart';
 import '../../models/learning_material.dart';
 import '../../models/power_plant.dart';
@@ -11,6 +13,99 @@ import '../../models/quiz_question.dart';
 
 class DemoData {
   const DemoData._();
+
+  static const Map<String, Map<String, dynamic>> comparisonBySlug = {
+    'solar': {
+      'sumber_energi':
+          'Radiasi cahaya matahari yang dikonversi melalui efek fotovoltaik pada sel surya',
+      'karakter_pasokan':
+          'Intermiten; berproduksi optimal pada siang hari dan bergantung pada cuaca serta tutupan awan',
+      'faktor_kapasitas':
+          'Relatif rendah hingga menengah karena siklus penyinaran harian matahari',
+      'emisi_siklus_hidup':
+          'Sangat rendah saat beroperasi; jejak emisi terutama berasal dari proses manufaktur modul surya',
+      'kebutuhan_lahan':
+          'Fleksibel; dapat memanfaatkan atap bangunan, lahan terbuka, maupun permukaan waduk (PLTS terapung)',
+      'keunggulan_utama':
+          'Bersifat modular, waktu pemasangan relatif cepat, serta pemeliharaan harian sederhana',
+      'tantangan_utama':
+          'Memerlukan penyimpan energi (baterai) atau penyeimbang jaringan saat malam dan cuaca mendung',
+      'karakter_lokasi':
+          'Daerah terbuka dengan paparan radiasi matahari konsisten dan minim bayangan penghalang',
+    },
+    'hydro': {
+      'sumber_energi':
+          'Energi potensial dan kinetik dari aliran sungai atau terjunan air waduk',
+      'karakter_pasokan':
+          'Stabil dan fleksibel; dapat dioperasikan untuk memikul beban dasar maupun beban puncak',
+      'faktor_kapasitas':
+          'Menengah hingga tinggi, mengikuti ketersediaan debit air sepanjang musim',
+      'emisi_siklus_hidup':
+          'Sangat rendah selama masa operasi pembangkitan listrik',
+      'kebutuhan_lahan':
+          'Luas untuk sistem bendungan berwaduk; relatif ringkas untuk sistem aliran sungai langsung (run-of-river)',
+      'keunggulan_utama':
+          'Umur teknis infrastruktur panjang dan mampu merespons perubahan beban jaringan dengan cepat',
+      'tantangan_utama':
+          'Kebutuhan investasi konstruksi sipil awal besar serta sensitif terhadap musim kemarau',
+      'karakter_lokasi':
+          'Wilayah dengan daerah aliran sungai berdebit stabil dan topografi berlembah atau berbukit',
+    },
+    'wind': {
+      'sumber_energi':
+          'Energi kinetik hembusan massa udara yang memutar bilah rotor turbin angin',
+      'karakter_pasokan':
+          'Variabel / intermiten; mengikuti fluktuasi kecepatan angin harian dan musiman',
+      'faktor_kapasitas':
+          'Menengah pada koridor angin yang memiliki hembusan konsisten',
+      'emisi_siklus_hidup':
+          'Sangat rendah; tidak menghasilkan emisi pembakaran selama turbin beroperasi',
+      'kebutuhan_lahan':
+          'Area di sekitar menara turbin masih dapat dimanfaatkan bersama untuk pertanian atau penggembalaan',
+      'keunggulan_utama':
+          'Tidak memerlukan air pendingin dan dapat membangkitkan listrik baik siang maupun malam hari',
+      'tantangan_utama':
+          'Terbatas pada wilayah dengan profil kecepatan angin yang memadai serta membutuhkan manajemen kestabilan frekuensi',
+      'karakter_lokasi':
+          'Kawasan pesisir, perbukitan terbuka, atau celah pegunungan dengan hembusan angin terarah',
+    },
+    'geothermal': {
+      'sumber_energi':
+          'Panas alami dan uap dari reservoar hidrotermal di dalam kerak bumi',
+      'karakter_pasokan':
+          'Beban dasar (baseload) yang beroperasi kontinu tanpa bergantung pada cuaca atau pergantian musim',
+      'faktor_kapasitas':
+          'Sangat tinggi dibandingkan pembangkit energi terbarukan berbasis cuaca',
+      'emisi_siklus_hidup':
+          'Rendah, terlebih dengan penerapan sistem reinjeksi fluida kembali ke dalam reservoar',
+      'kebutuhan_lahan':
+          'Kompak per satuan kapasitas pembangkitan dibandingkan energi surya atau bendungan air',
+      'keunggulan_utama':
+          'Keluaran daya sangat stabil sepanjang tahun sehingga andal sebagai penopang utama jaringan listrik',
+      'tantangan_utama':
+          'Risiko geologi pada tahap eksplorasi sumur awal serta waktu pengembangan proyek yang bertahap',
+      'karakter_lokasi':
+          'Kawasan sabuk vulkanik aktif yang memiliki manifestasi dan reservoar panas bumi',
+    },
+    'bioenergy': {
+      'sumber_energi':
+          'Bahan organik terbarukan seperti residu pertanian, perkebunan, limbah cair organik, atau biogas',
+      'karakter_pasokan':
+          'Dapat dikendalikan (dispatchable) selama rantai pasok bahan baku organik terjaga',
+      'faktor_kapasitas':
+          'Menengah hingga tinggi, bergantung pada kontinuitas suplai bahan baku biomassa atau biogas',
+      'emisi_siklus_hidup':
+          'Rendah dalam siklus karbon tertutup apabila memanfaatkan limbah organik secara berkelanjutan',
+      'kebutuhan_lahan':
+          'Umumnya terintegrasi dengan fasilitas pengolahan agroindustri atau instalasi pengolah limbah',
+      'keunggulan_utama':
+          'Membantu mengelola limbah organik dan mengurangi pelepasan gas metana sekaligus menghasilkan energi',
+      'tantangan_utama':
+          'Memerlukan pengelolaan logistik pengumpulan, penyimpanan, dan pengendalian kadar air bahan baku',
+      'karakter_lokasi':
+          'Sentra perkebunan, pertanian, atau fasilitas pengolahan produk agroindustri',
+    },
+  };
 
   static const List<EnergyCategory> categories = [
     EnergyCategory(
@@ -22,6 +117,24 @@ class DemoData {
           'Energi surya memanfaatkan radiasi matahari melalui sel fotovoltaik untuk menghasilkan listrik bersih.',
       icon: 'wb_sunny_rounded',
       colorHex: '#FACC15',
+      comparison: {
+        'sumber_energi':
+            'Radiasi cahaya matahari yang dikonversi melalui efek fotovoltaik pada sel surya',
+        'karakter_pasokan':
+            'Intermiten; berproduksi optimal pada siang hari dan bergantung pada cuaca serta tutupan awan',
+        'faktor_kapasitas':
+            'Relatif rendah hingga menengah karena siklus penyinaran harian matahari',
+        'emisi_siklus_hidup':
+            'Sangat rendah saat beroperasi; jejak emisi terutama berasal dari proses manufaktur modul surya',
+        'kebutuhan_lahan':
+            'Fleksibel; dapat memanfaatkan atap bangunan, lahan terbuka, maupun permukaan waduk (PLTS terapung)',
+        'keunggulan_utama':
+            'Bersifat modular, waktu pemasangan relatif cepat, serta pemeliharaan harian sederhana',
+        'tantangan_utama':
+            'Memerlukan penyimpan energi (baterai) atau penyeimbang jaringan saat malam dan cuaca mendung',
+        'karakter_lokasi':
+            'Daerah terbuka dengan paparan radiasi matahari konsisten dan minim bayangan penghalang',
+      },
       sortOrder: 1,
     ),
     EnergyCategory(
@@ -33,6 +146,24 @@ class DemoData {
           'Energi air memanfaatkan aliran sungai atau terjunan air waduk untuk memutar turbin pembangkit.',
       icon: 'water_drop_rounded',
       colorHex: '#38A6C8',
+      comparison: {
+        'sumber_energi':
+            'Energi potensial dan kinetik dari aliran sungai atau terjunan air waduk',
+        'karakter_pasokan':
+            'Stabil dan fleksibel; dapat dioperasikan untuk memikul beban dasar maupun beban puncak',
+        'faktor_kapasitas':
+            'Menengah hingga tinggi, mengikuti ketersediaan debit air sepanjang musim',
+        'emisi_siklus_hidup':
+            'Sangat rendah selama masa operasi pembangkitan listrik',
+        'kebutuhan_lahan':
+            'Luas untuk sistem bendungan berwaduk; relatif ringkas untuk sistem aliran sungai langsung (run-of-river)',
+        'keunggulan_utama':
+            'Umur teknis infrastruktur panjang dan mampu merespons perubahan beban jaringan dengan cepat',
+        'tantangan_utama':
+            'Kebutuhan investasi konstruksi sipil awal besar serta sensitif terhadap musim kemarau',
+        'karakter_lokasi':
+            'Wilayah dengan daerah aliran sungai berdebit stabil dan topografi berlembah atau berbukit',
+      },
       sortOrder: 2,
     ),
     EnergyCategory(
@@ -44,6 +175,24 @@ class DemoData {
           'Energi angin mengubah energi kinetik hembusan angin menjadi energi listrik melalui bilah turbin.',
       icon: 'air_rounded',
       colorHex: '#0EA5E9',
+      comparison: {
+        'sumber_energi':
+            'Energi kinetik hembusan massa udara yang memutar bilah rotor turbin angin',
+        'karakter_pasokan':
+            'Variabel / intermiten; mengikuti fluktuasi kecepatan angin harian dan musiman',
+        'faktor_kapasitas':
+            'Menengah pada koridor angin yang memiliki hembusan konsisten',
+        'emisi_siklus_hidup':
+            'Sangat rendah; tidak menghasilkan emisi pembakaran selama turbin beroperasi',
+        'kebutuhan_lahan':
+            'Area di sekitar menara turbin masih dapat dimanfaatkan bersama untuk pertanian atau penggembalaan',
+        'keunggulan_utama':
+            'Tidak memerlukan air pendingin dan dapat membangkitkan listrik baik siang maupun malam hari',
+        'tantangan_utama':
+            'Terbatas pada wilayah dengan profil kecepatan angin yang memadai serta membutuhkan manajemen kestabilan frekuensi',
+        'karakter_lokasi':
+            'Kawasan pesisir, perbukitan terbuka, atau celah pegunungan dengan hembusan angin terarah',
+      },
       sortOrder: 3,
     ),
     EnergyCategory(
@@ -55,6 +204,24 @@ class DemoData {
           'Energi panas bumi memanfaatkan uap dan panas alami dari perut bumi sebagai pembangkit beban dasar.',
       icon: 'thermostat_rounded',
       colorHex: '#F97316',
+      comparison: {
+        'sumber_energi':
+            'Panas alami dan uap dari reservoar hidrotermal di dalam kerak bumi',
+        'karakter_pasokan':
+            'Beban dasar (baseload) yang beroperasi kontinu tanpa bergantung pada cuaca atau pergantian musim',
+        'faktor_kapasitas':
+            'Sangat tinggi dibandingkan pembangkit energi terbarukan berbasis cuaca',
+        'emisi_siklus_hidup':
+            'Rendah, terlebih dengan penerapan sistem reinjeksi fluida kembali ke dalam reservoar',
+        'kebutuhan_lahan':
+            'Kompak per satuan kapasitas pembangkitan dibandingkan energi surya atau bendungan air',
+        'keunggulan_utama':
+            'Keluaran daya sangat stabil sepanjang tahun sehingga andal sebagai penopang utama jaringan listrik',
+        'tantangan_utama':
+            'Risiko geologi pada tahap eksplorasi sumur awal serta waktu pengembangan proyek yang bertahap',
+        'karakter_lokasi':
+            'Kawasan sabuk vulkanik aktif yang memiliki manifestasi dan reservoar panas bumi',
+      },
       sortOrder: 4,
     ),
     EnergyCategory(
@@ -66,6 +233,24 @@ class DemoData {
           'Bioenergi mengolah biomassa organik dan biogas menjadi energi listrik maupun bahan bakar bersih.',
       icon: 'eco_rounded',
       colorHex: '#22C55E',
+      comparison: {
+        'sumber_energi':
+            'Bahan organik terbarukan seperti residu pertanian, perkebunan, limbah cair organik, atau biogas',
+        'karakter_pasokan':
+            'Dapat dikendalikan (dispatchable) selama rantai pasok bahan baku organik terjaga',
+        'faktor_kapasitas':
+            'Menengah hingga tinggi, bergantung pada kontinuitas suplai bahan baku biomassa atau biogas',
+        'emisi_siklus_hidup':
+            'Rendah dalam siklus karbon tertutup apabila memanfaatkan limbah organik secara berkelanjutan',
+        'kebutuhan_lahan':
+            'Umumnya terintegrasi dengan fasilitas pengolahan agroindustri atau instalasi pengolah limbah',
+        'keunggulan_utama':
+            'Membantu mengelola limbah organik dan mengurangi pelepasan gas metana sekaligus menghasilkan energi',
+        'tantangan_utama':
+            'Memerlukan pengelolaan logistik pengumpulan, penyimpanan, dan pengendalian kadar air bahan baku',
+        'karakter_lokasi':
+            'Sentra perkebunan, pertanian, atau fasilitas pengolahan produk agroindustri',
+      },
       sortOrder: 5,
     ),
   ];
@@ -238,6 +423,82 @@ class DemoData {
       explanation:
           'Sel surya bekerja menggunakan efek fotovoltaik pada material semikonduktor.',
       sortOrder: 1,
+    ),
+  ];
+
+  static const List<Achievement> achievements = [
+    Achievement(
+      id: 'demo-ach-1',
+      code: 'first_bookmark',
+      title: 'Penjelajah Ingin Tahu',
+      description:
+          'Menyimpan materi pembelajaran atau pembangkit pertama ke Daftar Tersimpan.',
+      icon: 'bookmark_added_rounded',
+      points: 10,
+      sortOrder: 1,
+    ),
+    Achievement(
+      id: 'demo-ach-2',
+      code: 'avid_learner',
+      title: 'Pembelajar Energi Bersih',
+      description:
+          'Menyimpan minimal 2 materi pembelajaran energi terbarukan untuk dipelajari.',
+      icon: 'menu_book_rounded',
+      points: 20,
+      sortOrder: 2,
+    ),
+    Achievement(
+      id: 'demo-ach-3',
+      code: 'plant_collector',
+      title: 'Pemeta Nusantara',
+      description:
+          'Menyimpan minimal 2 lokasi pembangkit energi terbarukan di Indonesia.',
+      icon: 'map_rounded',
+      points: 20,
+      sortOrder: 3,
+    ),
+    Achievement(
+      id: 'demo-ach-4',
+      code: 'first_quiz',
+      title: 'Langkah Pertama Kuis',
+      description:
+          'Menyelesaikan percobaan kuis energi terbarukan pertama hingga tuntas.',
+      icon: 'quiz_rounded',
+      points: 15,
+      sortOrder: 4,
+    ),
+    Achievement(
+      id: 'demo-ach-5',
+      code: 'quiz_master',
+      title: 'Juara Energi Terbarukan',
+      description:
+          'Meraih skor minimal 80 pada salah satu kuis evaluasi EduEarth.',
+      icon: 'workspace_premium_rounded',
+      points: 30,
+      sortOrder: 5,
+    ),
+    Achievement(
+      id: 'demo-ach-6',
+      code: 'perfect_score',
+      title: 'Skor Sempurna 100',
+      description:
+          'Menjawab seluruh pertanyaan dengan benar (skor 100) pada kuis EduEarth.',
+      icon: 'emoji_events_rounded',
+      points: 50,
+      sortOrder: 6,
+    ),
+  ];
+
+  // DEMO DATA — 1 pengumuman contoh untuk mode lokal tanpa Supabase
+  static final List<AppNotification> notifications = [
+    AppNotification(
+      id: '00000000-0000-0000-0000-000000000601',
+      title: '[CONTOH] Selamat Datang di Pusat Informasi EduEarth',
+      body:
+          'Ini adalah pengumuman contoh untuk menguji fitur Notification Center pada aplikasi EduEarth. Pengumuman resmi mengenai pembaruan materi dan peta pembangkit akan ditampilkan di halaman ini.',
+      category: 'info',
+      isPublished: true,
+      createdAt: DateTime.utc(2026, 11, 3, 1, 0),
     ),
   ];
 }

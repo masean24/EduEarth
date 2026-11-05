@@ -169,13 +169,16 @@ class PlantPreviewSheet extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                plant.description,
-                style: AppTextStyles.body,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
+              if (plant.description != null &&
+                  plant.description!.trim().isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  plant.description!,
+                  style: AppTextStyles.body,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,
@@ -191,6 +194,11 @@ class PlantPreviewSheet extends StatelessWidget {
                     icon: Icons.info_outline_rounded,
                     label: 'Status: ${plant.operationalStatusLabel}',
                   ),
+                  if (plant.isApproximate)
+                    const _MetaPill(
+                      icon: Icons.location_searching_rounded,
+                      label: 'Lokasi perkiraan',
+                    ),
                 ],
               ),
               const SizedBox(height: 20),

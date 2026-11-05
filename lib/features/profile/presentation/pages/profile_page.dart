@@ -14,6 +14,7 @@ import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../models/user_profile.dart';
 import '../../../../routes/route_names.dart';
+import '../../../achievement/presentation/providers/achievement_providers.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../bookmark/presentation/providers/bookmark_providers.dart';
 import '../../../quiz/presentation/providers/quiz_providers.dart';
@@ -84,7 +85,7 @@ class ProfilePage extends ConsumerWidget {
             final bookmarkCount = bookmarksAsync.asData?.value.length ?? 0;
             final quizAttemptCount = attemptsAsync.asData?.value.length ?? 0;
             final avatarUrl = profile?.avatarUrl?.trim() ?? '';
-            const int? badgeCount = null; // Disembunyikan sampai Fase 6 (Achievement)
+            final int badgeCount = ref.watch(unlockedAchievementCountProvider);
 
             return RefreshIndicator(
               color: AppColors.freshGreen,
@@ -92,6 +93,7 @@ class ProfilePage extends ConsumerWidget {
                 ref.invalidate(currentUserProfileProvider);
                 ref.invalidate(userBookmarksProvider);
                 ref.invalidate(userQuizAttemptsProvider);
+                ref.invalidate(achievementsListProvider);
               },
               child: ListView(
                 padding: EdgeInsets.fromLTRB(
@@ -227,19 +229,17 @@ class ProfilePage extends ConsumerWidget {
                             label: 'Kuis',
                           ),
                         ),
-                        if (badgeCount != null) ...[
-                          Container(
-                            width: 1,
-                            height: 36,
-                            color: AppColors.divider,
+                        Container(
+                          width: 1,
+                          height: 36,
+                          color: AppColors.divider,
+                        ),
+                        Expanded(
+                          child: _StatItem(
+                            value: '$badgeCount',
+                            label: 'Badge',
                           ),
-                          Expanded(
-                            child: _StatItem(
-                              value: '$badgeCount',
-                              label: 'Badge',
-                            ),
-                          ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
@@ -264,6 +264,33 @@ class ProfilePage extends ConsumerWidget {
                           iconColor: AppColors.forestGreen,
                           title: 'Daftar Tersimpan',
                           onTap: () => context.push(RouteNames.bookmarksPath),
+                        ),
+                        const Divider(height: 1, indent: 64),
+                        _MoodboardMenuTile(
+                          icon: Icons.emoji_events_rounded,
+                          iconBackground: const Color(0xFFFEF9C3),
+                          iconColor: const Color(0xFFD97706),
+                          title: 'Pencapaian & Badge',
+                          onTap: () =>
+                              context.push(RouteNames.achievementsPath),
+                        ),
+                        const Divider(height: 1, indent: 64),
+                        _MoodboardMenuTile(
+                          icon: Icons.compare_arrows_rounded,
+                          iconBackground: AppColors.mintGreen,
+                          iconColor: AppColors.forestGreen,
+                          title: 'Perbandingan Energi',
+                          onTap: () =>
+                              context.push(RouteNames.energyComparisonPath),
+                        ),
+                        const Divider(height: 1, indent: 64),
+                        _MoodboardMenuTile(
+                          icon: Icons.campaign_rounded,
+                          iconBackground: const Color(0xFFE0F2FE),
+                          iconColor: AppColors.skyBlue,
+                          title: 'Pusat Informasi',
+                          onTap: () =>
+                              context.push(RouteNames.notificationsPath),
                         ),
                         const Divider(height: 1, indent: 64),
                         _MoodboardMenuTile(

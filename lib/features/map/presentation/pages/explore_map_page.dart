@@ -21,15 +21,7 @@ import '../../../../routes/route_names.dart';
 import '../../../../services/external_map_service.dart';
 import '../../../plants/presentation/providers/plants_providers.dart';
 
-/// Halaman Peta Eksplorasi Pembangkit (Explore Map) sesuai `docs/design/moodboard.png`.
-///
-/// Menampilkan:
-/// - Peta OpenStreetMap (`flutter_map`) dengan marker per kategori energi
-/// - Search bar Liquid Glass ("Cari lokasi pembangkit...") di atas peta
-/// - Filter chip kategori energi (`Semua`, `Surya`, `Air`, `Angin`, dll.)
-/// - Tombol apung pembangkit terdekat (`near_me_rounded`)
-/// - Kartu pratinjau pembangkit di bagian bawah peta dengan tombol "Lihat Detail →"
-/// - Atribusi resmi "© OpenStreetMap contributors"
+/// Halaman Peta Eksplorasi Pembangkit (Explore Map).
 class ExploreMapPage extends ConsumerStatefulWidget {
   const ExploreMapPage({super.key});
 
@@ -82,6 +74,7 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
     final categoriesAsync = ref.watch(energyCategoriesProvider);
     final plantsAsync = ref.watch(filteredPlantsListProvider);
     final selectedSlug = ref.watch(selectedCategoryFilterProvider);
+    final selectedStatuses = ref.watch(selectedStatusesFilterProvider);
     final externalMapService = ref.watch(externalMapServiceProvider);
 
     final visiblePlants = plantsAsync.asData != null
@@ -127,7 +120,7 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
             ],
           ),
 
-          // 2. ScreenHeader + Search Bar Glass & Chip Filter di Atas Peta
+          // 2. ScreenHeader + Search Bar + Filter Kategori & Filter Status
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -136,15 +129,15 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
                   child: GlassContainer(
                     borderRadius: AppTheme.cardRadius,
-                    blur: 20,
-                    tintOpacity: 0.68,
+                    blur: 14,
+                    tintOpacity: 0.72,
                     padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                     child: Column(
                       children: [
                         ScreenHeader(
                           title: 'Peta Pembangkit',
                           subtitle:
-                              'Jelajahi titik energi terbarukan Indonesia',
+                              'Menampilkan ${visiblePlants.length} titik pembangkit',
                           isCompact: true,
                           actions: [
                             ScreenHeaderAction(
@@ -165,7 +158,7 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
                             color: AppColors.surfaceWhite.withValues(
-                              alpha: 0.85,
+                              alpha: 0.88,
                             ),
                             borderRadius: BorderRadius.circular(
                               AppTheme.pillRadius,
@@ -225,6 +218,8 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
                   ),
                 ),
                 _buildCategoryFilterBar(categoriesAsync, selectedSlug),
+                const SizedBox(height: 6),
+                _buildStatusFilterBar(selectedStatuses),
               ],
             ),
           ),
@@ -262,7 +257,7 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
                         icon: Icons.location_off_outlined,
                         title: 'Tidak Ada Pembangkit Ditemukan',
                         description:
-                            'Tidak ada pembangkit yang cocok dengan filter kategori atau kata kunci pencarian saat ini.',
+                            'Tidak ada pembangkit yang cocok dengan filter kategori, status, atau pencarian saat ini.',
                         actionLabel: 'Reset Filter & Pencarian',
                         onAction: () {
                           _searchController.clear();
@@ -270,6 +265,9 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
                           ref
                               .read(selectedCategoryFilterProvider.notifier)
                               .selectCategory(null);
+                          ref
+                              .read(selectedStatusesFilterProvider.notifier)
+                              .resetToDefault();
                         },
                       ),
                     ),
@@ -290,88 +288,95 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          externalMapService.openExternalUrl(
-                            'https://www.openstreetmap.org/copyright',
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        externalMapService.openExternalUrl(
+                          'https://www.openstreetmap.org/copyright',
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceWhite.withValues(
+                            alpha: 0.88,
                           ),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.divider),
+                        ),
+                        child: Text(
+                          AppConstants.osmAttribution,
+                          style: AppTextStyles.caption.copyWith(fontSize: 10),
+                        ),
+                      ),
+                    ),
+                    Material(
+                      color: AppColors.surfaceWhite,
+                      shape: const CircleBorder(),
+                      elevation: 2,
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () =>
+                            context.push(RouteNames.nearbyPlantsPath),
+                        child: Container(
+                          width: 46,
+                          height: 46,
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceWhite.withValues(
-                              alpha: 0.88,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
+                            shape: BoxShape.circle,
                             border: Border.all(color: AppColors.divider),
                           ),
-                          child: Text(
-                            AppConstants.osmAttribution,
-                            style: AppTextStyles.caption.copyWith(fontSize: 10),
+                          child: const Icon(
+                            Icons.near_me_rounded,
+                            color: AppColors.forestGreen,
+                            size: 22,
                           ),
                         ),
                       ),
-                      // Tombol bulat Pembangkit Terdekat (gaya moodboard)
-                      Material(
-                        color: AppColors.surfaceWhite,
-                        shape: const CircleBorder(),
-                        elevation: 2,
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          onTap: () =>
-                              context.push(RouteNames.nearbyPlantsPath),
-                          child: Container(
-                            width: 46,
-                            height: 46,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.divider),
-                            ),
-                            child: const Icon(
-                              Icons.near_me_rounded,
-                              color: AppColors.forestGreen,
-                              size: 22,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (activePreviewPlant != null) ...[
-                    const SizedBox(height: 10),
-                    _MapPlantPreviewCard(
-                      plant: activePreviewPlant,
-                      onOpenDetail: () =>
-                          context.push('/plants/${activePreviewPlant!.id}'),
-                      onOpenGoogleMaps: () async {
-                        final ok = await externalMapService.openInGoogleMaps(
-                          latitude: activePreviewPlant!.latitude,
-                          longitude: activePreviewPlant.longitude,
-                        );
-                        if (!ok && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Gagal membuka aplikasi Google Maps.',
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      onClose: () {
-                        setState(() => _isPreviewDismissed = true);
-                      },
                     ),
                   ],
+                ),
+                if (activePreviewPlant != null) ...[
+                  const SizedBox(height: 10),
+                  _MapPlantPreviewCard(
+                    plant: activePreviewPlant,
+                    onOpenDetail: () =>
+                        context.push('/plants/${activePreviewPlant!.id}'),
+                    onOpenGoogleMaps: () async {
+                      final plant = activePreviewPlant!;
+                      final ok = plant.isApproximate
+                          ? await externalMapService.searchPlaceInGoogleMaps(
+                              name: plant.name,
+                              city: plant.city,
+                              province: plant.province,
+                            )
+                          : await externalMapService
+                              .openCoordinatesInGoogleMaps(
+                              latitude: plant.latitude,
+                              longitude: plant.longitude,
+                            );
+                      if (!ok && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Gagal membuka aplikasi Google Maps.',
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    onClose: () {
+                      setState(() => _isPreviewDismissed = true);
+                    },
+                  ),
                 ],
-              ),
+              ],
+            ),
           ),
         ],
       ),
@@ -385,7 +390,7 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
     final categories = categoriesAsync.asData?.value ?? const <EnergyCategory>[];
 
     return SizedBox(
-      height: 38,
+      height: 36,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -424,51 +429,178 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
     );
   }
 
+  Widget _buildStatusFilterBar(Set<String> selectedStatuses) {
+    const statusOptions = <(String, String, IconData)>[
+      ('operating', 'Beroperasi', Icons.check_circle_outline_rounded),
+      ('construction', 'Konstruksi', Icons.engineering_outlined),
+      ('planned', 'Rencana', Icons.schedule_rounded),
+    ];
+
+    return SizedBox(
+      height: 34,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: statusOptions.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final opt = statusOptions[index];
+          final code = opt.$1;
+          final label = opt.$2;
+          final icon = opt.$3;
+          final isSelected = selectedStatuses.contains(code);
+
+          return Material(
+            color: isSelected
+                ? AppColors.forestGreen
+                : AppColors.surfaceWhite.withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+              onTap: () {
+                ref
+                    .read(selectedStatusesFilterProvider.notifier)
+                    .toggleStatus(code);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.forestGreen
+                        : AppColors.sageGreen.withValues(alpha: 0.65),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 14,
+                      color: isSelected
+                          ? AppColors.mintGreen
+                          : AppColors.forestGreen,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      label,
+                      style: AppTextStyles.caption.copyWith(
+                        color: isSelected
+                            ? AppColors.surfaceWhite
+                            : AppColors.forestGreen,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Marker _buildPlantMarker({
     required PowerPlant plant,
     required bool isSelected,
   }) {
-    final markerColor = AppColors.colorForCategorySlug(
-      plant.categorySlug ?? '',
-    );
+    final slug = plant.categorySlug ?? '';
+    final markerColor = AppColors.colorForCategorySlug(slug);
+    final status = plant.operationalStatus.trim().toLowerCase();
+    final isConstruction = status == 'construction';
+    final isPlanned = status == 'planned';
+
+    final Color fillColor = isPlanned
+        ? AppColors.surfaceWhite.withValues(alpha: 0.92)
+        : isConstruction
+            ? markerColor.withValues(alpha: 0.78)
+            : markerColor;
+
+    final Color borderColor = isPlanned
+        ? markerColor
+        : isConstruction
+            ? const Color(0xFFD97706)
+            : AppColors.surfaceWhite;
+
+    final Color iconColor = isPlanned
+        ? (slug == 'solar' ? const Color(0xFFD97706) : AppColors.forestGreen)
+        : (slug == 'solar' ? AppColors.forestGreen : AppColors.surfaceWhite);
 
     return Marker(
       point: LatLng(plant.latitude, plant.longitude),
       width: isSelected ? 54 : 46,
       height: isSelected ? 54 : 46,
       child: Semantics(
-        label: 'Marker pembangkit ${plant.name}',
+        label:
+            'Marker pembangkit ${plant.name} (${plant.operationalStatusLabel})',
         button: true,
         child: GestureDetector(
           onTap: () => _selectPlantOnMap(plant),
           child: Center(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: isSelected ? 44 : 36,
-              height: isSelected ? 44 : 36,
-              decoration: BoxDecoration(
-                color: markerColor,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.surfaceWhite,
-                  width: isSelected ? 3.0 : 2.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.forestGreen.withValues(
-                      alpha: isSelected ? 0.35 : 0.22,
-                    ),
-                    blurRadius: isSelected ? 10 : 6,
-                    offset: const Offset(0, 3),
+            child: Opacity(
+              opacity: isPlanned ? 0.78 : (isConstruction ? 0.88 : 1.0),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: isSelected ? 44 : 36,
+                height: isSelected ? 44 : 36,
+                decoration: BoxDecoration(
+                  color: fillColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: borderColor,
+                    width: isSelected ? 3.2 : (isPlanned || isConstruction ? 2.6 : 2.2),
                   ),
-                ],
-              ),
-              child: Icon(
-                iconForCategorySlug(plant.categorySlug),
-                size: isSelected ? 22 : 18,
-                color: plant.categorySlug == 'solar'
-                    ? AppColors.forestGreen
-                    : AppColors.surfaceWhite,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.forestGreen.withValues(
+                        alpha: isSelected ? 0.35 : 0.2,
+                      ),
+                      blurRadius: isSelected ? 10 : 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      iconForCategorySlug(slug),
+                      size: isSelected ? 21 : 17,
+                      color: iconColor,
+                    ),
+                    if (isConstruction || isPlanned)
+                      Positioned(
+                        right: -3,
+                        bottom: -3,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: isConstruction
+                                ? const Color(0xFFD97706)
+                                : AppColors.slateGray,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.surfaceWhite,
+                              width: 1.2,
+                            ),
+                          ),
+                          child: Icon(
+                            isConstruction
+                                ? Icons.build_rounded
+                                : Icons.schedule_rounded,
+                            size: 8.5,
+                            color: AppColors.surfaceWhite,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -498,19 +630,20 @@ class _MapPlantPreviewCard extends StatelessWidget {
     final capacityText = plant.capacityMw != null
         ? ' • ${plant.capacityMw!.toStringAsFixed(1)} MW'
         : '';
+    final status = plant.operationalStatus.trim().toLowerCase();
 
     return GlassContainer(
       borderRadius: AppTheme.cardRadius,
-      blur: 20,
-      tintOpacity: 0.72,
+      blur: 14,
+      tintOpacity: 0.78,
       padding: const EdgeInsets.all(10),
       child: Row(
         children: [
           Stack(
             children: [
               SoftImagePlaceholder(
-                width: 72,
-                height: 72,
+                width: 74,
+                height: 74,
                 borderRadius: 12,
                 networkImageUrl: plant.imageUrl,
                 assetPath: assetForCategorySlug(slug),
@@ -570,14 +703,67 @@ class _MapPlantPreviewCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${plant.province}$capacityText',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 3),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: status == 'operating'
+                            ? AppColors.mintGreen
+                            : status == 'construction'
+                                ? const Color(0xFFFEF3C7)
+                                : const Color(0xFFE2E8F0),
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.pillRadius),
+                      ),
+                      child: Text(
+                        plant.operationalStatusLabel,
+                        style: AppTextStyles.caption.copyWith(
+                          color: status == 'operating'
+                              ? AppColors.forestGreen
+                              : status == 'construction'
+                                  ? const Color(0xFFB45309)
+                                  : AppColors.slateGray,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                    if (plant.isApproximate)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.pillRadius),
+                        ),
+                        child: Text(
+                          'Lokasi perkiraan',
+                          style: AppTextStyles.caption.copyWith(
+                            color: const Color(0xFFB45309),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    Text(
+                      '${plant.province}$capacityText',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -622,7 +808,9 @@ class _MapPlantPreviewCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Tooltip(
-                      message: 'Buka di Google Maps',
+                      message: plant.isApproximate
+                          ? 'Cari di Google Maps'
+                          : 'Lihat titik di Google Maps',
                       child: Material(
                         color: AppColors.mintGreen,
                         shape: const CircleBorder(),

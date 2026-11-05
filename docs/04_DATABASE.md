@@ -17,11 +17,13 @@ Dokumen ini adalah **rencana skema**. SQL final dibuat per fase sebagai file mig
 `id`, `slug` (unique: solar, hydro, wind, geothermal, bioenergy), `name`, `short_code` (PLTS, PLTA, PLTB, PLTP, PLTBm/PLTBg), `description`, `icon`, `color_hex`, `comparison` (jsonb — atribut untuk fitur Energy Comparison), `sort_order`, timestamps.
 
 ### `power_plants`
-`id`, `category_id` → `energy_categories`, `name`, `description`, `province`, `city`,
+`id`, `category_id` → `energy_categories`, `name`, `description` (nullable), `province`, `city`,
 `latitude` (double precision, not null), `longitude` (double precision, not null),
+`coordinate_precision` (check: `exact | approximate`, default `exact`),
 `geog` (`geography(Point,4326)`, **generated** dari longitude/latitude, GIST index),
 `capacity_mw` (numeric, **nullable**), `operational_status` (check: `operating | construction | planned | unknown`, default `unknown`), `operator_name` (nullable),
-`image_url`, **`source_url`**, **`verified_at`**, `is_demo` (boolean default false), `is_published`, timestamps.
+`image_url`, **`source_url`**, `source_notes` (nullable), `external_ref` (nullable), `data_as_of` (nullable), **`verified_at`** (nullable), `is_demo` (boolean default false), `is_published`, timestamps.
+Unique constraint: `(category_id, name)` + partial unique index `(external_ref) where external_ref is not null`.
 
 Aturan data: kolom yang tidak diketahui dibiarkan `null`/`unknown`, **tidak diisi tebakan**. Baris contoh untuk pengembangan wajib `is_demo = true`.
 
@@ -59,8 +61,9 @@ Dibuat otomatis oleh trigger `handle_new_user` saat user mendaftar.
 `id`, `user_id`, `achievement_id`, `unlocked_at`, `unique (user_id, achievement_id)`.
 Pemberian achievement dilakukan server-side (RPC/trigger), bukan insert bebas dari client.
 
-### Tabel tambahan (Fase 6, perlu persetujuan sebelum dibuat)
-`notifications` untuk Notification Center. Jangan dibuat sebelum fase itu.
+### `notifications` (Fase 6 — disetujui pemilik)
+`id` (uuid PK), `title`, `body`, `category` (check: `info | content | update`), `is_published` (boolean default false), `created_at` (timestamptz).
+Tanpa `user_id` dan tanpa `is_read` di database (hanya pengumuman publik satu arah; status baca per pengguna disimpan lokal di `shared_preferences`).
 
 ## RLS — ringkasan kebijakan
 
@@ -76,6 +79,7 @@ Pemberian achievement dilakukan server-side (RPC/trigger), bukan insert bebas da
 | `bookmarks` | milik sendiri | INSERT/DELETE milik sendiri |
 | `achievements` | publik | tidak ada policy client |
 | `user_achievements` | milik sendiri | **hanya lewat RPC/trigger** |
+| `notifications` | publik jika `is_published` | tidak ada policy client |
 
 Gunakan `(select auth.uid())` pada policy demi performa.
 

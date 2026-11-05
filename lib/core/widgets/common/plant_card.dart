@@ -87,6 +87,29 @@ class PlantCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if (plant.isApproximate) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF3C7),
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.pillRadius,
+                              ),
+                            ),
+                            child: Text(
+                              'Lokasi perkiraan',
+                              style: AppTextStyles.caption.copyWith(
+                                color: const Color(0xFFB45309),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 9.5,
+                              ),
+                            ),
+                          ),
+                        ],
                         if (plant.isDemo) ...[
                           const SizedBox(width: 6),
                           _buildDemoBadge(),

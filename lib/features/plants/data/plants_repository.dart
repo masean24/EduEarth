@@ -54,11 +54,13 @@ class PlantsRepository {
             '*, energy_categories!inner(slug, name, short_code)',
           )
           .eq('is_published', true)
+          .eq('is_demo', false)
           .order('name', ascending: true);
 
       final plants = (rows as List<dynamic>)
           .whereType<Map<String, dynamic>>()
           .map(PowerPlant.fromJson)
+          .where((plant) => !plant.isDemo)
           .toList();
 
       if (categorySlug == null || categorySlug.isEmpty) {
@@ -90,6 +92,7 @@ class PlantsRepository {
           )
           .eq('id', id)
           .eq('is_published', true)
+          .eq('is_demo', false)
           .maybeSingle();
 
       if (row == null) {
@@ -156,6 +159,7 @@ class PlantsRepository {
       return (rows as List<dynamic>)
           .whereType<Map<String, dynamic>>()
           .map(PowerPlant.fromJson)
+          .where((plant) => !plant.isDemo)
           .toList();
     } catch (e, st) {
       throw ErrorMapper.map(e, st);

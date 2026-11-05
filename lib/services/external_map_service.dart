@@ -5,26 +5,62 @@ final externalMapServiceProvider = Provider<ExternalMapService>((ref) {
   return const ExternalMapService();
 });
 
-/// Layanan untuk membuka koordinat pembangkit di Google Maps resmi atau tautan sumber
-/// eksternal menggunakan `url_launcher` tanpa memerlukan Google Maps API key.
+/// Layanan untuk membuka titik koordinat maupun pencarian nama pembangkit di
+/// Google Maps resmi atau tautan sumber eksternal menggunakan `url_launcher`
+/// tanpa memerlukan Google Maps API key.
 class ExternalMapService {
   const ExternalMapService();
 
-  /// Membuka koordinat `(latitude, longitude)` di Google Maps.
-  /// Mengembalikan `true` jika berhasil dibuka, atau `false` jika gagal.
+  /// Membuka titik koordinat (`query=lat,lng`) di Google Maps.
+  Future<bool> openCoordinatesInGoogleMaps({
+    required double latitude,
+    required double longitude,
+  }) async {
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
+    );
+    return _launchUri(uri);
+  }
+
+  /// Mencari pembangkit di Google Maps dengan `query = nama pembangkit + kota + provinsi`.
+  Future<bool> searchPlaceInGoogleMaps({
+    required String name,
+    String? city,
+    required String province,
+  }) async {
+    final parts = <String>[
+      name.trim(),
+      if (city != null && city.trim().isNotEmpty) city.trim(),
+      province.trim(),
+    ].where((s) => s.isNotEmpty).toList();
+
+    final query = Uri.encodeQueryComponent(parts.join(' '));
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$query',
+    );
+    return _launchUri(uri);
+  }
+
+  /// Kompatibilitas pemanggil umum untuk membuka titik koordinat di Google Maps.
   Future<bool> openInGoogleMaps({
     required double latitude,
     required double longitude,
     String? label,
   }) async {
-    final query = label != null && label.trim().isNotEmpty
-        ? '$latitude,$longitude (${Uri.encodeComponent(label.trim())})'
-        : '$latitude,$longitude';
-
-    final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=$query',
+    return openCoordinatesInGoogleMaps(
+      latitude: latitude,
+      longitude: longitude,
     );
+  }
 
+  /// Membuka URL sumber referensi (`source_url`) di browser eksternal.
+  Future<bool> openExternalUrl(String urlString) async {
+    final uri = Uri.tryParse(urlString.trim());
+    if (uri == null) return false;
+    return _launchUri(uri);
+  }
+
+  Future<bool> _launchUri(Uri uri) async {
     try {
       final launched = await launchUrl(
         uri,
@@ -40,16 +76,4 @@ class ExternalMapService {
       return false;
     }
   }
-
-  /// Membuka URL sumber referensi (`source_url`) di browser eksternal.
-  Future<bool> openExternalUrl(String urlString) async {
-    final uri = Uri.tryParse(urlString.trim());
-    if (uri == null) return false;
-    try {
-      return await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      return false;
-    }
-  }
 }
-

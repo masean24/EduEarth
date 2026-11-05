@@ -12,6 +12,7 @@ class ScreenHeaderAction extends StatelessWidget {
     required this.onTap,
     this.iconColor = AppColors.forestGreen,
     this.backgroundColor = AppColors.surfaceWhite,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
@@ -19,27 +20,57 @@ class ScreenHeaderAction extends StatelessWidget {
   final VoidCallback? onTap;
   final Color iconColor;
   final Color backgroundColor;
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: Material(
-        color: backgroundColor,
-        shape: const CircleBorder(),
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.divider),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Material(
+            color: backgroundColor,
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: onTap,
+              customBorder: const CircleBorder(),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
             ),
-            child: Icon(icon, color: iconColor, size: 20),
           ),
-        ),
+          if (badgeCount > 0)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                decoration: BoxDecoration(
+                  color: AppColors.freshGreen,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: AppColors.surfaceWhite, width: 1.5),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  badgeCount > 9 ? '9+' : '$badgeCount',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.surfaceWhite,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 10,
+                    height: 1.1,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
