@@ -9,6 +9,29 @@ import '../../../services/supabase_service.dart';
 class AchievementRepository {
   const AchievementRepository();
 
+  /// Antrian sementara untuk menampung judul badge yang baru saja diberikan oleh
+  /// server saat `getAchievementsWithStatus()` atau `evaluateAchievements()` dipanggil,
+  /// agar dialog animasi perayaan tidak pernah terlewat oleh UI.
+  static final List<String> _pendingCelebrationTitles = <String>[];
+
+  /// Mengambil dan mengosongkan daftar judul badge baru yang belum ditampilkan
+  /// pada dialog perayaan.
+  List<String> consumePendingCelebrations() {
+    if (_pendingCelebrationTitles.isEmpty) return const <String>[];
+    final copy = List<String>.from(_pendingCelebrationTitles);
+    _pendingCelebrationTitles.clear();
+    return copy;
+  }
+
+  void _recordNewlyAwarded(List<String> titles) {
+    for (final title in titles) {
+      if (title.trim().isNotEmpty &&
+          !_pendingCelebrationTitles.contains(title)) {
+        _pendingCelebrationTitles.add(title);
+      }
+    }
+  }
+
   Future<List<Achievement>> getAchievementsWithStatus() async {
     if (!AppConfig.isSupabaseConfigured) {
       return DemoData.achievements;
@@ -20,7 +43,11 @@ class AchievementRepository {
 
       // Evaluasi otomatis di server bila pengguna sedang login
       if (user != null) {
-        await client.rpc('check_and_award_achievements');
+        final rpcRes = await client.rpc('check_and_award_achievements');
+        if (rpcRes is Map<String, dynamic>) {
+          final awardResult = AchievementAwardResult.fromJson(rpcRes);
+          _recordNewlyAwarded(awardResult.newlyAwardedTitles);
+        }
       }
 
       final rows = await client
@@ -85,7 +112,13 @@ class AchievementRepository {
         'check_and_award_achievements',
       );
       if (response is Map<String, dynamic>) {
-        return AchievementAwardResult.fromJson(response);
+        final parsed = AchievementAwardResult.fromJson(response);
+        _recordNewlyAwarded(parsed.newlyAwardedTitles);
+        final allNew = consumePendingCelebrations();
+        return AchievementAwardResult(
+          newlyAwardedTitles: allNew,
+          totalUnlocked: parsed.totalUnlocked,
+        );
       }
       return const AchievementAwardResult(
         newlyAwardedTitles: <String>[],
@@ -96,4 +129,3 @@ class AchievementRepository {
     }
   }
 }
-

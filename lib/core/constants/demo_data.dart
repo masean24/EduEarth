@@ -449,43 +449,103 @@ class DemoData {
     ),
     Achievement(
       id: 'demo-ach-3',
+      code: 'library_guardian',
+      title: 'Kolektor Pustaka Hijau',
+      description:
+          'Menyimpan minimal 5 materi pembelajaran energi terbarukan di Daftar Tersimpan.',
+      icon: 'auto_stories_rounded',
+      points: 35,
+      sortOrder: 3,
+    ),
+    Achievement(
+      id: 'demo-ach-4',
       code: 'plant_collector',
       title: 'Pemeta Nusantara',
       description:
           'Menyimpan minimal 2 lokasi pembangkit energi terbarukan di Indonesia.',
       icon: 'map_rounded',
       points: 20,
-      sortOrder: 3,
+      sortOrder: 4,
     ),
     Achievement(
-      id: 'demo-ach-4',
+      id: 'demo-ach-5',
+      code: 'grid_explorer',
+      title: 'Penjelajah Jaringan EBT',
+      description:
+          'Menyimpan minimal 5 lokasi pembangkit energi terbarukan dari peta Nusantara.',
+      icon: 'explore_rounded',
+      points: 35,
+      sortOrder: 5,
+    ),
+    Achievement(
+      id: 'demo-ach-6',
+      code: 'all_rounder_saver',
+      title: 'Kolektor Seimbang',
+      description:
+          'Menyimpan setidaknya 1 materi pembelajaran sekaligus 1 lokasi pembangkit.',
+      icon: 'stars_rounded',
+      points: 25,
+      sortOrder: 6,
+    ),
+    Achievement(
+      id: 'demo-ach-7',
       code: 'first_quiz',
       title: 'Langkah Pertama Kuis',
       description:
           'Menyelesaikan percobaan kuis energi terbarukan pertama hingga tuntas.',
       icon: 'quiz_rounded',
       points: 15,
-      sortOrder: 4,
+      sortOrder: 7,
     ),
     Achievement(
-      id: 'demo-ach-5',
+      id: 'demo-ach-8',
+      code: 'quiz_enthusiast',
+      title: 'Pejuang Kuis Tangguh',
+      description:
+          'Menyelesaikan minimal 3 percobaan kuis evaluasi di EduEarth.',
+      icon: 'bolt_rounded',
+      points: 30,
+      sortOrder: 8,
+    ),
+    Achievement(
+      id: 'demo-ach-9',
+      code: 'multi_quiz_explorer',
+      title: 'Penakluk Lintas Topik',
+      description:
+          'Menyelesaikan minimal 3 topik kuis yang berbeda di EduEarth.',
+      icon: 'military_tech_rounded',
+      points: 40,
+      sortOrder: 9,
+    ),
+    Achievement(
+      id: 'demo-ach-10',
       code: 'quiz_master',
       title: 'Juara Energi Terbarukan',
       description:
           'Meraih skor minimal 80 pada salah satu kuis evaluasi EduEarth.',
       icon: 'workspace_premium_rounded',
       points: 30,
-      sortOrder: 5,
+      sortOrder: 10,
     ),
     Achievement(
-      id: 'demo-ach-6',
+      id: 'demo-ach-11',
+      code: 'consistent_scholar',
+      title: 'Cendekiawan Konsisten',
+      description:
+          'Meraih skor tinggi (minimal 80) sebanyak 3 kali atau lebih pada kuis EduEarth.',
+      icon: 'school_rounded',
+      points: 45,
+      sortOrder: 11,
+    ),
+    Achievement(
+      id: 'demo-ach-12',
       code: 'perfect_score',
-      title: 'Skor Sempurna 100',
+      title: 'Master Skor Sempurna 100',
       description:
           'Menjawab seluruh pertanyaan dengan benar (skor 100) pada kuis EduEarth.',
       icon: 'emoji_events_rounded',
-      points: 50,
-      sortOrder: 6,
+      points: 60,
+      sortOrder: 12,
     ),
   ];
 

@@ -409,15 +409,37 @@ class HomeDashboardPage extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       if (allPlants.isNotEmpty) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         Text(
-                          '$catOperating/${catPlants.length} titik',
+                          '${catPlants.length} lokasi',
                           style: AppTextStyles.caption.copyWith(
-                            color: AppColors.textMuted,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
                           ),
                           textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 3),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.mintGreen.withValues(alpha: 0.75),
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.pillRadius,
+                            ),
+                          ),
+                          child: Text(
+                            '$catOperating aktif',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.forestGreen,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ],
                     ],
@@ -432,47 +454,68 @@ class HomeDashboardPage extends ConsumerWidget {
               child: Divider(height: 1),
             ),
             Wrap(
-              spacing: 12,
+              spacing: 10,
               runSpacing: 6,
               alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
-                  'Total ${allPlants.length} pembangkit:',
+                  'Total ${allPlants.length} lokasi:',
                   style: AppTextStyles.caption.copyWith(
                     color: AppColors.forestGreen,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                     fontSize: 11.5,
                   ),
                 ),
-                Text(
-                  'Beroperasi $opCount',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.forestGreen,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11.5,
-                  ),
+                _buildStatusLegendDot(
+                  color: AppColors.freshGreen,
+                  label: '$opCount Aktif',
+                  textColor: AppColors.forestGreen,
                 ),
-                Text(
-                  '• Konstruksi $conCount',
-                  style: AppTextStyles.caption.copyWith(
-                    color: const Color(0xFFB45309),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11.5,
-                  ),
+                _buildStatusLegendDot(
+                  color: const Color(0xFFD97706),
+                  label: '$conCount Konstruksi',
+                  textColor: const Color(0xFFB45309),
                 ),
-                Text(
-                  '• Rencana $planCount',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11.5,
-                  ),
+                _buildStatusLegendDot(
+                  color: const Color(0xFF94A3B8),
+                  label: '$planCount Rencana',
+                  textColor: AppColors.textSecondary,
                 ),
               ],
             ),
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildStatusLegendDot({
+    required Color color,
+    required String label,
+    required Color textColor,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: AppTextStyles.caption.copyWith(
+            color: textColor,
+            fontWeight: FontWeight.w600,
+            fontSize: 11.5,
+          ),
+        ),
+      ],
     );
   }
 

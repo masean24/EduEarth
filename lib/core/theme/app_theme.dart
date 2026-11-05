@@ -68,10 +68,10 @@ class AppTheme {
     );
   }
 
-  // Konstanta dimensi & margin Bottom Navigation Glass
-  static const double bottomNavHeight = 68.0;
+  // Konstanta dimensi & margin Bottom Navigation Glass (dengan tombol Home tengah menonjol proporsional)
+  static const double bottomNavHeight = 78.0;
   static const double bottomNavHorizontalMargin = 16.0;
-  static const double bottomNavBottomMargin = 12.0;
+  static const double bottomNavBottomMargin = 10.0;
 
   /// Jarak aman bawah untuk seluruh layar yang discroll di dalam shell 5 tab
   /// (`bottomNavHeight` + `bottomNavBottomMargin` + ruang ekstra 28 dp).

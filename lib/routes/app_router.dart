@@ -268,8 +268,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-/// Kerangka navigasi bawah 5 tab menggunakan `GlassBottomNav` dengan satu
-/// indikator lembut (`mintGreen` pill di belakang ikon + label tab aktif).
+/// Kerangka navigasi bawah 5 tab menggunakan `GlassBottomNav` dengan transisi
+/// halus (fade + slide ringan) saat berpindah antar-tab utama.
 class _MainShellScaffold extends StatelessWidget {
   const _MainShellScaffold({required this.navigationShell});
 
@@ -279,7 +279,22 @@ class _MainShellScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      body: navigationShell,
+      body: TweenAnimationBuilder<double>(
+        key: ValueKey<int>(navigationShell.currentIndex),
+        tween: Tween<double>(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        builder: (context, value, child) {
+          return Opacity(
+            opacity: 0.85 + (0.15 * value),
+            child: Transform.translate(
+              offset: Offset(0, (1 - value) * 8),
+              child: child,
+            ),
+          );
+        },
+        child: navigationShell,
+      ),
       bottomNavigationBar: GlassBottomNav(
         currentIndex: navigationShell.currentIndex,
         onTap: (index) {

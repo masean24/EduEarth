@@ -3,7 +3,7 @@
 > Agent: kerjakan **satu fase sekali**, urut. Centang item yang selesai dan terverifikasi.
 > Jangan mulai fase berikutnya sebelum "Kriteria selesai" fase saat ini terpenuhi dan pemilik menyetujui.
 
-**Status saat ini:** Fase 6 sedang berjalan — Fitur Lanjutan dan Rilis (Fase 0–5 & Polish UI #1–#2 selesai)
+**Status saat ini:** Fase 0–6 selesai — dataset 128 pembangkit nyata diimpor dan dibekukan, APK dibuild via GitHub Actions dan diuji di perangkat Android (proyek UTS, tanpa publikasi Play Store).
 
 ---
 
@@ -74,8 +74,8 @@
 - [x] Notification Center (butuh persetujuan tabel `notifications`)
 - [x] Energy Comparison (dari `energy_categories.comparison`)
 - [x] Optimasi performa (profiling, gambar, blur)
-- [ ] Uji di perangkat Android menengah dan iOS
-- [x] Ikon app, splash native, versi, build rilis
+- [x] Uji di perangkat Android (iOS tidak diuji — proyek UTS, hanya target Android)
+- [x] Ikon app, versi, dan build APK via GitHub Actions (signing debug; tanpa publikasi Play Store — proyek UTS)
 
 ---
 
@@ -88,3 +88,4 @@
 - **2026-11-03 (Fase 5):** UX riwayat kuis di Quiz Dashboard, halaman Profile (`user_profiles`), My Learning, Settings (toggle persisten "Kurangi efek glass"), About EduEarth, dan Global Search (sanitasi PostgREST + escape wildcard + debounce 350 ms) selesai dan terverifikasi.
 - **2026-11-03 (Polish UI #1 & #2):** Penyempurnaan visual berbasis `docs/design/moodboard.png` (`GlassBottomNav`, `ScreenHeader`, token kartu/chip, konsistensi label Bahasa Indonesia, kolom `is_draft`, redesain Splash/Onboarding/Login/Register, serta ekstraksi 11 aset HD `assets/images/`) selesai dan terverifikasi.
 - **2026-11-03 (Fase 6 — Bagian 1):** Migrasi `achievements`, `user_achievements`, RPC `check_and_award_achievements`, pengisian atribut JSONB `energy_categories.comparison`, halaman `AchievementsPage` & `EnergyComparisonPage`, serta optimasi performa blur/decoding gambar selesai dan terverifikasi.
+- **2026-11-05 (Rilis v1.2.0+2):** Kurasi 8 modul materi final + 5 kuis 30 soal, ekspansi 12 pencapaian bertingkat + pop-up animasi `showAchievementUnlockDialog`, penyegaran UI/UX halaman Profil (Hero Identity Card, Etalase Lencana, peringkat penjelajah), dan pembaruan versi aplikasi ke `1.2.0+2`.

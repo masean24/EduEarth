@@ -11,20 +11,18 @@ import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/secondary_button.dart';
+import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../models/quiz.dart';
 import '../../../../models/quiz_question.dart';
 import '../../../../routes/route_names.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/quiz_providers.dart';
 
-/// Halaman Pengerjaan Kuis (Quiz Gameplay) sesuai gaya `docs/design/moodboard.png`.
-///
-/// Keamanan & Aturan:
-/// - Wajib login.
-/// - Menampilkan progres soal (`Quiz [===] 3/10`), pilihan jawaban bergaya moodboard,
-///   dan timer opsional bila `quiz.timeLimitSeconds != null`.
-/// - TIDAK menampilkan umpan balik benar/salah sebelum submit; penilaian dilakukan
-///   sepenuhnya di server saat submit melalui RPC `submit_quiz_attempt`.
+/// Halaman Pengerjaan Kuis (Quiz Gameplay) yang interaktif & modern:
+/// - Wajib login & penilaian tetap dilakukan 100% di server via RPC `submit_quiz_attempt`.
+/// - Dilengkapi strip navigasi nomor soal (`1..N`) yang bisa diklik langsung.
+/// - Sapaan penyemangat dinamis dari maskot Eco sesuai progres pengerjaan.
+/// - Animasi pergantian soal (`AnimatedSwitcher`) dan badge pilihan `A/B/C/D`.
 class QuizGameplayPage extends ConsumerStatefulWidget {
   const QuizGameplayPage({
     super.key,
@@ -152,6 +150,23 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
     }
   }
 
+  String _ecoEncouragementText({
+    required int answeredCount,
+    required int totalQuestions,
+    required int currentIndex,
+  }) {
+    if (answeredCount == totalQuestions && totalQuestions > 0) {
+      return 'Semua $totalQuestions soal sudah terjawab! Siap kirim jawabanmu? 🏆';
+    }
+    if (currentIndex == 0 && answeredCount == 0) {
+      return 'Soal pembuka! Baca dengan teliti dan pilih jawaban terbaikmu 🌱';
+    }
+    if (answeredCount >= (totalQuestions / 2).ceil()) {
+      return 'Keren! $answeredCount dari $totalQuestions soal sudah terjawab, sedikit lagi! ⚡';
+    }
+    return 'Terjawab $answeredCount dari $totalQuestions soal • Kamu pasti bisa! 🌿';
+  }
+
   @override
   Widget build(BuildContext context) {
     final isAuthenticated = ref.watch(isAuthenticatedProvider);
@@ -228,48 +243,183 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
                   final selectedOptionId =
                       _selectedAnswers[currentQuestion.id];
                   final isLastQuestion = safeIndex == questions.length - 1;
+                  final answeredCount = questions
+                      .where((q) => _selectedAnswers.containsKey(q.id))
+                      .length;
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildMoodboardHeader(
+                        quizTitle: quiz.title,
                         currentIndex: safeIndex,
                         totalQuestions: questions.length,
+                        questions: questions,
                       ),
                       Expanded(
                         child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                          padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Text(
-                                currentQuestion.question,
-                                style: AppTextStyles.display.copyWith(
-                                  fontSize: 21,
-                                  height: 1.35,
+                              // Banner motivasi maskot Eco
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.mintGreen.withValues(
+                                    alpha: 0.65,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: AppColors.sageGreen,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    SoftImagePlaceholder(
+                                      width: 38,
+                                      height: 38,
+                                      borderRadius: 19,
+                                      assetPath:
+                                          answeredCount == questions.length
+                                              ? 'assets/images/mascot/eco_congrats.png'
+                                              : 'assets/images/mascot/eco_happy.png',
+                                      backgroundColor: AppColors.surfaceWhite,
+                                      fallbackIcon: Icons.eco_rounded,
+                                      iconColor: AppColors.forestGreen,
+                                      iconSize: 20,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        _ecoEncouragementText(
+                                          answeredCount: answeredCount,
+                                          totalQuestions: questions.length,
+                                          currentIndex: safeIndex,
+                                        ),
+                                        style: AppTextStyles.caption.copyWith(
+                                          color: AppColors.forestGreen,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 20),
-                              ...currentQuestion.options.map((option) {
-                                final isSelected =
-                                    selectedOptionId == option.id;
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: _OptionTile(
-                                    option: option,
-                                    isSelected: isSelected,
-                                    onTap: _isSubmitting
-                                        ? null
-                                        : () {
-                                            setState(() {
-                                              _selectedAnswers[
-                                                  currentQuestion.id] =
-                                                  option.id;
-                                            });
-                                          },
-                                  ),
-                                );
-                              }),
+                              const SizedBox(height: 16),
+
+                              // Kartu Pertanyaan & Opsi dengan animasi pergantian halus
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 240),
+                                transitionBuilder: (child, animation) {
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: SlideTransition(
+                                      position: Tween<Offset>(
+                                        begin: const Offset(0.03, 0),
+                                        end: Offset.zero,
+                                      ).animate(animation),
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: Column(
+                                  key: ValueKey<String>(currentQuestion.id),
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(18),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surfaceWhite,
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: AppColors.divider,
+                                        ),
+                                        boxShadow: AppTheme.softCardShadow,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.mintGreen,
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    AppTheme.pillRadius,
+                                                  ),
+                                            ),
+                                            child: Text(
+                                              'Pertanyaan ${safeIndex + 1} dari ${questions.length}',
+                                              style: AppTextStyles.caption
+                                                  .copyWith(
+                                                    color:
+                                                        AppColors.forestGreen,
+                                                    fontWeight: FontWeight.w800,
+                                                    fontSize: 11,
+                                                  ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Text(
+                                            currentQuestion.question,
+                                            style: AppTextStyles.display
+                                                .copyWith(
+                                                  fontSize: 19.5,
+                                                  height: 1.35,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ...List.generate(
+                                      currentQuestion.options.length,
+                                      (optIndex) {
+                                        final option =
+                                            currentQuestion.options[optIndex];
+                                        final isSelected =
+                                            selectedOptionId == option.id;
+                                        final badgeLetter = option.id
+                                            .trim()
+                                            .toUpperCase();
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 12,
+                                          ),
+                                          child: _OptionTile(
+                                            badgeLetter: badgeLetter.isEmpty
+                                                ? String.fromCharCode(
+                                                    65 + optIndex,
+                                                  )
+                                                : badgeLetter,
+                                            option: option,
+                                            isSelected: isSelected,
+                                            onTap: _isSubmitting
+                                                ? null
+                                                : () {
+                                                    setState(() {
+                                                      _selectedAnswers[
+                                                          currentQuestion.id] =
+                                                          option.id;
+                                                    });
+                                                  },
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -290,13 +440,19 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
   }
 
   Widget _buildMoodboardHeader({
+    required String quizTitle,
     required int currentIndex,
     required int totalQuestions,
+    required List<QuizQuestion> questions,
   }) {
     final progress = (currentIndex + 1) / totalQuestions;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 20, 8),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 20, 10),
+      decoration: const BoxDecoration(
+        color: AppColors.surfaceWhite,
+        border: Border(bottom: BorderSide(color: AppColors.divider)),
+      ),
       child: Column(
         children: [
           Row(
@@ -315,74 +471,129 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
                   }
                 },
               ),
-              Text(
-                'Quiz',
-                style: AppTextStyles.subtitle.copyWith(fontSize: 17),
-              ),
-              const SizedBox(width: 14),
               Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 8,
-                    backgroundColor: AppColors.divider,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.freshGreen,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Text(
-                '${currentIndex + 1}/$totalQuestions',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          if (_remainingSeconds != null) ...[
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: (_remainingSeconds ?? 0) <= 30
-                      ? AppColors.errorLight
-                      : AppColors.mintGreen,
-                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.timer_outlined,
-                      size: 14,
-                      color: (_remainingSeconds ?? 0) <= 30
-                          ? AppColors.errorRed
-                          : AppColors.forestGreen,
-                    ),
-                    const SizedBox(width: 4),
                     Text(
-                      _formatTime(_remainingSeconds!),
-                      style: AppTextStyles.caption.copyWith(
-                        color: (_remainingSeconds ?? 0) <= 30
-                            ? AppColors.errorRed
-                            : AppColors.forestGreen,
-                        fontWeight: FontWeight.w700,
+                      quizTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.subtitle.copyWith(fontSize: 15),
+                    ),
+                    const SizedBox(height: 5),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 7,
+                        backgroundColor: AppColors.offWhite,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.freshGreen,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 12),
+              if (_remainingSeconds != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: (_remainingSeconds ?? 0) <= 30
+                        ? AppColors.errorLight
+                        : AppColors.mintGreen,
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.timer_outlined,
+                        size: 14,
+                        color: (_remainingSeconds ?? 0) <= 30
+                            ? AppColors.errorRed
+                            : AppColors.forestGreen,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatTime(_remainingSeconds!),
+                        style: AppTextStyles.caption.copyWith(
+                          color: (_remainingSeconds ?? 0) <= 30
+                              ? AppColors.errorRed
+                              : AppColors.forestGreen,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Text(
+                  '${currentIndex + 1}/$totalQuestions',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.forestGreen,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Strip nomor soal interaktif (bisa lompat langsung ke soal mana saja)
+          SizedBox(
+            height: 32,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              itemCount: questions.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 6),
+              itemBuilder: (context, idx) {
+                final q = questions[idx];
+                final isCurrent = idx == currentIndex;
+                final isAnswered = _selectedAnswers.containsKey(q.id);
+
+                return GestureDetector(
+                  onTap: _isSubmitting
+                      ? null
+                      : () => setState(() => _currentQuestionIndex = idx),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 34,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isCurrent
+                          ? AppColors.forestGreen
+                          : isAnswered
+                              ? AppColors.mintGreen
+                              : AppColors.offWhite,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isCurrent
+                            ? AppColors.forestGreen
+                            : isAnswered
+                                ? AppColors.freshGreen
+                                : AppColors.divider,
+                      ),
+                    ),
+                    child: Text(
+                      '${idx + 1}',
+                      style: AppTextStyles.caption.copyWith(
+                        color: isCurrent
+                            ? AppColors.surfaceWhite
+                            : AppColors.forestGreen,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -394,6 +605,10 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
   }) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+      decoration: const BoxDecoration(
+        color: AppColors.surfaceWhite,
+        border: Border(top: BorderSide(color: AppColors.divider)),
+      ),
       child: Row(
         children: [
           if (safeIndex > 0) ...[
@@ -416,7 +631,9 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
               height: 52,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.forestGreen,
+                  backgroundColor: isLastQuestion
+                      ? AppColors.freshGreen
+                      : AppColors.forestGreen,
                   foregroundColor: AppColors.surfaceWhite,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppTheme.pillRadius),
@@ -448,11 +665,18 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            isLastQuestion ? 'Kirim Jawaban' : 'Lanjut',
+                            isLastQuestion
+                                ? 'Kirim & Lihat Skor'
+                                : 'Soal Berikutnya',
                             style: AppTextStyles.button,
                           ),
                           const SizedBox(width: 8),
-                          const Icon(Icons.arrow_forward_rounded, size: 18),
+                          Icon(
+                            isLastQuestion
+                                ? Icons.rocket_launch_rounded
+                                : Icons.arrow_forward_rounded,
+                            size: 18,
+                          ),
                         ],
                       ),
               ),
@@ -472,11 +696,13 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
 
 class _OptionTile extends StatelessWidget {
   const _OptionTile({
+    required this.badgeLetter,
     required this.option,
     required this.isSelected,
     required this.onTap,
   });
 
+  final String badgeLetter;
   final QuizOption option;
   final bool isSelected;
   final VoidCallback? onTap;
@@ -489,8 +715,10 @@ class _OptionTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
@@ -500,25 +728,37 @@ class _OptionTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              if (isSelected)
-                const Icon(
-                  Icons.check_circle_rounded,
-                  color: AppColors.freshGreen,
-                  size: 26,
-                )
-              else
-                Container(
-                  width: 24,
-                  height: 24,
+              AnimatedScale(
+                scale: isSelected ? 1.06 : 1.0,
+                duration: const Duration(milliseconds: 180),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: AppColors.offWhite,
+                    color: isSelected
+                        ? AppColors.forestGreen
+                        : AppColors.offWhite,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppColors.divider,
-                      width: 2,
+                      color: isSelected
+                          ? AppColors.forestGreen
+                          : AppColors.sageGreen,
+                      width: 1.4,
+                    ),
+                  ),
+                  child: Text(
+                    badgeLetter,
+                    style: AppTextStyles.caption.copyWith(
+                      color: isSelected
+                          ? AppColors.surfaceWhite
+                          : AppColors.forestGreen,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
                     ),
                   ),
                 ),
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
@@ -532,18 +772,10 @@ class _OptionTile extends StatelessWidget {
               ),
               if (isSelected) ...[
                 const SizedBox(width: 8),
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: const BoxDecoration(
-                    color: AppColors.freshGreen,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.chevron_right_rounded,
-                    size: 16,
-                    color: AppColors.surfaceWhite,
-                  ),
+                const Icon(
+                  Icons.check_circle_rounded,
+                  size: 22,
+                  color: AppColors.freshGreen,
                 ),
               ],
             ],

@@ -9,7 +9,6 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/primary_button.dart';
-import '../../../../core/widgets/common/secondary_button.dart';
 import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../routes/route_names.dart';
 import '../../../../services/supabase_service.dart';
@@ -204,7 +203,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                   ],
                                   Text(
                                     'Nama Tampilan',
-                                    style: AppTextStyles.bodyMedium,
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: AppColors.forestGreen,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                   const SizedBox(height: 8),
                                   TextFormField(
@@ -222,7 +224,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                   const SizedBox(height: 14),
                                   Text(
                                     'Alamat Email',
-                                    style: AppTextStyles.bodyMedium,
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: AppColors.forestGreen,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                   const SizedBox(height: 8),
                                   TextFormField(
@@ -239,7 +244,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                   const SizedBox(height: 14),
                                   Text(
                                     'Kata Sandi',
-                                    style: AppTextStyles.bodyMedium,
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: AppColors.forestGreen,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                   const SizedBox(height: 8),
                                   TextFormField(
@@ -278,15 +286,33 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                     isLoading: authAsync.isLoading,
                                     onPressed: _submitRegister,
                                   ),
-                                  const SizedBox(height: 10),
-                                  SecondaryButton(
-                                    label: 'Sudah Punya Akun? Masuk',
-                                    icon: Icons.login_rounded,
-                                    onPressed: authAsync.isLoading
-                                        ? null
-                                        : () => context.go(
-                                              RouteNames.loginPath,
-                                            ),
+                                  const SizedBox(height: 18),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'Sudah punya akun? ',
+                                        style: AppTextStyles.body.copyWith(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: authAsync.isLoading
+                                            ? null
+                                            : () => context.go(
+                                                  RouteNames.loginPath,
+                                                ),
+                                        child: Text(
+                                          'Masuk di sini',
+                                          style: AppTextStyles.body.copyWith(
+                                            color: AppColors.forestGreen,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),

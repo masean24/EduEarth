@@ -9,7 +9,6 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/primary_button.dart';
-import '../../../../core/widgets/common/secondary_button.dart';
 import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../routes/route_names.dart';
 import '../../../../services/supabase_service.dart';
@@ -33,6 +32,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   String? _errorMessage;
+  String? _infoMessage;
 
   @override
   void dispose() {
@@ -42,7 +42,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Future<void> _submitLogin() async {
-    setState(() => _errorMessage = null);
+    setState(() {
+      _errorMessage = null;
+      _infoMessage = null;
+    });
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final success = await ref.read(authControllerProvider.notifier).signIn(
@@ -58,6 +61,40 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       if (authState.hasError) {
         setState(() => _errorMessage = authState.error.toString());
       }
+    }
+  }
+
+  Future<void> _handleForgotPassword() async {
+    final emailError = AppValidators.validateEmail(_emailController.text);
+    if (emailError != null) {
+      setState(() {
+        _infoMessage = null;
+        _errorMessage =
+            'Masukkan alamat email Anda terlebih dahulu pada kolom Alamat Email untuk mengatur ulang kata sandi.';
+      });
+      return;
+    }
+
+    setState(() {
+      _errorMessage = null;
+      _infoMessage = null;
+    });
+
+    try {
+      await SupabaseService.client.auth.resetPasswordForEmail(
+        _emailController.text.trim(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _infoMessage =
+            'Tautan atur ulang kata sandi telah dikirim ke ${_emailController.text.trim()}. Silakan periksa kotak masuk Anda.';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage =
+            'Gagal mengirim tautan atur ulang kata sandi. Periksa koneksi atau coba beberapa saat lagi.';
+      });
     }
   }
 
@@ -149,9 +186,48 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                     ),
                                     const SizedBox(height: 16),
                                   ],
+                                  if (_infoMessage != null) ...[
+                                    Container(
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.mintGreen,
+                                        borderRadius: BorderRadius.circular(
+                                          AppTheme.buttonRadius,
+                                        ),
+                                        border: Border.all(
+                                          color: AppColors.freshGreen,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.check_circle_outline_rounded,
+                                            color: AppColors.forestGreen,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              _infoMessage!,
+                                              style: AppTextStyles.caption
+                                                  .copyWith(
+                                                    color:
+                                                        AppColors.forestGreen,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
                                   Text(
                                     'Alamat Email',
-                                    style: AppTextStyles.bodyMedium,
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: AppColors.forestGreen,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                   const SizedBox(height: 8),
                                   TextFormField(
@@ -166,9 +242,32 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  Text(
-                                    'Kata Sandi',
-                                    style: AppTextStyles.bodyMedium,
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Kata Sandi',
+                                        style: AppTextStyles.bodyMedium
+                                            .copyWith(
+                                              color: AppColors.forestGreen,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: authAsync.isLoading
+                                            ? null
+                                            : _handleForgotPassword,
+                                        child: Text(
+                                          'Lupa Kata Sandi?',
+                                          style: AppTextStyles.caption.copyWith(
+                                            color: AppColors.freshGreen,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 8),
                                   TextFormField(
@@ -207,15 +306,33 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                     isLoading: authAsync.isLoading,
                                     onPressed: _submitLogin,
                                   ),
-                                  const SizedBox(height: 12),
-                                  SecondaryButton(
-                                    label: 'Belum Punya Akun? Daftar Sekarang',
-                                    icon: Icons.person_add_alt_1_rounded,
-                                    onPressed: authAsync.isLoading
-                                        ? null
-                                        : () => context.go(
-                                              RouteNames.registerPath,
-                                            ),
+                                  const SizedBox(height: 18),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'Belum punya akun? ',
+                                        style: AppTextStyles.body.copyWith(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: authAsync.isLoading
+                                            ? null
+                                            : () => context.go(
+                                                  RouteNames.registerPath,
+                                                ),
+                                        child: Text(
+                                          'Daftar Sekarang',
+                                          style: AppTextStyles.body.copyWith(
+                                            color: AppColors.forestGreen,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),

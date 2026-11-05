@@ -28,3 +28,11 @@ final unlockedAchievementCountProvider = Provider<int>((ref) {
   return list.where((a) => a.isUnlocked).length;
 });
 
+/// Menghitung total poin eksplorasi dari seluruh badge yang sudah dibuka.
+final unlockedAchievementPointsProvider = Provider<int>((ref) {
+  final list = ref.watch(achievementsListProvider).asData?.value;
+  if (list == null) return 0;
+  return list
+      .where((a) => a.isUnlocked)
+      .fold<int>(0, (sum, item) => sum + item.points);
+});

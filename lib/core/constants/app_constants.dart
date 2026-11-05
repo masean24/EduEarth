@@ -5,6 +5,8 @@ class AppConstants {
   static const String appName = 'EduEarth';
   static const String appTagline = 'Explore Energy, Understand Earth.';
   static const String appPackageName = 'com.eduearth.app';
+  static const String appVersion = '1.2.0';
+  static const String appBuildNumber = '2';
 
   // OpenStreetMap tile & atribusi sesuai kebijakan penggunaan OSM
   static const String osmTileUrl =

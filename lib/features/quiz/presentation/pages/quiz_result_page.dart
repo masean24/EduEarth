@@ -14,14 +14,13 @@ import '../../../../core/widgets/common/secondary_button.dart';
 import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../models/quiz_attempt.dart';
 import '../../../../routes/route_names.dart';
+import '../../../achievement/presentation/providers/achievement_providers.dart';
+import '../../../achievement/presentation/widgets/achievement_unlock_dialog.dart';
 import '../providers/quiz_providers.dart';
 
-/// Halaman Hasil Kuis (Quiz Result) sesuai gaya `docs/design/moodboard.png`.
-///
-/// Menampilkan skor akhir, jumlah benar, serta ulasan jawaban benar/salah +
-/// penjelasan per soal yang dikembalikan oleh RPC `submit_quiz_attempt`
-/// (HANYA setelah submit).
-class QuizResultPage extends ConsumerWidget {
+/// Halaman Hasil Kuis (Quiz Result) dengan animasi penghitung skor melingkar,
+/// gelar apresiasi, serta ulasan jawaban benar/salah + pembahasan ilmiah per soal.
+class QuizResultPage extends ConsumerStatefulWidget {
   const QuizResultPage({
     super.key,
     required this.quizId,
@@ -32,7 +31,40 @@ class QuizResultPage extends ConsumerWidget {
   final QuizSubmissionResult? initialResult;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<QuizResultPage> createState() => _QuizResultPageState();
+}
+
+class _QuizResultPageState extends ConsumerState<QuizResultPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkNewlyUnlockedBadges();
+    });
+  }
+
+  Future<void> _checkNewlyUnlockedBadges() async {
+    try {
+      final award = await ref
+          .read(achievementRepositoryProvider)
+          .evaluateAchievements();
+      ref.invalidate(achievementsListProvider);
+      if (!mounted) return;
+      if (award.newlyAwardedTitles.isNotEmpty) {
+        await showAchievementUnlockDialog(
+          context,
+          badgeTitles: award.newlyAwardedTitles,
+        );
+      }
+    } catch (_) {
+      // Abaikan bila evaluasi latar gagal agar hasil kuis tetap tampil lancar
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final quizId = widget.quizId;
+    final initialResult = widget.initialResult;
     final quizAsync = ref.watch(quizDetailProvider(quizId));
     final storedResult = ref.watch(latestQuizResultProvider)[quizId];
     final result = initialResult ?? storedResult;
@@ -117,87 +149,194 @@ class QuizResultPage extends ConsumerWidget {
     String quizTitle,
     QuizSubmissionResult result,
   ) {
+    final isExcellent = result.score >= 90;
     final isPassed = result.score >= 70;
+    final wrongCount =
+        (result.totalQuestions - result.correctCount).clamp(0, 999);
+
+    final rankTitle = isExcellent
+        ? '🏆 Master Energi Nusantara!'
+        : isPassed
+            ? '🌿 Penjelajah Hijau Andal!'
+            : '🌱 Terus Semangat Belajar!';
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.surfaceWhite,
+            AppColors.mintGreen.withValues(alpha: 0.45),
+          ],
+        ),
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: AppColors.sageGreen),
+        boxShadow: AppTheme.softCardShadow,
       ),
       child: Column(
         children: [
-          SoftImagePlaceholder(
-            width: 88,
-            height: 88,
-            borderRadius: 44,
-            assetPath: isPassed
-                ? 'assets/images/mascot/eco_congrats.png'
-                : 'assets/images/mascot/eco_thinking.png',
-            backgroundColor: isPassed
-                ? const Color(0xFFFEF9C3)
-                : AppColors.mintGreen,
-            fallbackIcon: isPassed
-                ? Icons.emoji_events_rounded
-                : Icons.psychology_alt_rounded,
-            iconColor: isPassed
-                ? const Color(0xFFD97706)
-                : AppColors.forestGreen,
-            iconSize: 44,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SoftImagePlaceholder(
+                width: 82,
+                height: 82,
+                borderRadius: 41,
+                assetPath: isPassed
+                    ? 'assets/images/mascot/eco_congrats.png'
+                    : 'assets/images/mascot/eco_thinking.png',
+                backgroundColor: isPassed
+                    ? const Color(0xFFFEF9C3)
+                    : AppColors.mintGreen,
+                fallbackIcon: isPassed
+                    ? Icons.emoji_events_rounded
+                    : Icons.psychology_alt_rounded,
+                iconColor: isPassed
+                    ? const Color(0xFFD97706)
+                    : AppColors.forestGreen,
+                iconSize: 40,
+              ),
+              const SizedBox(width: 18),
+              // Lingkaran Skor Beranimasi (0 -> Skor Akhir)
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(
+                  begin: 0,
+                  end: result.score.toDouble(),
+                ),
+                duration: const Duration(milliseconds: 900),
+                curve: Curves.easeOutCubic,
+                builder: (context, animatedScore, _) {
+                  final normalized = (animatedScore / 100).clamp(0.0, 1.0);
+                  return SizedBox(
+                    width: 86,
+                    height: 86,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 86,
+                          height: 86,
+                          child: CircularProgressIndicator(
+                            value: normalized,
+                            strokeWidth: 8,
+                            backgroundColor: AppColors.surfaceWhite,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              isPassed
+                                  ? AppColors.freshGreen
+                                  : const Color(0xFFD97706),
+                            ),
+                          ),
+                        ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${animatedScore.round()}',
+                              style: AppTextStyles.display.copyWith(
+                                fontSize: 24,
+                                color: AppColors.forestGreen,
+                                height: 1.0,
+                              ),
+                            ),
+                            Text(
+                              'POIN',
+                              style: AppTextStyles.caption.copyWith(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Text(
-            isPassed ? 'Kerja Bagus!' : 'Terus Semangat Belajar!',
-            style: AppTextStyles.display.copyWith(fontSize: 22),
+            rankTitle,
+            style: AppTextStyles.display.copyWith(fontSize: 20),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
             quizTitle,
             style: AppTextStyles.caption.copyWith(
               color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                  horizontal: 14,
+                  vertical: 7,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.mintGreen,
+                  color: AppColors.surfaceWhite,
                   borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                  border: Border.all(color: AppColors.freshGreen),
                 ),
-                child: Text(
-                  'Skor: ${result.score}',
-                  style: AppTextStyles.subtitle.copyWith(
-                    color: AppColors.forestGreen,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      size: 15,
+                      color: AppColors.freshGreen,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Benar: ${result.correctCount}/${result.totalQuestions}',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.forestGreen,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.offWhite,
-                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-                  border: Border.all(color: AppColors.divider),
-                ),
-                child: Text(
-                  'Benar: ${result.correctCount}/${result.totalQuestions}',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.forestGreen,
-                    fontWeight: FontWeight.w700,
+              if (wrongCount > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceWhite,
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                    border: Border.all(color: AppColors.divider),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.info_outline_rounded,
+                        size: 15,
+                        color: Color(0xFFD97706),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Perlu Ulasan: $wrongCount',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
             ],
           ),
         ],

@@ -167,66 +167,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
               return Column(
                 children: [
-                  // Header bar: Logo EduEarth di kiri + tombol Lewati di kanan
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 10, 16, 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const SoftImagePlaceholder(
-                              width: 34,
-                              height: 34,
-                              borderRadius: 10,
-                              assetPath:
-                                  'assets/images/branding/logo_eduearth.png',
-                              backgroundColor: Colors.transparent,
-                              fallbackIcon: Icons.eco_rounded,
-                              iconColor: AppColors.forestGreen,
-                              iconSize: 22,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'EduEarth',
-                              style: AppTextStyles.subtitle.copyWith(
-                                color: AppColors.forestGreen,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                        TextButton(
-                          onPressed: _isSaving ? null : _finishOnboarding,
-                          style: TextButton.styleFrom(
-                            backgroundColor: AppColors.surfaceWhite.withValues(
-                              alpha: 0.75,
-                            ),
-                            foregroundColor: AppColors.forestGreen,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 6,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppTheme.pillRadius,
-                              ),
-                              side: const BorderSide(color: AppColors.divider),
-                            ),
-                          ),
-                          child: Text(
-                            'Lewati',
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.forestGreen,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  // Header bar rapi & sejajar dengan kartu di bawahnya
+                  _buildTopHeader(),
 
-                  // Area slide 3 halaman
+                  // Area slide 3 halaman (terpusat secara vertikal & simetris)
                   Expanded(
                     child: PageView.builder(
                       controller: _pageController,
@@ -241,9 +185,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                     ),
                   ),
 
-                  // Indikator halaman + tombol aksi bawah
+                  // Indikator halaman + tombol aksi bawah (sejajar margin 22px)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 4, 24, 18),
+                    padding: const EdgeInsets.fromLTRB(22, 8, 22, 20),
                     child: Column(
                       children: [
                         Row(
@@ -268,7 +212,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                             );
                           }),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 18),
                         Row(
                           children: [
                             if (_currentIndex > 0) ...[
@@ -315,58 +259,183 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     );
   }
 
-  Widget _buildSlideCard(_OnboardingSlideData slide) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
-      child: Column(
-        children: [
-          // Kartu showcase utama dengan header lanskap/maskot + pratinjau fitur
-          Container(
-            width: double.infinity,
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceWhite,
-              borderRadius: BorderRadius.circular(26),
-              border: Border.all(
-                color: AppColors.divider,
-                width: AppTheme.cardBorderWidth,
+  Widget _buildTopHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 12, 22, 4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceWhite.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.divider,
+            width: AppTheme.cardBorderWidth,
+          ),
+          boxShadow: AppTheme.softCardShadow,
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: AppColors.mintGreen.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(12),
               ),
-              boxShadow: AppTheme.softCardShadow,
+              child: const SoftImagePlaceholder(
+                width: 32,
+                height: 32,
+                borderRadius: 9,
+                assetPath: 'assets/images/branding/logo_eduearth.png',
+                backgroundColor: Colors.transparent,
+                fallbackIcon: Icons.eco_rounded,
+                iconColor: AppColors.forestGreen,
+                iconSize: 20,
+              ),
             ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'EduEarth',
+                    style: AppTextStyles.subtitle.copyWith(
+                      color: AppColors.forestGreen,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      height: 1.15,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    'Langkah ${_currentIndex + 1} dari ${_slides.length} • Pengenalan',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: _isSaving ? null : _finishOnboarding,
+              style: TextButton.styleFrom(
+                backgroundColor: AppColors.mintGreen.withValues(alpha: 0.65),
+                foregroundColor: AppColors.forestGreen,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 7,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                  side: BorderSide(
+                    color: AppColors.sageGreen.withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Lewati',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.forestGreen,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 11,
+                    color: AppColors.forestGreen,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSlideCard(_OnboardingSlideData slide) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const verticalPadding = 12.0;
+        final minContentHeight =
+            (constraints.maxHeight - (verticalPadding * 2)).clamp(
+              0.0,
+              double.infinity,
+            );
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 22,
+            vertical: verticalPadding,
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: minContentHeight),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildHeroStage(slide),
+                // Kartu showcase utama dengan header lanskap/maskot + pratinjau fitur
+                Container(
+                  width: double.infinity,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceWhite,
+                    borderRadius: BorderRadius.circular(26),
+                    border: Border.all(
+                      color: AppColors.divider,
+                      width: AppTheme.cardBorderWidth,
+                    ),
+                    boxShadow: AppTheme.softCardShadow,
+                  ),
+                  child: Column(
+                    children: [
+                      _buildHeroStage(slide),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                        child: _buildFeaturePreview(slide.stepIndex),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                  child: _buildFeaturePreview(slide.stepIndex),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    slide.title,
+                    style: AppTextStyles.display.copyWith(
+                      fontSize: 21,
+                      height: 1.28,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    slide.description,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                      height: 1.48,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 18),
-          Text(
-            slide.title,
-            style: AppTextStyles.display.copyWith(
-              fontSize: 21,
-              height: 1.25,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              slide.description,
-              style: AppTextStyles.body.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-                height: 1.45,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -475,21 +544,32 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                padding: AppTheme.badgePadding,
+                decoration: AppTheme.badgeDecoration(
+                  backgroundColor: AppColors.surfaceWhite,
+                  borderColor: AppColors.sageGreen.withValues(alpha: 0.6),
                 ),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceWhite.withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-                ),
-                child: Text(
-                  slide.stepIndex == 1 ? '5 Kategori EBT' : 'Evaluasi Server',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.forestGreen,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (slide.stepIndex == 2) ...[
+                      const Icon(
+                        Icons.bolt_rounded,
+                        size: 15,
+                        color: Color(0xFFF59E0B),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    Text(
+                      slide.stepIndex == 1
+                          ? '5 Kategori EBT'
+                          : 'Umpan Balik Instan',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.forestGreen,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

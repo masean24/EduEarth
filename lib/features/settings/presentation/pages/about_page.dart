@@ -58,7 +58,7 @@ class AboutPage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Versi 1.0.0 • Aplikasi Edukasi Energi Terbarukan Indonesia',
+                    'Versi ${AppConstants.appVersion} • Aplikasi Edukasi Energi Terbarukan Indonesia',
                     style: AppTextStyles.caption,
                     textAlign: TextAlign.center,
                   ),

@@ -11,8 +11,10 @@ import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../models/achievement.dart';
 import '../providers/achievement_providers.dart';
+import '../widgets/achievement_unlock_dialog.dart';
 
-/// Halaman Pencapaian & Badge (Achievement) Fase 6 sesuai `docs/design/moodboard.png`.
+/// Halaman Pencapaian & Badge (Achievement) dengan 12 lencana bertingkat
+/// dan dialog animasi perayaan saat lencana dibuka atau diketuk.
 class AchievementsPage extends ConsumerStatefulWidget {
   const AchievementsPage({super.key});
 
@@ -22,6 +24,26 @@ class AchievementsPage extends ConsumerStatefulWidget {
 
 class _AchievementsPageState extends ConsumerState<AchievementsPage> {
   bool _isChecking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkPendingCelebrationOnOpen();
+    });
+  }
+
+  Future<void> _checkPendingCelebrationOnOpen() async {
+    final pending = ref
+        .read(achievementRepositoryProvider)
+        .consumePendingCelebrations();
+    if (pending.isNotEmpty && mounted) {
+      await showAchievementUnlockDialog(
+        context,
+        badgeTitles: pending,
+      );
+    }
+  }
 
   Future<void> _manualEvaluate() async {
     if (_isChecking) return;
@@ -33,13 +55,20 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
       ref.invalidate(achievementsListProvider);
       if (!mounted) return;
 
-      final newlyCount = result.newlyAwardedTitles.length;
-      final message = newlyCount > 0
-          ? 'Selamat! Badge baru terbuka: ${result.newlyAwardedTitles.join(', ')}'
-          : 'Progres pencapaian telah diperbarui (${result.totalUnlocked} badge terbuka).';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      if (result.newlyAwardedTitles.isNotEmpty) {
+        await showAchievementUnlockDialog(
+          context,
+          badgeTitles: result.newlyAwardedTitles,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Progres pencapaian telah diperbarui (${result.totalUnlocked} badge terbuka).',
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -49,24 +78,6 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
       if (mounted) {
         setState(() => _isChecking = false);
       }
-    }
-  }
-
-  static IconData _iconForCode(String iconName) {
-    switch (iconName.toLowerCase().trim()) {
-      case 'bookmark_added_rounded':
-        return Icons.bookmark_added_rounded;
-      case 'menu_book_rounded':
-        return Icons.menu_book_rounded;
-      case 'map_rounded':
-        return Icons.map_rounded;
-      case 'quiz_rounded':
-        return Icons.quiz_rounded;
-      case 'workspace_premium_rounded':
-        return Icons.workspace_premium_rounded;
-      case 'emoji_events_rounded':
-      default:
-        return Icons.emoji_events_rounded;
     }
   }
 
@@ -92,11 +103,12 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
   @override
   Widget build(BuildContext context) {
     final achievementsAsync = ref.watch(achievementsListProvider);
+    final totalPoints = ref.watch(unlockedAchievementPointsProvider);
 
     return Scaffold(
       appBar: ScreenHeaderBar(
         title: 'Pencapaian & Badge',
-        subtitle: 'Lencana eksplorasi energi bersih Anda',
+        subtitle: 'Koleksi 12 lencana eksplorasi energi bersih Anda',
         actions: [
           ScreenHeaderAction(
             tooltip: 'Periksa Progres Pencapaian',
@@ -136,6 +148,9 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
               onRefresh: () async {
                 ref.invalidate(achievementsListProvider);
                 await ref.read(achievementsListProvider.future);
+                if (mounted) {
+                  await _checkPendingCelebrationOnOpen();
+                }
               },
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
@@ -143,6 +158,7 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
                   _buildHeroSummaryCard(
                     unlockedCount: unlockedCount,
                     totalCount: totalCount,
+                    totalPoints: totalPoints,
                     progress: progress,
                   ),
                   const SizedBox(height: 22),
@@ -151,7 +167,7 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
                     children: [
                       Text('Daftar Lencana', style: AppTextStyles.title),
                       Text(
-                        '$unlockedCount dari $totalCount terbuka',
+                        'Ketuk badge terbuka untuk animasi ✨',
                         style: AppTextStyles.caption.copyWith(
                           color: AppColors.forestGreen,
                           fontWeight: FontWeight.w700,
@@ -163,7 +179,7 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
                   ...achievements.map(
                     (item) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: _buildAchievementCard(item),
+                      child: _buildAchievementCard(context, item),
                     ),
                   ),
                 ],
@@ -178,6 +194,7 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
   Widget _buildHeroSummaryCard({
     required int unlockedCount,
     required int totalCount,
+    required int totalPoints,
     required double progress,
   }) {
     return Container(
@@ -217,24 +234,43 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: AppTheme.badgePadding,
-                      decoration: AppTheme.badgeDecoration(
-                        backgroundColor: AppColors.surfaceWhite,
-                        borderColor: AppColors.warmYellow,
-                      ),
-                      child: Text(
-                        'Koleksi Badge Eco 🏆',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.forestGreen,
-                          fontWeight: FontWeight.w800,
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        Container(
+                          padding: AppTheme.badgePadding,
+                          decoration: AppTheme.badgeDecoration(
+                            backgroundColor: AppColors.surfaceWhite,
+                            borderColor: AppColors.warmYellow,
+                          ),
+                          child: Text(
+                            'Koleksi Badge Eco 🏆',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.forestGreen,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                         ),
-                      ),
+                        Container(
+                          padding: AppTheme.badgePadding,
+                          decoration: AppTheme.badgeDecoration(
+                            backgroundColor: AppColors.forestGreen,
+                          ),
+                          child: Text(
+                            '⚡ $totalPoints Poin',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.surfaceWhite,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Text(
                       '$unlockedCount / $totalCount Badge Terbuka',
-                      style: AppTextStyles.display.copyWith(fontSize: 22),
+                      style: AppTextStyles.display.copyWith(fontSize: 21),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -266,128 +302,156 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
     );
   }
 
-  Widget _buildAchievementCard(Achievement item) {
+  Widget _buildAchievementCard(BuildContext context, Achievement item) {
     final isUnlocked = item.isUnlocked;
-    return Container(
-      padding: AppTheme.cardPadding,
-      decoration: AppTheme.cardDecoration(
-        backgroundColor:
-            isUnlocked ? AppColors.surfaceWhite : const Color(0xFFF3F6F3),
-        borderColor: isUnlocked
-            ? AppColors.sageGreen.withValues(alpha: 0.8)
-            : AppColors.divider,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: isUnlocked
-                  ? const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFFFDE047),
-                        Color(0xFFF59E0B),
-                      ],
-                    )
-                  : null,
-              color: isUnlocked ? null : AppColors.divider,
-              border: Border.all(
-                color: isUnlocked
-                    ? const Color(0xFFD97706)
-                    : AppColors.sageGreen.withValues(alpha: 0.4),
-                width: 1.5,
-              ),
-            ),
-            child: Icon(
-              _iconForCode(item.icon),
-              color: isUnlocked ? AppColors.surfaceWhite : AppColors.textMuted,
-              size: 28,
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        onTap: isUnlocked
+            ? () => showAchievementUnlockDialog(
+                  context,
+                  badgeTitles: <String>[item.title],
+                  singleAchievement: item,
+                  isReplay: true,
+                )
+            : null,
+        child: Container(
+          padding: AppTheme.cardPadding,
+          decoration: AppTheme.cardDecoration(
+            backgroundColor:
+                isUnlocked ? AppColors.surfaceWhite : const Color(0xFFF3F6F3),
+            borderColor: isUnlocked
+                ? AppColors.sageGreen.withValues(alpha: 0.85)
+                : AppColors.divider,
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: isUnlocked
+                      ? const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFFFDE047),
+                            Color(0xFFF59E0B),
+                          ],
+                        )
+                      : null,
+                  color: isUnlocked ? null : AppColors.divider,
+                  border: Border.all(
+                    color: isUnlocked
+                        ? const Color(0xFFD97706)
+                        : AppColors.sageGreen.withValues(alpha: 0.4),
+                    width: 1.5,
+                  ),
+                ),
+                child: Icon(
+                  iconForAchievementCode(item.icon),
+                  color: isUnlocked
+                      ? AppColors.surfaceWhite
+                      : AppColors.textMuted,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        item.title,
-                        style: AppTextStyles.subtitle.copyWith(
-                          color: isUnlocked
-                              ? AppColors.forestGreen
-                              : AppColors.textSecondary,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.title,
+                            style: AppTextStyles.subtitle.copyWith(
+                              color: isUnlocked
+                                  ? AppColors.forestGreen
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
                         ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: AppTheme.badgePadding,
+                          decoration: AppTheme.badgeDecoration(
+                            backgroundColor: isUnlocked
+                                ? AppColors.mintGreen
+                                : AppColors.offWhite,
+                            borderColor: isUnlocked
+                                ? AppColors.freshGreen.withValues(alpha: 0.5)
+                                : AppColors.divider,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isUnlocked
+                                    ? Icons.check_circle_rounded
+                                    : Icons.lock_outline_rounded,
+                                size: 12,
+                                color: isUnlocked
+                                    ? AppColors.forestGreen
+                                    : AppColors.textMuted,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isUnlocked
+                                    ? '+${item.points} Poin'
+                                    : '${item.points} Poin',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: isUnlocked
+                                      ? AppColors.forestGreen
+                                      : AppColors.textMuted,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 10.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      item.description,
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 13.5,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: AppTheme.badgePadding,
-                      decoration: AppTheme.badgeDecoration(
-                        backgroundColor: isUnlocked
-                            ? AppColors.mintGreen
-                            : AppColors.offWhite,
-                        borderColor: isUnlocked
-                            ? AppColors.freshGreen.withValues(alpha: 0.5)
-                            : AppColors.divider,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                    if (isUnlocked && item.unlockedAt != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
                         children: [
-                          Icon(
-                            isUnlocked
-                                ? Icons.check_circle_rounded
-                                : Icons.lock_outline_rounded,
-                            size: 12,
-                            color: isUnlocked
-                                ? AppColors.forestGreen
-                                : AppColors.textMuted,
+                          const Icon(
+                            Icons.auto_awesome_rounded,
+                            size: 13,
+                            color: Color(0xFFD97706),
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            isUnlocked ? 'Terbuka' : 'Terkunci',
+                            'Diraih pada ${_formatUnlockedDate(item.unlockedAt!)} • Ketuk lihat animasi',
                             style: AppTextStyles.caption.copyWith(
-                              color: isUnlocked
-                                  ? AppColors.forestGreen
-                                  : AppColors.textMuted,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 10.5,
+                              color: AppColors.forestGreen,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
                             ),
                           ),
                         ],
                       ),
-                    ),
+                    ],
                   ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  item.description,
-                  style: AppTextStyles.body.copyWith(
-                    color: AppColors.textSecondary,
-                    fontSize: 13.5,
-                  ),
-                ),
-                if (isUnlocked && item.unlockedAt != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Diraih pada ${_formatUnlockedDate(item.unlockedAt!)}',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.forestGreen,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11.5,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

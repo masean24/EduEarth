@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +20,8 @@ import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../models/power_plant.dart';
 import '../../../../routes/route_names.dart';
 import '../../../../services/external_map_service.dart';
+import '../../../achievement/presentation/providers/achievement_providers.dart';
+import '../../../achievement/presentation/widgets/achievement_unlock_dialog.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../bookmark/presentation/providers/bookmark_providers.dart';
 import '../providers/plants_providers.dart';
@@ -124,6 +128,20 @@ class PlantDetailPage extends ConsumerWidget {
           ),
         ),
       );
+      if (!currentlyBookmarked) {
+        try {
+          final award = await ref
+              .read(achievementRepositoryProvider)
+              .evaluateAchievements();
+          ref.invalidate(achievementsListProvider);
+          if (context.mounted && award.newlyAwardedTitles.isNotEmpty) {
+            await showAchievementUnlockDialog(
+              context,
+              badgeTitles: award.newlyAwardedTitles,
+            );
+          }
+        } catch (_) {}
+      }
     } else {
       final err = ref.read(bookmarkControllerProvider).error;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -310,6 +328,8 @@ class PlantDetailPage extends ConsumerWidget {
       slug,
       plant.categoryName ?? 'Energi Bersih',
     );
+    final hasNetworkImage =
+        plant.imageUrl != null && plant.imageUrl!.trim().isNotEmpty;
 
     return Container(
       clipBehavior: Clip.antiAlias,
@@ -322,27 +342,35 @@ class PlantDetailPage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            height: 156,
+            height: 174,
             child: Stack(
               fit: StackFit.expand,
               children: [
-                SoftImagePlaceholder(
-                  borderRadius: 0,
-                  networkImageUrl: plant.imageUrl,
-                  assetPath: assetForCategorySlug(slug),
-                  backgroundColor: softBg,
-                  fallbackIcon: iconForCategorySlug(slug),
-                  iconColor: AppColors.forestGreen.withValues(alpha: 0.28),
-                  iconSize: 72,
-                ),
+                if (hasNetworkImage)
+                  SoftImagePlaceholder(
+                    borderRadius: 0,
+                    networkImageUrl: plant.imageUrl,
+                    assetPath: assetForCategorySlug(slug),
+                    backgroundColor: softBg,
+                    fallbackIcon: iconForCategorySlug(slug),
+                    iconColor: AppColors.forestGreen.withValues(alpha: 0.28),
+                    iconSize: 72,
+                  )
+                else
+                  _AnimatedCategorySceneBanner(
+                    categorySlug: slug,
+                    shortCode: plant.categoryShortCode,
+                  ),
                 DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
+                      stops: const [0.0, 0.45, 1.0],
                       colors: [
-                        AppColors.forestGreen.withValues(alpha: 0.05),
-                        AppColors.forestGreen.withValues(alpha: 0.62),
+                        Colors.black.withValues(alpha: 0.08),
+                        Colors.transparent,
+                        AppColors.forestGreen.withValues(alpha: 0.78),
                       ],
                     ),
                   ),
@@ -662,70 +690,13 @@ class PlantDetailPage extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: 14),
             child: Divider(height: 1),
           ),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.mintGreen.withValues(alpha: 0.45),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.sageGreen),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      iconForCategorySlug(slug),
-                      size: 18,
-                      color: AppColors.forestGreen,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Cara Kerja Singkat Energi $shortLabel',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.forestGreen,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  _educationalNoteForCategory(slug),
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.forestGreen,
-                    height: 1.45,
-                  ),
-                ),
-                if (slug.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  GestureDetector(
-                    onTap: () => context.push('/learning/category/$slug'),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Pelajari Materi $shortLabel Selengkapnya',
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.forestGreen,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 14,
-                          color: AppColors.forestGreen,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
+          _InteractiveEnergyFlowSection(
+            categorySlug: slug,
+            shortLabel: shortLabel,
+            summaryNote: _educationalNoteForCategory(slug),
+            onLearnMore: slug.isNotEmpty
+                ? () => context.push('/learning/category/$slug')
+                : null,
           ),
         ],
       ),
@@ -1094,6 +1065,530 @@ class _MetricTile extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Banner visual ilustrasi berlapis dengan animasi halus per kategori energi
+/// ketika `plant.imageUrl` belum tersedia di database.
+class _AnimatedCategorySceneBanner extends StatefulWidget {
+  const _AnimatedCategorySceneBanner({
+    required this.categorySlug,
+    this.shortCode,
+  });
+
+  final String categorySlug;
+  final String? shortCode;
+
+  @override
+  State<_AnimatedCategorySceneBanner> createState() =>
+      _AnimatedCategorySceneBannerState();
+}
+
+class _AnimatedCategorySceneBannerState
+    extends State<_AnimatedCategorySceneBanner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  List<Color> _gradientForSlug(String slug) {
+    switch (slug.toLowerCase().trim()) {
+      case 'solar':
+        return const [
+          Color(0xFF0F5132),
+          Color(0xFF1E7E48),
+          Color(0xFFD97706),
+        ];
+      case 'hydro':
+        return const [
+          Color(0xFF0C4A6E),
+          Color(0xFF0284C7),
+          Color(0xFF15803D),
+        ];
+      case 'wind':
+        return const [
+          Color(0xFF115E59),
+          Color(0xFF0D9488),
+          Color(0xFF22C55E),
+        ];
+      case 'geothermal':
+        return const [
+          Color(0xFF7C2D12),
+          Color(0xFFC2410C),
+          Color(0xFF14532D),
+        ];
+      case 'bioenergy':
+      default:
+        return const [
+          Color(0xFF14532D),
+          Color(0xFF15803D),
+          Color(0xFF4ADE80),
+        ];
+    }
+  }
+
+  IconData _secondarySchematicIcon(String slug) {
+    switch (slug.toLowerCase().trim()) {
+      case 'solar':
+        return Icons.solar_power_rounded;
+      case 'hydro':
+        return Icons.waves_rounded;
+      case 'wind':
+        return Icons.wind_power_rounded;
+      case 'geothermal':
+        return Icons.terrain_rounded;
+      case 'bioenergy':
+      default:
+        return Icons.compost_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final slug = widget.categorySlug.toLowerCase().trim();
+    final colors = _gradientForSlug(slug);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: colors,
+        ),
+      ),
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          final t = _controller.value;
+          final pulse = 0.94 + (0.08 * math.sin(t * 2 * math.pi));
+          final angle = t * 2 * math.pi;
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              // Lingkaran gelombang dekoratif di kanan
+              Positioned(
+                right: -28,
+                top: -18,
+                child: Transform.scale(
+                  scale: pulse,
+                  child: Container(
+                    width: 170,
+                    height: 170,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.08),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.14),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 12,
+                top: 22,
+                child: Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.22),
+                    ),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Cincin putar halus
+                      Transform.rotate(
+                        angle: slug == 'wind' || slug == 'solar'
+                            ? angle
+                            : angle * 0.5,
+                        child: Icon(
+                          slug == 'wind'
+                              ? Icons.cyclone_rounded
+                              : slug == 'solar'
+                                  ? Icons.wb_sunny_outlined
+                                  : Icons.autorenew_rounded,
+                          size: 74,
+                          color: Colors.white.withValues(alpha: 0.22),
+                        ),
+                      ),
+                      Transform.scale(
+                        scale: pulse,
+                        child: Icon(
+                          _secondarySchematicIcon(slug),
+                          size: 40,
+                          color: Colors.white.withValues(alpha: 0.92),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Siluet bukit halus di bagian bawah
+              Positioned(
+                left: -30,
+                right: -30,
+                bottom: -42,
+                child: Container(
+                  height: 76,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.14),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.elliptical(260, 70),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Bagian interaktif 3 tahap alur konversi energi pembangkit.
+class _InteractiveEnergyFlowSection extends StatefulWidget {
+  const _InteractiveEnergyFlowSection({
+    required this.categorySlug,
+    required this.shortLabel,
+    required this.summaryNote,
+    this.onLearnMore,
+  });
+
+  final String categorySlug;
+  final String shortLabel;
+  final String summaryNote;
+  final VoidCallback? onLearnMore;
+
+  @override
+  State<_InteractiveEnergyFlowSection> createState() =>
+      _InteractiveEnergyFlowSectionState();
+}
+
+class _InteractiveEnergyFlowSectionState
+    extends State<_InteractiveEnergyFlowSection> {
+  int _selectedStep = 0;
+
+  List<({String title, IconData icon, String detail})> _stepsForSlug(
+    String slug,
+  ) {
+    switch (slug.toLowerCase().trim()) {
+      case 'solar':
+        return const [
+          (
+            title: '1. Tangkap Sinar',
+            icon: Icons.wb_sunny_rounded,
+            detail:
+                'Panel fotovoltaik menyerap foton radiasi matahari dan membangkitkan arus listrik searah (DC) pada sel semikonduktor silikon.',
+          ),
+          (
+            title: '2. Konversi Inverter',
+            icon: Icons.electrical_services_rounded,
+            detail:
+                'Inverter mengubah arus DC dari rangkaian modul surya menjadi arus bolak-balik (AC) yang sinkron dengan frekuensi jaringan.',
+          ),
+          (
+            title: '3. Saluran Grid',
+            icon: Icons.bolt_rounded,
+            detail:
+                'Tegangan dinaikkan melalui transformator step-up lalu disalurkan ke jaringan listrik PLN untuk rumah dan industri.',
+          ),
+        ];
+      case 'hydro':
+        return const [
+          (
+            title: '1. Aliran Air',
+            icon: Icons.water_drop_rounded,
+            detail:
+                'Air dari waduk atau bendungan dialirkan melalui pipa pesat (penstock) untuk mengubah energi potensial gravitasi menjadi energi kinetik.',
+          ),
+          (
+            title: '2. Putaran Turbin',
+            icon: Icons.settings_suggest_rounded,
+            detail:
+                'Dorongan air bertekanan tinggi memutar sudu turbin air yang terhubung langsung pada poros generator.',
+          ),
+          (
+            title: '3. Induksi Listrik',
+            icon: Icons.bolt_rounded,
+            detail:
+                'Generator mengubah energi mekanik putaran menjadi energi listrik AC ramah lingkungan dan air dikembalikan ke daerah aliran sungai.',
+          ),
+        ];
+      case 'wind':
+        return const [
+          (
+            title: '1. Hembusan Angin',
+            icon: Icons.air_rounded,
+            detail:
+                'Bilah rotor aerodinamis menangkap energi kinetik angin pada ketinggian menara dan mulai berputar mengikuti arah angin.',
+          ),
+          (
+            title: '2. Nacelle & Generator',
+            icon: Icons.wind_power_rounded,
+            detail:
+                'Poros di dalam nacelle memutar generator (baik melalui gearbox maupun direct-drive) untuk menghasilkan energi listrik.',
+          ),
+          (
+            title: '3. Gardu & Jaringan',
+            icon: Icons.bolt_rounded,
+            detail:
+                'Listrik dari tiap menara turbin dikumpulkan di gardu induk pembangkit lalu diinjeksikan ke jaringan transmisi.',
+          ),
+        ];
+      case 'geothermal':
+        return const [
+          (
+            title: '1. Uap Panas Bumi',
+            icon: Icons.local_fire_department_rounded,
+            detail:
+                'Sumur produksi mengalirkan fluida dan uap bersuhu tinggi dari reservoar geotermal di bawah permukaan bumi.',
+          ),
+          (
+            title: '2. Turbin Uap',
+            icon: Icons.settings_input_component_rounded,
+            detail:
+                'Pemisah uap (separator) mengalirkan uap bersih bertekanan untuk memutar turbin uap dan generator secara stabil 24 jam (baseload).',
+          ),
+          (
+            title: '3. Injeksi Ulang',
+            icon: Icons.recycling_rounded,
+            detail:
+                'Uap yang telah dikondensasi diinjeksikan kembali ke dalam sumur injeksi agar tekanan reservoar bumi tetap lestari.',
+          ),
+        ];
+      case 'bioenergy':
+      default:
+        return const [
+          (
+            title: '1. Bahan Organik',
+            icon: Icons.eco_rounded,
+            detail:
+                'Residu pertanian/perkebunan (cangkang sawit, sekam, kayu energi) atau limbah cair organik dikumpulkan sebagai bahan bakar terbarukan.',
+          ),
+          (
+            title: '2. Termal / Biogas',
+            icon: Icons.local_fire_department_rounded,
+            detail:
+                'Biomassa dibakar di boiler uap (PLTBm) atau difermentasi menjadi gas metana (PLTBg) untuk menggerakkan turbin/mesin gas.',
+          ),
+          (
+            title: '3. Listrik Bersih',
+            icon: Icons.bolt_rounded,
+            detail:
+                'Generator membangkitkan listrik sekaligus membantu pengelolaan limbah agroindustri secara sirkular.',
+          ),
+        ];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = _stepsForSlug(widget.categorySlug);
+    final activeStep = steps[_selectedStep.clamp(0, steps.length - 1)];
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.mintGreen.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.sageGreen),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                iconForCategorySlug(widget.categorySlug),
+                size: 18,
+                color: AppColors.forestGreen,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Skema Interaktif Cara Kerja Energi ${widget.shortLabel}',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.forestGreen,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            widget.summaryNote,
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.forestGreen,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // 3 tombol tahapan interaktif
+          Row(
+            children: List.generate(steps.length, (index) {
+              final step = steps[index];
+              final isSelected = index == _selectedStep;
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: index < steps.length - 1 ? 6 : 0,
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => setState(() => _selectedStep = index),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOutCubic,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.forestGreen
+                            : AppColors.surfaceWhite,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.forestGreen
+                              : AppColors.sageGreen.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            step.icon,
+                            size: 16,
+                            color: isSelected
+                                ? AppColors.surfaceWhite
+                                : AppColors.forestGreen,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            step.title,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.caption.copyWith(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected
+                                  ? AppColors.surfaceWhite
+                                  : AppColors.forestGreen,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 10),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            child: Container(
+              key: ValueKey<int>(_selectedStep),
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceWhite,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: AppColors.mintGreen,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      activeStep.icon,
+                      size: 18,
+                      color: AppColors.forestGreen,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          activeStep.title,
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.forestGreen,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          activeStep.detail,
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
+                            fontSize: 11.5,
+                            height: 1.42,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (widget.onLearnMore != null) ...[
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: widget.onLearnMore,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Pelajari Materi ${widget.shortLabel} Selengkapnya',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.forestGreen,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 14,
+                    color: AppColors.forestGreen,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
