@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/widgets/common/design_system_showcase_page.dart';
+import '../core/widgets/common/empty_view.dart';
 import '../core/widgets/glass/glass_bottom_nav.dart';
 import '../features/achievement/presentation/pages/achievements_page.dart';
 import '../features/auth/presentation/pages/login_page.dart';
@@ -46,28 +48,41 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
   ref.listen(onboardingStatusProvider, (_, _) => refreshListenable.notify());
   ref.listen(currentSessionProvider, (_, _) => refreshListenable.notify());
+  ref.listen(isGuestModeProvider, (_, _) => refreshListenable.notify());
 
   return GoRouter(
     initialLocation: RouteNames.splashPath,
     refreshListenable: refreshListenable,
     debugLogDiagnostics: false,
+    errorBuilder: (context, state) => Scaffold(
+      body: SafeArea(
+        child: EmptyView(
+          icon: Icons.explore_off_rounded,
+          assetPath: 'assets/images/mascot/eco_thinking.png',
+          title: 'Halaman Tidak Ditemukan',
+          description:
+              'Rute yang dibuka (${state.uri.path}) tidak tersedia di aplikasi EduEarth.',
+          actionLabel: 'Kembali ke Beranda',
+          onAction: () => context.go(RouteNames.homePath),
+        ),
+      ),
+    ),
     redirect: (context, state) {
       final location = state.matchedLocation;
 
-      if (location == RouteNames.designShowcasePath) {
+      if (kDebugMode && location == RouteNames.designShowcasePath) {
         return null;
       }
 
       final onboardingAsync = ref.read(onboardingStatusProvider);
       if (onboardingAsync.isLoading) {
-        return location == RouteNames.splashPath
-            ? null
-            : RouteNames.splashPath;
+        return location == RouteNames.splashPath ? null : RouteNames.splashPath;
       }
 
       final isOnboardingDone = onboardingAsync.value ?? false;
       final isSupabaseReady = ref.read(isSupabaseInitializedProvider);
       final isAuthenticated = ref.read(isAuthenticatedProvider);
+      final isGuestMode = ref.read(isGuestModeProvider);
 
       if (!isOnboardingDone) {
         if (location == RouteNames.onboardingPath ||
@@ -81,7 +96,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           location == RouteNames.loginPath ||
           location == RouteNames.registerPath;
 
-      if (isSupabaseReady && !isAuthenticated) {
+      if (isSupabaseReady && !isAuthenticated && !isGuestMode) {
         if (isAuthRoute || location == RouteNames.splashPath) {
           return null;
         }
@@ -116,11 +131,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteNames.registerPath,
         builder: (context, state) => const RegisterPage(),
       ),
-      GoRoute(
-        name: RouteNames.designShowcaseName,
-        path: RouteNames.designShowcasePath,
-        builder: (context, state) => const DesignSystemShowcasePage(),
-      ),
+      if (kDebugMode)
+        GoRoute(
+          name: RouteNames.designShowcaseName,
+          path: RouteNames.designShowcasePath,
+          builder: (context, state) => const DesignSystemShowcasePage(),
+        ),
       GoRoute(
         name: RouteNames.plantDetailName,
         path: RouteNames.plantDetailPath,
@@ -171,10 +187,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final extraResult = state.extra is QuizSubmissionResult
               ? state.extra as QuizSubmissionResult
               : null;
-          return QuizResultPage(
-            quizId: id,
-            initialResult: extraResult,
-          );
+          return QuizResultPage(quizId: id, initialResult: extraResult);
         },
       ),
       GoRoute(
@@ -210,7 +223,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         name: RouteNames.energyComparisonName,
         path: RouteNames.energyComparisonPath,
-        builder: (context, state) => const EnergyComparisonPage(),
+        builder: (context, state) {
+          final initialCategorySlug = state.uri.queryParameters['category'];
+          return EnergyComparisonPage(initialCategorySlug: initialCategorySlug);
+        },
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

@@ -24,53 +24,74 @@ class ScreenHeaderAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Material(
-            color: backgroundColor,
-            shape: const CircleBorder(),
-            child: InkWell(
-              onTap: onTap,
-              customBorder: const CircleBorder(),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.divider),
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: Tooltip(
+        message: tooltip,
+        child: Material(
+          color: Colors.transparent,
+          child: InkResponse(
+            onTap: onTap,
+            radius: 24,
+            containedInkWell: false,
+            customBorder: const CircleBorder(),
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Center(
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: backgroundColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.divider),
+                      ),
+                      child: Icon(icon, color: iconColor, size: 20),
+                    ),
+                    if (badgeCount > 0)
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1.5,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.actionGreen,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: AppColors.surfaceWhite,
+                              width: 1.5,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            badgeCount > 9 ? '9+' : '$badgeCount',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.surfaceWhite,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 10.5,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                child: Icon(icon, color: iconColor, size: 20),
               ),
             ),
           ),
-          if (badgeCount > 0)
-            Positioned(
-              right: -2,
-              top: -2,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-                decoration: BoxDecoration(
-                  color: AppColors.freshGreen,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: AppColors.surfaceWhite, width: 1.5),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  badgeCount > 9 ? '9+' : '$badgeCount',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.surfaceWhite,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 10,
-                    height: 1.1,
-                  ),
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -113,7 +134,8 @@ class ScreenHeader extends StatelessWidget {
             subtitle!,
             style: AppTextStyles.body.copyWith(
               color: AppColors.textSecondary,
-              fontSize: 13.5,
+              fontSize: isCompact ? 12.5 : 13.5,
+              height: isCompact ? 1.25 : null,
               fontWeight: FontWeight.w500,
             ),
             maxLines: 2,
@@ -132,7 +154,7 @@ class ScreenHeader extends StatelessWidget {
               tooltip: 'Kembali',
               onTap: onBack ?? () => Navigator.of(context).maybePop(),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 6),
           ],
           Expanded(
             child: Column(
@@ -169,14 +191,8 @@ class ScreenHeader extends StatelessWidget {
   }
 
   static List<Widget> _intersperseActions(List<Widget> items) {
-    final result = <Widget>[];
-    for (var i = 0; i < items.length; i++) {
-      if (i > 0) {
-        result.add(const SizedBox(width: 8));
-      }
-      result.add(items[i]);
-    }
-    return result;
+    // ScreenHeaderAction sudah menyediakan bingkai tap 48dp (4dp padding luar)
+    return items;
   }
 }
 
@@ -199,7 +215,7 @@ class ScreenHeaderBar extends StatelessWidget implements PreferredSizeWidget {
   final List<Widget> actions;
 
   @override
-  Size get preferredSize => Size.fromHeight(subtitle != null ? 72 : 60);
+  Size get preferredSize => Size.fromHeight(subtitle != null ? 88 : 64);
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +224,7 @@ class ScreenHeaderBar extends StatelessWidget implements PreferredSizeWidget {
       child: Container(
         color: AppColors.offWhite,
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
         child: ScreenHeader(
           title: title,
           subtitle: subtitle,

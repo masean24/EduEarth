@@ -36,15 +36,18 @@ class HomeDashboardPage extends ConsumerWidget {
     final plantsAsync = ref.watch(allPlantsListProvider);
     final profileAsync = ref.watch(currentUserProfileProvider);
     final session = ref.watch(currentSessionProvider);
+    final isGuestSession = ref.watch(isGuestSessionProvider);
     final unreadNotifications = ref.watch(unreadNotificationsCountProvider);
 
     final rawName = profileAsync.asData?.value?.displayName?.trim();
     final emailPrefix = session?.user.email?.split('@').first;
-    final greetingName = (rawName != null && rawName.isNotEmpty)
+    final greetingName = isGuestSession
+        ? 'Tamu'
+        : (rawName != null && rawName.isNotEmpty)
         ? rawName
         : (emailPrefix != null && emailPrefix.isNotEmpty)
-            ? emailPrefix
-            : 'Penjelajah';
+        ? emailPrefix
+        : 'Penjelajah';
 
     final bottomSafe = MediaQuery.viewPaddingOf(context).bottom;
 
@@ -72,8 +75,7 @@ class HomeDashboardPage extends ConsumerWidget {
               if (categories.isEmpty) {
                 return EmptyView(
                   title: 'Kategori Energi Belum Tersedia',
-                  description:
-                      'Jalankan seed 5 kategori energi pada database Supabase Anda.',
+                  description: 'Jalankan seed 5 kategori energi pada database Supabase Anda.',
                   actionLabel: 'Muat Ulang',
                   onAction: () => ref.invalidate(energyCategoriesProvider),
                 );
@@ -110,24 +112,30 @@ class HomeDashboardPage extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  if (isGuestSession) ...[
+                    _buildGuestBanner(context),
+                    const SizedBox(height: 10),
+                  ],
                   _buildSearchBarTrigger(context),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 14),
                   _buildExploreBanner(context),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 14),
+                  _buildLearningJourneyAndImpactCard(context),
+                  const SizedBox(height: 18),
                   _buildSectionHeader(
                     title: 'Kategori Energi',
                     actionLabel: 'Lihat Semua →',
                     onAction: () => context.go(RouteNames.learningPath),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   _buildCircularCategoriesRow(
                     context,
                     ref,
                     categories,
                     plantsAsync.asData?.value ?? const <PowerPlant>[],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 18),
                   _buildSectionHeader(
                     title: 'Rekomendasi Pembangkit',
                     actionLabel: 'Peta →',
@@ -140,6 +148,40 @@ class HomeDashboardPage extends ConsumerWidget {
             },
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildGuestBanner(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF3C7),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.warmYellow),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.explore_outlined,
+            size: 18,
+            color: AppColors.forestGreen,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Mode Tamu aktif: progres baca, bookmark, & skor kuis tidak disimpan.',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.forestGreen,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => context.push(RouteNames.loginPath),
+            child: const Text('Masuk'),
+          ),
+        ],
       ),
     );
   }
@@ -250,10 +292,10 @@ class HomeDashboardPage extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Explore\nRenewable\nEnergy',
+                  'Jelajahi Energi\nTerbarukan\nIndonesia',
                   style: AppTextStyles.title.copyWith(
                     color: AppColors.surfaceWhite,
-                    fontSize: 21,
+                    fontSize: 20,
                     height: 1.2,
                   ),
                 ),
@@ -292,6 +334,116 @@ class HomeDashboardPage extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLearningJourneyAndImpactCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.route_outlined,
+                size: 19,
+                color: AppColors.forestGreen,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Alur Belajar EduEarth (4 Pilar)',
+                  style: AppTextStyles.subtitle.copyWith(fontSize: 14.5),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '1. Jelajahi peta pembangkit → 2. Baca materi & studi kasus → 3. Bandingkan manfaat & trade-off lingkungan → 4. Uji pemahaman lewat kuis.',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 12.2,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(48, 44),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 10,
+                    ),
+                  ),
+                  onPressed: () =>
+                      context.push(RouteNames.energyComparisonPath),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.compare_arrows_rounded, size: 16),
+                      SizedBox(width: 5),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Perbandingan & Dampak',
+                            maxLines: 1,
+                            style: TextStyle(fontSize: 13),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(48, 44),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 10,
+                    ),
+                  ),
+                  onPressed: () => context.push(
+                    '/learning/material/transisi-energi-dan-dampak-lingkungan',
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.eco_outlined, size: 16),
+                      SizedBox(width: 4),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Transisi Energi',
+                            maxLines: 1,
+                            style: TextStyle(fontSize: 13),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -356,10 +508,10 @@ class HomeDashboardPage extends ConsumerWidget {
             children: categories.map((category) {
               final slug = category.slug;
               final softBg = AppColors.softBackgroundForCategorySlug(slug);
-              final accentColor = AppColors.colorForCategorySlug(slug);
               final shortLabel = shortDisplayLabelForSlug(slug, category.name);
-              final catPlants =
-                  allPlants.where((p) => p.categorySlug == slug).toList();
+              final catPlants = allPlants
+                  .where((p) => p.categorySlug == slug)
+                  .toList();
               final catOperating = catPlants
                   .where(
                     (p) => p.operationalStatus.toLowerCase() == 'operating',
@@ -387,34 +539,35 @@ class HomeDashboardPage extends ConsumerWidget {
                         ),
                         child: Icon(
                           iconForCategorySlug(slug),
-                          color: slug == 'solar'
-                              ? const Color(0xFFD97706)
-                              : accentColor == AppColors.freshGreen
-                                  ? AppColors.forestGreen
-                                  : accentColor,
+                          color: AppColors.foregroundColorForCategorySlug(slug),
                           size: 26,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        shortLabel,
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.forestGreen,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                          height: 1.15,
+                      SizedBox(
+                        height: 28,
+                        child: Center(
+                          child: Text(
+                            shortLabel,
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.forestGreen,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11.5,
+                              height: 1.15,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       if (allPlants.isNotEmpty) ...[
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 4),
                         Text(
                           '${catPlants.length} lokasi',
                           style: AppTextStyles.caption.copyWith(
                             color: AppColors.textSecondary,
-                            fontSize: 10.5,
+                            fontSize: 11,
                             fontWeight: FontWeight.w700,
                           ),
                           textAlign: TextAlign.center,
@@ -422,8 +575,8 @@ class HomeDashboardPage extends ConsumerWidget {
                         const SizedBox(height: 3),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 1.5,
+                            horizontal: 5,
+                            vertical: 2,
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.mintGreen.withValues(alpha: 0.75),
@@ -431,14 +584,18 @@ class HomeDashboardPage extends ConsumerWidget {
                               AppTheme.pillRadius,
                             ),
                           ),
-                          child: Text(
-                            '$catOperating aktif',
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.forestGreen,
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w700,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              '$catOperating operasi',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.forestGreen,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
                           ),
                         ),
                       ],
@@ -468,14 +625,14 @@ class HomeDashboardPage extends ConsumerWidget {
                   ),
                 ),
                 _buildStatusLegendDot(
-                  color: AppColors.freshGreen,
-                  label: '$opCount Aktif',
+                  color: AppColors.actionGreen,
+                  label: '$opCount Beroperasi',
                   textColor: AppColors.forestGreen,
                 ),
                 _buildStatusLegendDot(
-                  color: const Color(0xFFD97706),
+                  color: AppColors.warningFg,
                   label: '$conCount Konstruksi',
-                  textColor: const Color(0xFFB45309),
+                  textColor: AppColors.warningFg,
                 ),
                 _buildStatusLegendDot(
                   color: const Color(0xFF94A3B8),
@@ -501,10 +658,7 @@ class HomeDashboardPage extends ConsumerWidget {
         Container(
           width: 7,
           height: 7,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
         Text(
@@ -537,8 +691,7 @@ class HomeDashboardPage extends ConsumerWidget {
         if (plants.isEmpty) {
           return const EmptyView(
             title: 'Belum Ada Data Pembangkit',
-            description:
-                'Tabel power_plants masih kosong. Jalankan migrasi seed pembangkit.',
+            description: 'Tabel power_plants masih kosong. Jalankan migrasi seed pembangkit.',
           );
         }
 

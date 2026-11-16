@@ -1,6 +1,6 @@
 # DATA_LOG
 
-Diperbarui 2026-11-04. Semua angka dihitung skrip dari CSV. Dataset BELUM dibekukan (tanpa CHECKSUMS).
+Diperbarui 2026-11-16. Semua angka dihitung skrip dari CSV. Dataset staging telah dibekukan dan diverifikasi dengan SHA-256 pada `data/CHECKSUMS.txt`.
 
 ## 1. Jumlah akhir (staging saat ini)
 

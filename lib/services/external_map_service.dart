@@ -56,7 +56,9 @@ class ExternalMapService {
   /// Membuka URL sumber referensi (`source_url`) di browser eksternal.
   Future<bool> openExternalUrl(String urlString) async {
     final uri = Uri.tryParse(urlString.trim());
-    if (uri == null) return false;
+    if (uri == null || !uri.hasScheme) return false;
+    final scheme = uri.scheme.toLowerCase();
+    if (scheme != 'http' && scheme != 'https') return false;
     return _launchUri(uri);
   }
 

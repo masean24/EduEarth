@@ -130,6 +130,7 @@ class QuizDashboardPage extends ConsumerWidget {
                       padding: const EdgeInsets.only(bottom: 14),
                       child: _QuizCard(
                         quiz: quiz,
+                        isAuthenticated: isAuthenticated,
                         attemptSummary: summary,
                         onStart: () => _startQuiz(context, ref, quiz),
                       ),
@@ -314,11 +315,13 @@ class QuizDashboardPage extends ConsumerWidget {
 class _QuizCard extends StatelessWidget {
   const _QuizCard({
     required this.quiz,
+    required this.isAuthenticated,
     required this.onStart,
     this.attemptSummary,
   });
 
   final Quiz quiz;
+  final bool isAuthenticated;
   final QuizAttemptSummary? attemptSummary;
   final VoidCallback onStart;
 
@@ -525,12 +528,42 @@ class _QuizCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (attemptSummary!.hasMultipleAttempts) ...[
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.offWhite,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.divider),
+                  ),
+                  child: Text(
+                    'Perkembangan skor: Awal ${attemptSummary!.initialScore} → Terbaru ${attemptSummary!.latestScore} (${attemptSummary!.scoreDelta >= 0 ? '+${attemptSummary!.scoreDelta}' : attemptSummary!.scoreDelta} poin)',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.forestGreen,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ),
+              ],
             ],
             const SizedBox(height: 16),
             if (isCompleted)
               SecondaryButton(
                 label: 'Ulangi Kuis',
                 icon: Icons.replay_rounded,
+                onPressed: onStart,
+              )
+            else if (!isAuthenticated)
+              SecondaryButton(
+                label: 'Masuk untuk Mulai Kuis',
+                icon: Icons.login_rounded,
                 onPressed: onStart,
               )
             else

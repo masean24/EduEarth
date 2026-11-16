@@ -545,10 +545,10 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
           const SizedBox(height: 8),
           // Strip nomor soal interaktif (bisa lompat langsung ke soal mana saja)
           SizedBox(
-            height: 32,
+            height: 44,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               itemCount: questions.length,
               separatorBuilder: (_, _) => const SizedBox(width: 6),
               itemBuilder: (context, idx) {
@@ -556,14 +556,19 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
                 final isCurrent = idx == currentIndex;
                 final isAnswered = _selectedAnswers.containsKey(q.id);
 
-                return GestureDetector(
-                  onTap: _isSubmitting
-                      ? null
-                      : () => setState(() => _currentQuestionIndex = idx),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: 34,
-                    alignment: Alignment.center,
+                return Semantics(
+                  button: true,
+                  selected: isCurrent,
+                  label: 'Soal nomor ${idx + 1}',
+                  child: GestureDetector(
+                    onTap: _isSubmitting
+                        ? null
+                        : () => setState(() => _currentQuestionIndex = idx),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 38,
+                      height: 36,
+                      alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: isCurrent
                           ? AppColors.forestGreen
@@ -579,14 +584,15 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
                                 : AppColors.divider,
                       ),
                     ),
-                    child: Text(
-                      '${idx + 1}',
-                      style: AppTextStyles.caption.copyWith(
-                        color: isCurrent
-                            ? AppColors.surfaceWhite
-                            : AppColors.forestGreen,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
+                      child: Text(
+                        '${idx + 1}',
+                        style: AppTextStyles.caption.copyWith(
+                          color: isCurrent
+                              ? AppColors.surfaceWhite
+                              : AppColors.forestGreen,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ),
@@ -632,7 +638,7 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isLastQuestion
-                      ? AppColors.freshGreen
+                      ? AppColors.actionGreen
                       : AppColors.forestGreen,
                   foregroundColor: AppColors.surfaceWhite,
                   shape: RoundedRectangleBorder(

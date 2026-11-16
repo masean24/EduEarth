@@ -13,6 +13,7 @@ class PrimaryButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.isExpanded = true,
+    this.padding,
   });
 
   final String label;
@@ -20,6 +21,7 @@ class PrimaryButton extends StatelessWidget {
   final IconData? icon;
   final bool isLoading;
   final bool isExpanded;
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -53,13 +55,14 @@ class PrimaryButton extends StatelessWidget {
     final button = ElevatedButton(
       onPressed: isLoading ? null : onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.freshGreen,
+        backgroundColor: AppColors.actionGreen,
         foregroundColor: AppColors.surfaceWhite,
         disabledBackgroundColor: AppColors.sageGreen.withValues(alpha: 0.5),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.buttonRadius),
         ),
         minimumSize: const Size(48, 52),
+        padding: padding,
       ),
       child: buttonChild,
     );

@@ -42,6 +42,7 @@ class BookmarksPage extends ConsumerWidget {
         child: !isAuthenticated
             ? EmptyView(
                 icon: Icons.lock_outline_rounded,
+                assetPath: 'assets/images/mascot/eco_wave.png',
                 title: 'Masuk untuk Melihat Bookmark',
                 description:
                     'Simpan materi pembelajaran dan pembangkit favorit ke akun Anda agar dapat diakses kapan saja.',

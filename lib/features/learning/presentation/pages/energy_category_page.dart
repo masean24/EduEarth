@@ -16,13 +16,11 @@ import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../routes/route_names.dart';
 import '../../../plants/presentation/providers/plants_providers.dart';
 import '../providers/learning_providers.dart';
+import '../providers/reading_progress_provider.dart';
 
 /// Halaman Daftar Materi per Kategori Energi (Energy Category Page).
 class EnergyCategoryPage extends ConsumerWidget {
-  const EnergyCategoryPage({
-    super.key,
-    required this.categorySlug,
-  });
+  const EnergyCategoryPage({super.key, required this.categorySlug});
 
   final String categorySlug;
 
@@ -54,6 +52,21 @@ class EnergyCategoryPage extends ConsumerWidget {
       0.0,
       (sum, p) => sum + (p.capacityMw ?? 0.0),
     );
+    final int exactCount = categoryPlants.where((p) => !p.isApproximate).length;
+    final int approxCount = categoryPlants.where((p) => p.isApproximate).length;
+    final Map<String, int> provinceCounts = <String, int>{};
+    for (final plant in categoryPlants) {
+      final prov = plant.province.trim();
+      if (prov.isNotEmpty) {
+        provinceCounts[prov] = (provinceCounts[prov] ?? 0) + 1;
+      }
+    }
+    final topProvinces =
+        (provinceCounts.entries.toList()
+              ..sort((a, b) => b.value.compareTo(a.value)))
+            .take(3)
+            .map((e) => '${e.key} (${e.value})')
+            .join(', ');
 
     final softBg = AppColors.softBackgroundForCategorySlug(categorySlug);
     final categoryDisplayTitle = fullDisplayLabelForSlug(
@@ -179,6 +192,22 @@ class EnergyCategoryPage extends ConsumerWidget {
                                   ),
                                 ),
                               ],
+                              const SizedBox(height: 4),
+                              Text(
+                                'Presisi koordinat: $exactCount terverifikasi • $approxCount lokasi perkiraan',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              if (topProvinces.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Sebaran wilayah utama: $topProvinces',
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -195,6 +224,14 @@ class EnergyCategoryPage extends ConsumerWidget {
                           context.go(RouteNames.exploreMapPath);
                         },
                       ),
+                      const SizedBox(height: 8),
+                      SecondaryButton(
+                        label: 'Bandingkan Karakteristik & Dampak',
+                        icon: Icons.compare_arrows_rounded,
+                        onPressed: () => context.push(
+                          '${RouteNames.energyComparisonPath}?category=$categorySlug',
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -205,9 +242,7 @@ class EnergyCategoryPage extends ConsumerWidget {
               materialsAsync.when(
                 loading: () => const Padding(
                   padding: EdgeInsets.symmetric(vertical: 28),
-                  child: LoadingView(
-                    message: 'Memuat materi kategori...',
-                  ),
+                  child: LoadingView(message: 'Memuat materi kategori...'),
                 ),
                 error: (error, _) => ErrorView(
                   message: error.toString(),
@@ -219,19 +254,22 @@ class EnergyCategoryPage extends ConsumerWidget {
                   if (materials.isEmpty) {
                     return EmptyView(
                       title: 'Belum Ada Materi untuk Kategori Ini',
-                      description:
-                          'Materi pembelajaran untuk kategori ini belum dipublikasikan.',
+                      description: 'Materi pembelajaran untuk kategori ini belum dipublikasikan.',
                       actionLabel: 'Kembali ke Semua Materi',
                       onAction: () => context.pop(),
                     );
                   }
 
+                  final readingState = ref.watch(readingProgressProvider);
                   return Column(
                     children: materials.map((material) {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: MaterialCard(
                           material: material,
+                          readingProgress: readingState.progressFor(
+                            material.slug,
+                          ),
                           onTap: () => context.push(
                             '/learning/material/${material.slug}',
                           ),

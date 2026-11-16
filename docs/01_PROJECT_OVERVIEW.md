@@ -1,7 +1,9 @@
 # 01 — Project Overview
 
-## Tujuan
-Membantu pelajar dan masyarakat Indonesia memahami energi terbarukan lewat **peta pembangkit**, **materi belajar**, dan **kuis**.
+## Rumusan Masalah & Tujuan
+Pelajar (SMP–SMA/SMK) maupun masyarakat umum kerap mempelajari energi terbarukan hanya secara abstrak tanpa melihat sebaran pembangkit nyata di Indonesia, memahami perbedaan karakter beban dasar (*baseload*) vs variabel (*intermiten*), serta membandingkan *trade-off* lingkungannya.
+
+**Tujuan:** Menghadirkan aplikasi pembelajaran terstruktur berbasis 4 pilar (**Explore → Learn → Understand Impact → Evaluate**) untuk pelajar SMP–SMA dan masyarakat umum dengan dukungan eksplorasi Mode Tamu serta pelacakan peningkatan skor kuis. *Lingkup tahap saat ini: Academic MVP Android (proyek UTS solo).*
 
 ## Identitas
 - Nama: **EduEarth**

@@ -12,6 +12,7 @@ class EmptyView extends StatelessWidget {
     required this.title,
     required this.description,
     this.icon = Icons.eco_outlined,
+    this.assetPath = 'assets/images/mascot/eco_sleepy.png',
     this.actionLabel,
     this.onAction,
   });
@@ -19,6 +20,7 @@ class EmptyView extends StatelessWidget {
   final String title;
   final String description;
   final IconData icon;
+  final String assetPath;
   final String? actionLabel;
   final VoidCallback? onAction;
 
@@ -34,7 +36,7 @@ class EmptyView extends StatelessWidget {
               width: 96,
               height: 96,
               borderRadius: 24,
-              assetPath: 'assets/images/mascot/eco_sleepy.png',
+              assetPath: assetPath,
               backgroundColor: Colors.transparent,
               fallbackIcon: icon,
               iconColor: AppColors.forestGreen,

@@ -78,8 +78,8 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
               child: GlassContainer(
-                borderRadius: AppTheme.buttonRadius,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                borderRadius: AppTheme.pillRadius,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                 child: ValueListenableBuilder<TextEditingValue>(
                   valueListenable: _controller,
                   builder: (context, textValue, _) {
@@ -105,7 +105,7 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
                         ),
                         suffixIcon: textValue.text.isNotEmpty
                             ? IconButton(
-                                tooltip: 'Bersihkan pencarian',
+                                tooltip: 'Hapus pencarian',
                                 icon: const Icon(Icons.clear_rounded),
                                 onPressed: _clearSearch,
                               )
@@ -121,6 +121,7 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
               child: query.trim().isEmpty
                   ? const EmptyView(
                       icon: Icons.manage_search_rounded,
+                      assetPath: 'assets/images/mascot/eco_thinking.png',
                       title: 'Cari Pembangkit & Materi Energi',
                       description:
                           'Ketik kata kunci seperti "PLTS", "Surya", "Air", atau nama wilayah untuk menemukan konten terkait.',

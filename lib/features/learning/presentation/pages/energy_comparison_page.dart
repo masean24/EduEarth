@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../../core/config/app_config.dart';
 import '../../../../core/constants/demo_data.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -14,10 +14,12 @@ import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../models/energy_category.dart';
 import '../../../plants/presentation/providers/plants_providers.dart';
 
-/// Halaman Perbandingan Energi Terbarukan (Energy Comparison) Fase 6
+/// Halaman Perbandingan Energi Terbarukan & Dampak Lingkungan (Pilar Understand Impact)
 /// yang membaca atribut JSONB `energy_categories.comparison`.
 class EnergyComparisonPage extends ConsumerStatefulWidget {
-  const EnergyComparisonPage({super.key});
+  const EnergyComparisonPage({super.key, this.initialCategorySlug});
+
+  final String? initialCategorySlug;
 
   @override
   ConsumerState<EnergyComparisonPage> createState() =>
@@ -28,26 +30,53 @@ class _EnergyComparisonPageState extends ConsumerState<EnergyComparisonPage> {
   String _leftSlug = 'solar';
   String _rightSlug = 'geothermal';
 
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialCategorySlug?.trim();
+    if (initial != null && initial.isNotEmpty) {
+      _leftSlug = initial;
+      _rightSlug = initial == 'geothermal' ? 'solar' : 'geothermal';
+    }
+  }
+
   static const List<(String, String, IconData)> _comparisonAttributes = [
     ('sumber_energi', 'Sumber Energi Primer', Icons.wb_incandescent_outlined),
-    ('karakter_pasokan', 'Karakteristik Pasokan', Icons.bolt_rounded),
-    ('faktor_kapasitas', 'Faktor Kapasitas (Kualitatif)', Icons.speed_rounded),
-    ('emisi_siklus_hidup', 'Emisi Siklus Hidup', Icons.co2_rounded),
+    ('karakter_pasokan', 'Karakteristik Pasokan (Umum)', Icons.bolt_rounded),
+    ('variasi_desain', 'Variasi Desain Pembangkit', Icons.tune_rounded),
+    (
+      'manfaat_lingkungan',
+      'Manfaat Lingkungan & Dekarbonisasi',
+      Icons.eco_outlined,
+    ),
+    (
+      'tantangan_lingkungan',
+      'Tantangan Lingkungan (Trade-off)',
+      Icons.warning_amber_rounded,
+    ),
+    ('emisi_siklus_hidup', 'Emisi Siklus Hidup (LCA)', Icons.co2_rounded),
     ('kebutuhan_lahan', 'Kebutuhan Ruang / Lahan', Icons.terrain_rounded),
-    ('keunggulan_utama', 'Keunggulan Utama', Icons.thumb_up_alt_outlined),
-    ('tantangan_utama', 'Tantangan Teknis', Icons.build_circle_outlined),
+    ('faktor_kapasitas', 'Faktor Kapasitas (Kualitatif)', Icons.speed_rounded),
+    (
+      'keunggulan_utama',
+      'Keunggulan Teknis Utama',
+      Icons.thumb_up_alt_outlined,
+    ),
+    (
+      'tantangan_utama',
+      'Tantangan Teknis & Jaringan',
+      Icons.build_circle_outlined,
+    ),
     ('karakter_lokasi', 'Karakteristik Lokasi Ideal', Icons.map_outlined),
   ];
 
   Map<String, dynamic> _resolveComparison(EnergyCategory category) {
+    final fallback =
+        DemoData.comparisonBySlug[category.slug] ?? const <String, dynamic>{};
     if (category.comparison.isNotEmpty) {
-      return category.comparison;
+      return <String, dynamic>{...fallback, ...category.comparison};
     }
-    if (!AppConfig.isSupabaseConfigured) {
-      return DemoData.comparisonBySlug[category.slug] ??
-          const <String, dynamic>{};
-    }
-    return const <String, dynamic>{};
+    return fallback;
   }
 
   @override
@@ -56,8 +85,8 @@ class _EnergyComparisonPageState extends ConsumerState<EnergyComparisonPage> {
 
     return Scaffold(
       appBar: const ScreenHeaderBar(
-        title: 'Perbandingan Energi',
-        subtitle: 'Bandingkan karakteristik teknis 5 kategori EBT',
+        title: 'Perbandingan & Dampak Energi',
+        subtitle: 'Karakteristik teknis, manfaat, dan trade-off lingkungan',
       ),
       body: SafeArea(
         child: categoriesAsync.when(
@@ -72,8 +101,7 @@ class _EnergyComparisonPageState extends ConsumerState<EnergyComparisonPage> {
             if (categories.length < 2) {
               return EmptyView(
                 title: 'Data Kategori Belum Lengkap',
-                description:
-                    'Dibutuhkan minimal 2 kategori energi untuk menampilkan matriks perbandingan.',
+                description: 'Dibutuhkan minimal 2 kategori energi untuk menampilkan matriks perbandingan.',
                 actionLabel: 'Muat Ulang',
                 onAction: () => ref.invalidate(energyCategoriesProvider),
               );
@@ -85,9 +113,8 @@ class _EnergyComparisonPageState extends ConsumerState<EnergyComparisonPage> {
             );
             final rightCategory = categories.firstWhere(
               (c) => c.slug == _rightSlug,
-              orElse: () => categories.length > 1
-                  ? categories[1]
-                  : categories.first,
+              orElse: () =>
+                  categories.length > 1 ? categories[1] : categories.first,
             );
 
             final leftMap = _resolveComparison(leftCategory);
@@ -96,7 +123,7 @@ class _EnergyComparisonPageState extends ConsumerState<EnergyComparisonPage> {
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
               children: [
-                _buildDraftNoticeBanner(),
+                _buildMethodologyAndReferencesCard(context),
                 const SizedBox(height: 14),
 
                 // 1. Pemilih 2 Kategori yang Dibandingkan
@@ -167,41 +194,65 @@ class _EnergyComparisonPageState extends ConsumerState<EnergyComparisonPage> {
     );
   }
 
-  Widget _buildDraftNoticeBanner() {
+  Widget _buildMethodologyAndReferencesCard(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.warmYellow.withValues(alpha: 0.14),
+        color: AppColors.mintGreen.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.warmYellow.withValues(alpha: 0.45),
-        ),
+        border: Border.all(color: AppColors.freshGreen.withValues(alpha: 0.3)),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFB45309).withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              'DRAF KUALITATIF',
-              style: AppTextStyles.caption.copyWith(
-                color: const Color(0xFFB45309),
-                fontWeight: FontWeight.w800,
-                fontSize: 10.5,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.forestGreen,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'METODOLOGI & SUMBER REFERENSI',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.surfaceWhite,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 10.5,
+                  ),
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Perbandingan ini menggunakan pendekatan kualitatif berbasis siklus hidup (Life-Cycle Assessment / LCA) dan karakteristik umum pembangkit. Karakteristik setiap proyek di lapangan dapat berbeda bergantung pada desain teknis dan kondisi geografis tapak.',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textPrimary,
+              height: 1.45,
+              fontSize: 12.5,
             ),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Matriks perbandingan ini memuat deskripsi kualitatif konseptual (tanpa statistik numerik) dan menunggu verifikasi literatur.',
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.textPrimary,
-                height: 1.35,
+          const SizedBox(height: 8),
+          Text(
+            'Sumber rujukan: IPCC AR6 WGIII (2022) Chapter 6 & Annex III • IRENA Renewable Power Generation Costs • Kementerian ESDM — Ditjen EBTKE.',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.forestGreen,
+              fontWeight: FontWeight.w700,
+              fontSize: 11.5,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: () => context.push(
+                '/learning/material/transisi-energi-dan-dampak-lingkungan',
+              ),
+              icon: const Icon(Icons.menu_book_rounded, size: 16),
+              label: const Text(
+                'Baca Modul Transisi Energi & Trade-off Lingkungan',
               ),
             ),
           ),
@@ -229,22 +280,26 @@ class _EnergyComparisonPageState extends ConsumerState<EnergyComparisonPage> {
             ),
           ),
           const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: categories.map((cat) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: CategoryChip(
-                    label: shortDisplayLabelForSlug(cat.slug, cat.name),
-                    categorySlug: cat.slug,
-                    isSelected: cat.slug == leftCategory.slug,
-                    onTap: () {
-                      setState(() => _leftSlug = cat.slug);
-                    },
-                  ),
-                );
-              }).toList(),
+          HorizontalChipStrip(
+            fadeColor: AppColors.surfaceWhite,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(right: 28),
+              child: Row(
+                children: categories.map((cat) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: CategoryChip(
+                      label: shortDisplayLabelForSlug(cat.slug, cat.name),
+                      categorySlug: cat.slug,
+                      isSelected: cat.slug == leftCategory.slug,
+                      onTap: () {
+                        setState(() => _leftSlug = cat.slug);
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
           const SizedBox(height: 14),
@@ -256,22 +311,26 @@ class _EnergyComparisonPageState extends ConsumerState<EnergyComparisonPage> {
             ),
           ),
           const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: categories.map((cat) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: CategoryChip(
-                    label: shortDisplayLabelForSlug(cat.slug, cat.name),
-                    categorySlug: cat.slug,
-                    isSelected: cat.slug == rightCategory.slug,
-                    onTap: () {
-                      setState(() => _rightSlug = cat.slug);
-                    },
-                  ),
-                );
-              }).toList(),
+          HorizontalChipStrip(
+            fadeColor: AppColors.surfaceWhite,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(right: 28),
+              child: Row(
+                children: categories.map((cat) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: CategoryChip(
+                      label: shortDisplayLabelForSlug(cat.slug, cat.name),
+                      categorySlug: cat.slug,
+                      isSelected: cat.slug == rightCategory.slug,
+                      onTap: () {
+                        setState(() => _rightSlug = cat.slug);
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
         ],
@@ -301,25 +360,22 @@ class _EnergyComparisonPageState extends ConsumerState<EnergyComparisonPage> {
             ),
             child: Icon(
               iconForCategorySlug(category.slug),
-              color: category.slug == 'solar'
-                  ? const Color(0xFFD97706)
-                  : color == AppColors.freshGreen
-                      ? AppColors.forestGreen
-                      : color,
+              color: AppColors.foregroundColorForCategorySlug(category.slug),
               size: 20,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   shortDisplayLabelForSlug(category.slug, category.name),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.subtitle.copyWith(
-                    fontSize: 14,
+                    fontSize: 13.5,
+                    height: 1.2,
                     color: AppColors.forestGreen,
                   ),
                 ),

@@ -16,6 +16,8 @@ import '../../../../models/quiz_attempt.dart';
 import '../../../../routes/route_names.dart';
 import '../../../achievement/presentation/providers/achievement_providers.dart';
 import '../../../achievement/presentation/widgets/achievement_unlock_dialog.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../learning/domain/learning_integration_helper.dart';
 import '../providers/quiz_providers.dart';
 
 /// Halaman Hasil Kuis (Quiz Result) dengan animasi penghitung skor melingkar,
@@ -44,6 +46,7 @@ class _QuizResultPageState extends ConsumerState<QuizResultPage> {
   }
 
   Future<void> _checkNewlyUnlockedBadges() async {
+    if (!ref.read(isAuthenticatedProvider)) return;
     try {
       final award = await ref
           .read(achievementRepositoryProvider)
@@ -121,7 +124,9 @@ class _QuizResultPageState extends ConsumerState<QuizResultPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 18),
+                _buildFollowUpLearningCard(context, quizId, result),
+                const SizedBox(height: 24),
                 Text(
                   'Ulasan Jawaban (${result.reviews.length} Soal)',
                   style: AppTextStyles.title,
@@ -141,6 +146,89 @@ class _QuizResultPageState extends ConsumerState<QuizResultPage> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildFollowUpLearningCard(
+    BuildContext context,
+    String quizId,
+    QuizSubmissionResult result,
+  ) {
+    final remedial = LearningIntegrationHelper.remedialInfoForQuiz(quizId);
+    final isMastered = result.score >= 80;
+    final compSlug = remedial.comparisonCategorySlug;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(
+          color: isMastered ? AppColors.sageGreen : AppColors.warmYellow,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isMastered
+                    ? Icons.explore_outlined
+                    : Icons.menu_book_rounded,
+                size: 19,
+                color: AppColors.forestGreen,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  isMastered
+                      ? 'Langkah Berikutnya: Eksplorasi Peta & Dampak Nyata'
+                      : 'Rekomendasi Penguatan Materi (Remedial)',
+                  style: AppTextStyles.subtitle.copyWith(fontSize: 14.5),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isMastered
+                ? 'Pemahaman konsep kamu sudah sangat baik! Lanjutkan dengan mengamati lokasi pembangkit nyata di peta atau membandingkan trade-off lingkungannya.'
+                : 'Masih ada konsep yang perlu diperkuat. Pelajari kembali modul "${remedial.materialTitle}" lalu bandingkan karakteristik energinya sebelum mencoba ulang.',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 12.2,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () =>
+                    context.push('/learning/material/${remedial.materialSlug}'),
+                icon: const Icon(Icons.auto_stories_outlined, size: 16),
+                label: Text('Baca: ${remedial.materialTitle}'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {
+                  if (compSlug != null && compSlug.isNotEmpty) {
+                    context.push(
+                      '${RouteNames.energyComparisonPath}?category=$compSlug',
+                    );
+                  } else {
+                    context.push(RouteNames.energyComparisonPath);
+                  }
+                },
+                icon: const Icon(Icons.compare_arrows_rounded, size: 16),
+                label: const Text('Bandingkan Dampak & Trade-off'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

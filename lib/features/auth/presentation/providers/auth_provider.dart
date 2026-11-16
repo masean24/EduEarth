@@ -1,10 +1,63 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../models/user_profile.dart';
+import '../../../../services/supabase_service.dart';
 import '../../data/auth_repository.dart';
+
+/// Nilai awal mode tamu yang dapat di-override dari `SharedPreferences` saat app start.
+final initialGuestModeProvider = Provider<bool>((ref) => false);
+
+/// State mode tamu (disimpan lokal agar pengguna tamu tidak mengulang ke layar masuk).
+class GuestModeNotifier extends Notifier<bool> {
+  @override
+  bool build() => ref.watch(initialGuestModeProvider);
+
+  Future<void> restoreSavedGuestMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getBool(AppConstants.prefGuestMode) ?? false;
+      if (saved) {
+        state = true;
+      }
+    } catch (_) {
+      // Abaikan jika binding SharedPreferences belum siap di lingkungan test unit.
+    }
+  }
+
+  Future<void> enterGuestMode() async {
+    state = true;
+    await _persistGuestMode(true);
+  }
+
+  Future<void> exitGuestMode() async {
+    state = false;
+    await _persistGuestMode(false);
+  }
+
+  Future<void> _persistGuestMode(bool value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(AppConstants.prefGuestMode, value);
+    } catch (_) {}
+  }
+}
+
+final isGuestModeProvider = NotifierProvider<GuestModeNotifier, bool>(
+  GuestModeNotifier.new,
+);
+
+/// Bernilai `true` bila Supabase aktif, pengguna belum login, dan sedang memakai Mode Tamu.
+final isGuestSessionProvider = Provider<bool>((ref) {
+  final isSupabaseReady = ref.watch(isSupabaseInitializedProvider);
+  final isAuthenticated = ref.watch(isAuthenticatedProvider);
+  final isGuestMode = ref.watch(isGuestModeProvider);
+  return isSupabaseReady && !isAuthenticated && isGuestMode;
+});
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return const AuthRepository();
@@ -54,6 +107,9 @@ class AuthController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       await repo.signInWithPassword(email: email, password: password);
     });
+    if (!state.hasError) {
+      ref.read(isGuestModeProvider.notifier).exitGuestMode();
+    }
     return !state.hasError;
   }
 
@@ -80,6 +136,10 @@ class AuthController extends AsyncNotifier<void> {
       return (success: false, requiresEmailConfirmation: false);
     }
 
+    if (response?.session != null) {
+      ref.read(isGuestModeProvider.notifier).exitGuestMode();
+    }
+
     final needsConfirmation =
         response?.user != null && response?.session == null;
     return (
@@ -92,6 +152,7 @@ class AuthController extends AsyncNotifier<void> {
     state = const AsyncLoading();
     final repo = ref.read(authRepositoryProvider);
     state = await AsyncValue.guard(repo.signOut);
+    ref.read(isGuestModeProvider.notifier).exitGuestMode();
   }
 }
 

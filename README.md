@@ -7,16 +7,21 @@
 
 ## Tentang EduEarth
 
-**EduEarth** adalah aplikasi edukasi interaktif untuk mempelajari lima jenis pembangkit energi terbarukan di Indonesia (**PLTS / Surya**, **PLTA / Air**, **PLTB / Angin**, **PLTP / Panas Bumi**, dan **Bioenergi**) melalui peta pembangkit interaktif, matriks perbandingan energi, materi pembelajaran terstruktur, kuis berpenilaian *server-side*, lencana pencapaian (*achievement*), serta pusat informasi.
+**EduEarth** adalah aplikasi pembelajaran pendamping berbasis geospasial untuk **pelajar SMP–SMA/SMK dan masyarakat umum** dalam mempelajari lima jenis pembangkit energi terbarukan di Indonesia (**PLTS / Surya**, **PLTA / Air**, **PLTB / Angin**, **PLTP / Panas Bumi**, dan **Bioenergi**) melalui **4 pilar terintegrasi**:
+1. **Explore** — Peta persebaran 128 pembangkit tercatat (`Beroperasi`, `Konstruksi`, `Rencana`), transparansi presisi lokasi (`exact` vs `Lokasi perkiraan`), dan konteks geografis wilayah.
+2. **Learn** — 9 modul pembelajaran terstruktur (dilengkapi *persistent high-water-mark reading progress* dan contoh pembangkit nyata).
+3. **Understand Impact** — Perbandingan karakteristik, variasi desain, manfaat dekarbonisasi, dan *trade-off* lingkungan berbasis literatur **IPCC AR6 WGIII (2022)**, **IRENA**, dan **Kementerian ESDM (Ditjen EBTKE)**.
+4. **Evaluate** — 6 paket kuis berpenilaian *server-side* (`SmartQuizResolver`) lengkap dengan pembahasan ilmiah per soal dan rekomendasi remedial.
 
-### Fitur Utama (Fase 0 – Fase 6 & Tahap 7 Dataset Pembangkit Nyata)
-- **Autentikasi, Onboarding, & Splash HD**:
-  - Alur Splash → Onboarding 3 slide interaktif (`SharedPreferences`) → Login/Register dengan pembuatan profil otomatis via trigger PostgreSQL dan sesi persisten.
+### Fitur Utama (Fase 0 – Fase 9 & Polish UI/UX)
+- **Autentikasi, Onboarding, Mode Tamu, & Splash HD**:
+  - Alur Splash → Onboarding 3 slide interaktif (`SharedPreferences`) → Login/Register atau **Mode Tamu persisten** (dapat diakses langsung dari slide akhir Onboarding, Login, maupun Register; bebas menjelajahi peta, materi, & perbandingan tanpa login dengan batasan jujur tanpa menyimpan progres/skor).
+  - Pembuatan profil otomatis via trigger PostgreSQL, validasi akun aktif, dan penonaktifan *auto-retry* berkepanjangan (`ProviderScope(retry: null)`) agar `ErrorView` tampil cepat saat offline.
 - **Peta Eksplorasi & Dataset 128 Pembangkit Nyata**:
-  - Peta interaktif berbasis `flutter_map` + OpenStreetMap (ODbL) tanpa Google Maps SDK.
+  - Peta interaktif berbasis `flutter_map` + OpenStreetMap (ODbL) dengan *framing* awal kepulauan Indonesia utuh (`CameraFit.bounds`), tombol *Pusatkan ke lokasi saya*, serta penanganan ubin offline (`errorTileCallback`).
   - Dataset terkurasi **128 pembangkit energi terbarukan on-grid (>= 1 MW)** di Indonesia (`85 beroperasi`, `9 konstruksi`, `34 rencana`) dengan atribusi sumber per baris (`source_url`, `data_as_of`, `source_notes`, dan penanda `coordinate_precision`).
-  - Filter chip per kategori energi dan **filter status operasional** (**Beroperasi**, **Konstruksi**, **Rencana** — default **HANYA Beroperasi**) dengan pembeda visual marker.
-  - Halaman **Detail Pembangkit** dengan label **"Kapasitas terpasang (menurut sumber)"**, dua mode tombol Google Maps (**"Lihat titik di Google Maps"** `query=lat,lng` dan **"Cari di Google Maps"** `query=nama+kota+provinsi`, otomatis memprioritaskan pencarian nama untuk koordinat `approximate` / **"Lokasi perkiraan"**), serta bagian `source_notes` yang dapat dibuka.
+  - Strip filter 5 kategori energi (`HorizontalChipStrip`) dan **filter status operasional** (**Beroperasi**, **Konstruksi**, **Rencana** — default **HANYA Beroperasi**) dengan pembeda visual marker.
+  - Halaman **Detail Pembangkit** dengan *footer* sticky terfokus (*Bandingkan EBT* + *Buka Maps*/*Cari Maps*), label **"Kapasitas terpasang (menurut sumber)"**, dukungan kedua mode Google Maps (`query=lat,lng` & pencarian nama untuk koordinat `approximate` / **"Lokasi perkiraan"**), serta catatan studi kasus & `source_notes`.
   - Pencarian pembangkit terdekat dari lokasi pengguna (`geolocator` + PostGIS RPC `nearby_plants`).
 - **Pustaka Pembelajaran, Perbandingan Energi, & Bookmark**:
   - Materi edukasi per kategori energi yang dirender menggunakan Markdown (`flutter_markdown_plus`) lengkap dengan penanda status draf (`is_draft`).
@@ -28,7 +33,10 @@
 - **Achievement, Notification Center, Profil, & Pencarian Global**:
   - **Achievement & Badge**: evaluasi lencana otomatis di server melalui RPC `check_and_award_achievements()` (`SECURITY DEFINER`) berdasarkan progres kuis dan bookmark.
   - **Notification Center (Pusat Informasi)**: pengumuman publik satu arah dari tabel `notifications` dengan pelacakan status baca lokal di `SharedPreferences`.
-  - **Profil, Progres Belajar (*My Learning*), Pengaturan ("Kurangi efek glass"), & Tentang EduEarth** (lengkap dengan dokumentasi **Sumber Data dan Cakupan** dari `data/DATA_LOG.md`).
+  - **Navigasi, Profil, Progres Belajar, Pengaturan, & Aksesibilitas**:
+    - `GlassBottomNav` 5 tab berbahasa Indonesia (**Jelajah · Belajar · Beranda · Kuis · Profil**), token kontras aksi primer WCAG AA (`AppColors.actionGreen` `#15803D`), target sentuh header/kontrol `48dp`, serta maskot Eco kontekstual pada `EmptyView`.
+    - **Progres Belajar (*My Learning*)**: pelacakan delta skor kuis (**Awal → Terbaru**), riwayat percobaan, dan daftar bookmark.
+    - **Pengaturan (*Kurangi efek glass*) & Tentang EduEarth** dapat diakses penuh oleh pengguna login maupun Mode Tamu (lengkap dengan dokumentasi **Sumber Data dan Cakupan** dari `data/DATA_LOG.md`).
   - **Pencarian Global** lintas pembangkit dan materi pembelajaran dengan *debounce* 350 ms dan sanitasi filter PostgREST.
 
 ---
@@ -104,6 +112,9 @@ Jalankan file migrasi di folder `supabase/migrations/` secara berurutan di **Sup
 7. **Tahap 7 — Impor 128 Pembangkit Nyata & Pembersihan Baris Demo**
    - `20261104234501_phase7_import_real_power_plants.sql`
    - `20261104234502_phase7_delete_demo_power_plants.sql` *(jalankan setelah memverifikasi hasil impor 128 baris)*
+8. **Fase 8 & 9 — Kurasi Materi, Kuis, Matriks Perbandingan, & Blueprint V2**
+   - `20261105104501_phase8_curated_materials_and_quizzes.sql`
+   - `20261110120001_phase9_final_blueprint_v2_refinements.sql`
 
 ---
 
@@ -157,3 +168,5 @@ Repositori ini telah dilengkapi workflow GitHub Actions di [`.github/workflows/b
 - [05 — Roadmap](docs/05_ROADMAP.md)
 - [06 — Coding Standards](docs/06_CODING_STANDARDS.md)
 - [Data Log & Cakupan Pembangkit](data/DATA_LOG.md)
+- [Audit Produk & QA](docs/audit/05_ringkasan_eksekutif.md)
+- [Audit UI/UX & Rencana Perbaikan](docs/audit/ui-ux/05_ringkasan.md)

@@ -27,7 +27,8 @@ class BookmarkRepository {
             'power_plants(*, energy_categories(slug, name, short_code))',
           )
           .eq('user_id', user.id)
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .limit(100);
 
       return (rows as List<dynamic>)
           .whereType<Map<String, dynamic>>()

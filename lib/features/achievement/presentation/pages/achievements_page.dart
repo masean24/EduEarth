@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -10,6 +11,8 @@ import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../models/achievement.dart';
+import '../../../../routes/route_names.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/achievement_providers.dart';
 import '../widgets/achievement_unlock_dialog.dart';
 
@@ -46,6 +49,17 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
   }
 
   Future<void> _manualEvaluate() async {
+    if (!ref.read(isAuthenticatedProvider)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Masuk ke akun EduEarth terlebih dahulu untuk menyimpan pencapaian.',
+          ),
+        ),
+      );
+      context.push(RouteNames.loginPath);
+      return;
+    }
     if (_isChecking) return;
     setState(() => _isChecking = true);
     try {
@@ -104,6 +118,7 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
   Widget build(BuildContext context) {
     final achievementsAsync = ref.watch(achievementsListProvider);
     final totalPoints = ref.watch(unlockedAchievementPointsProvider);
+    final isAuthenticated = ref.watch(isAuthenticatedProvider);
 
     return Scaffold(
       appBar: ScreenHeaderBar(
@@ -155,6 +170,43 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
                 children: [
+                  if (!isAuthenticated) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.warmYellow),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.lock_outline_rounded,
+                            size: 18,
+                            color: AppColors.forestGreen,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Mode Tamu: masuk akun untuk membuka & menyimpan lencana belajar.',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.forestGreen,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => context.push(RouteNames.loginPath),
+                            child: const Text('Masuk'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   _buildHeroSummaryCard(
                     unlockedCount: unlockedCount,
                     totalCount: totalCount,
@@ -162,18 +214,24 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
                     progress: progress,
                   ),
                   const SizedBox(height: 22),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Daftar Lencana', style: AppTextStyles.title),
-                      Text(
-                        'Ketuk badge terbuka untuk animasi ✨',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.forestGreen,
-                          fontWeight: FontWeight.w700,
+                  SizedBox(
+                    width: double.infinity,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text('Daftar Lencana', style: AppTextStyles.title),
+                        Text(
+                          'Ketuk badge terbuka ✨',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.forestGreen,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 12),
                   ...achievements.map(

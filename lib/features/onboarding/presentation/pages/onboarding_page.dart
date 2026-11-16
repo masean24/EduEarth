@@ -56,33 +56,33 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   static const List<_OnboardingSlideData> _slides = [
     _OnboardingSlideData(
       stepIndex: 0,
-      badge: '1 • Peta Pembangkit',
-      speechBubble: 'Halo! Yuk keliling pembangkit hijau Nusantara! 🗺️',
-      title: 'Jelajahi Pembangkit Energi Terbarukan Indonesia',
+      badge: '1 • Explore Nusantara',
+      speechBubble: 'Halo! Yuk kenali pembangkit bersih di Nusantara! 🗺️',
+      title: 'Jelajahi Peta & Studi Kasus Pembangkit Indonesia',
       description:
-          'Temukan lokasi PLTS, PLTA, PLTB, PLTP, dan Bioenergi terverifikasi di seluruh Nusantara melalui peta OpenStreetMap interaktif.',
+          'Untuk pelajar SMP–SMA hingga masyarakat umum: amati 128 pembangkit (Beroperasi, Konstruksi, Rencana) lengkap dengan pelabelan jujur Lokasi perkiraan.',
       mascotAsset: 'assets/images/mascot/eco_wave.png',
       fallbackIcon: Icons.explore_rounded,
       accentColor: AppColors.freshGreen,
     ),
     _OnboardingSlideData(
       stepIndex: 1,
-      badge: '2 • Pusat Belajar',
-      speechBubble: 'Materi ringkas & mudah dipahami kapan saja! 📖',
-      title: 'Pelajari Cara Kerja Energi Bersih Secara Ringkas',
+      badge: '2 • Learn & Understand Impact',
+      speechBubble: 'Dari konsep pemula hingga trade-off lingkungan! 📖',
+      title: 'Pahami Cara Kerja & Bandingkan Dampak 5 Energi',
       description:
-          'Baca materi terstruktur tentang 5 kategori energi terbarukan, prinsip konversi daya, serta potensi geografis Indonesia.',
+          'Pelajari 9 modul bertingkat (Pemula–Lanjut), bandingkan kelebihan dan tantangan lingkungan tiap EBT, lalu akses bebas lewat Mode Tamu atau akun pribadi.',
       mascotAsset: 'assets/images/mascot/eco_reading.png',
-      fallbackIcon: Icons.menu_book_rounded,
+      fallbackIcon: Icons.compare_arrows_rounded,
       accentColor: AppColors.skyBlue,
     ),
     _OnboardingSlideData(
       stepIndex: 2,
-      badge: '3 • Kuis Edukatif',
-      speechBubble: 'Uji wawasanmu & lihat pembahasan tiap soal! 🏆',
-      title: 'Uji Pemahaman & Pantau Progres Belajarmu',
+      badge: '3 • Evaluate & Pantau Kemajuan',
+      speechBubble: 'Uji pemahaman & lihat kenaikan skormu! 🏆',
+      title: 'Evaluasi Kuis & Ukur Peningkatan Pemahaman',
       description:
-          'Kerjakan kuis interaktif dengan ulasan pembahasan per soal dan simpan materi serta pembangkit favoritmu.',
+          'Kerjakan 6 paket kuis aman dengan pembahasan ilmiah di setiap soal. Masuk akun untuk menyimpan bookmark dan melihat perkembangan skor Awal hingga Terbaru.',
       mascotAsset: 'assets/images/mascot/eco_congrats.png',
       fallbackIcon: Icons.quiz_rounded,
       accentColor: AppColors.warmYellow,
@@ -95,17 +95,20 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     super.dispose();
   }
 
-  Future<void> _finishOnboarding() async {
+  Future<void> _finishOnboarding({bool enterAsGuest = false}) async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
     try {
+      if (enterAsGuest) {
+        await ref.read(isGuestModeProvider.notifier).enterGuestMode();
+      }
       await ref.read(onboardingStatusProvider.notifier).completeOnboarding();
       if (!mounted) return;
 
       final isSupabaseReady = ref.read(isSupabaseInitializedProvider);
       final isAuthenticated = ref.read(isAuthenticatedProvider);
 
-      if (isSupabaseReady && !isAuthenticated) {
+      if (!enterAsGuest && isSupabaseReady && !isAuthenticated) {
         context.go(RouteNames.loginPath);
       } else {
         context.go(RouteNames.homePath);
@@ -247,6 +250,18 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                             ),
                           ],
                         ),
+                        if (_currentIndex == _slides.length - 1 &&
+                            ref.watch(isSupabaseInitializedProvider) &&
+                            !ref.watch(isAuthenticatedProvider)) ...[
+                          const SizedBox(height: 6),
+                          TextButton.icon(
+                            onPressed: _isSaving
+                                ? null
+                                : () => _finishOnboarding(enterAsGuest: true),
+                            icon: const Icon(Icons.explore_outlined, size: 17),
+                            label: const Text('Jelajahi dulu sebagai Tamu'),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -491,7 +506,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'OpenStreetMap • Data Terverifikasi',
+                    'OpenStreetMap • Sumber Tercatat',
                     style: AppTextStyles.caption.copyWith(
                       color: AppColors.surfaceWhite,
                       fontWeight: FontWeight.w700,
@@ -526,53 +541,59 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: AppTheme.badgePadding,
-                decoration: AppTheme.badgeDecoration(
-                  backgroundColor: AppColors.surfaceWhite,
-                  borderColor: AppColors.sageGreen.withValues(alpha: 0.6),
-                ),
-                child: Text(
-                  slide.badge,
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.forestGreen,
-                    fontWeight: FontWeight.w800,
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Container(
+                  padding: AppTheme.badgePadding,
+                  decoration: AppTheme.badgeDecoration(
+                    backgroundColor: AppColors.surfaceWhite,
+                    borderColor: AppColors.sageGreen.withValues(alpha: 0.6),
+                  ),
+                  child: Text(
+                    slide.badge,
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.forestGreen,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-              ),
-              Container(
-                padding: AppTheme.badgePadding,
-                decoration: AppTheme.badgeDecoration(
-                  backgroundColor: AppColors.surfaceWhite,
-                  borderColor: AppColors.sageGreen.withValues(alpha: 0.6),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (slide.stepIndex == 2) ...[
-                      const Icon(
-                        Icons.bolt_rounded,
-                        size: 15,
-                        color: Color(0xFFF59E0B),
+                Container(
+                  padding: AppTheme.badgePadding,
+                  decoration: AppTheme.badgeDecoration(
+                    backgroundColor: AppColors.surfaceWhite,
+                    borderColor: AppColors.sageGreen.withValues(alpha: 0.6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (slide.stepIndex == 2) ...[
+                        const Icon(
+                          Icons.bolt_rounded,
+                          size: 15,
+                          color: AppColors.warningFg,
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      Text(
+                        slide.stepIndex == 1
+                            ? '5 Kategori EBT'
+                            : 'Umpan Balik Instan',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.forestGreen,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                      const SizedBox(width: 4),
                     ],
-                    Text(
-                      slide.stepIndex == 1
-                          ? '5 Kategori EBT'
-                          : 'Umpan Balik Instan',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.forestGreen,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 8),
           Row(

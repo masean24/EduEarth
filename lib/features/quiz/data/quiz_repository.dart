@@ -25,6 +25,7 @@ class QuizRepository {
             '*, energy_categories(slug, name, short_code)',
           )
           .eq('is_published', true)
+          .eq('is_draft', false)
           .order('created_at', ascending: true);
 
       return (rows as List<dynamic>)
@@ -54,6 +55,7 @@ class QuizRepository {
           )
           .eq('id', quizId)
           .eq('is_published', true)
+          .eq('is_draft', false)
           .maybeSingle();
 
       if (row == null) {
@@ -154,7 +156,8 @@ class QuizRepository {
           .from('quiz_attempts')
           .select('*, quizzes(title)')
           .eq('user_id', user.id)
-          .order('completed_at', ascending: false);
+          .order('completed_at', ascending: false)
+          .limit(100);
 
       return (rows as List<dynamic>)
           .whereType<Map<String, dynamic>>()

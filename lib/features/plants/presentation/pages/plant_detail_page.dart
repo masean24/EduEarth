@@ -17,6 +17,7 @@ import '../../../../core/widgets/common/primary_button.dart';
 import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../core/widgets/common/secondary_button.dart';
 import '../../../../core/widgets/common/soft_image_placeholder.dart';
+import '../../../../models/learning_material.dart';
 import '../../../../models/power_plant.dart';
 import '../../../../routes/route_names.dart';
 import '../../../../services/external_map_service.dart';
@@ -24,14 +25,13 @@ import '../../../achievement/presentation/providers/achievement_providers.dart';
 import '../../../achievement/presentation/widgets/achievement_unlock_dialog.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../bookmark/presentation/providers/bookmark_providers.dart';
+import '../../../learning/domain/learning_integration_helper.dart';
+import '../../../learning/presentation/providers/learning_providers.dart';
 import '../providers/plants_providers.dart';
 
 /// Halaman Detail Pembangkit Energi (Plant Detail).
 class PlantDetailPage extends ConsumerWidget {
-  const PlantDetailPage({
-    super.key,
-    required this.plantId,
-  });
+  const PlantDetailPage({super.key, required this.plantId});
 
   final String plantId;
 
@@ -72,9 +72,7 @@ class PlantDetailPage extends ConsumerWidget {
     if (!launched) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Tidak dapat membuka pencarian Google Maps.',
-          ),
+          content: Text('Tidak dapat membuka pencarian Google Maps.'),
         ),
       );
     }
@@ -172,6 +170,7 @@ class PlantDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plantAsync = ref.watch(plantDetailProvider(plantId));
+    final materialsAsync = ref.watch(allLearningMaterialsProvider);
     final externalMapService = ref.watch(externalMapServiceProvider);
     final isBookmarked = ref.watch(isPlantBookmarkedProvider(plantId));
     final bookmarkController = ref.watch(bookmarkControllerProvider);
@@ -189,24 +188,24 @@ class PlantDetailPage extends ConsumerWidget {
               icon: isBookmarked
                   ? Icons.bookmark_rounded
                   : Icons.bookmark_border_rounded,
-              iconColor:
-                  isBookmarked ? AppColors.freshGreen : AppColors.forestGreen,
+              iconColor: isBookmarked
+                  ? AppColors.actionGreen
+                  : AppColors.forestGreen,
               onTap: bookmarkController.isLoading
                   ? null
                   : () => _handleToggleBookmark(
-                        context,
-                        ref,
-                        plantId,
-                        isBookmarked,
-                      ),
+                      context,
+                      ref,
+                      plantId,
+                      isBookmarked,
+                    ),
             ),
         ],
       ),
       body: SafeArea(
         child: plantAsync.when(
-          loading: () => const LoadingView(
-            message: 'Memuat informasi pembangkit...',
-          ),
+          loading: () =>
+              const LoadingView(message: 'Memuat informasi pembangkit...'),
           error: (error, _) => ErrorView(
             message: error.toString(),
             onRetry: () => ref.invalidate(plantDetailProvider(plantId)),
@@ -214,6 +213,8 @@ class PlantDetailPage extends ConsumerWidget {
           data: (plant) {
             final slug = plant.categorySlug ?? '';
             final categoryColor = AppColors.colorForCategorySlug(slug);
+            final eduContext =
+                LearningIntegrationHelper.buildPlantEducationalContext(plant);
 
             return Column(
               children: [
@@ -227,21 +228,64 @@ class PlantDetailPage extends ConsumerWidget {
 
                       // 2. Grid 2x2 Ringkasan Spesifikasi Utama
                       _buildQuickMetricsGrid(plant, categoryColor),
+                      const SizedBox(height: 12),
+
+                      // 2b. Penjelasan Arti Kapasitas (MW) & Status Operasional (M1.A)
+                      _buildCapacityAndStatusExplanationCard(plant, eduContext),
                       const SizedBox(height: 20),
 
-                      // 3. Kartu Deskripsi & Konteks Edukasi Kategori
+                      // 3. Kartu Deskripsi & Skema Konversi Energi 3 Langkah
                       _buildDescriptionAndEducationCard(
                         context: context,
                         plant: plant,
                         categoryColor: categoryColor,
                       ),
+                      if (eduContext.plantSpecificHighlight != null) ...[
+                        const SizedBox(height: 16),
+                        _buildPlantCaseStudyCard(
+                          plant: plant,
+                          eduContext: eduContext,
+                          externalMapService: externalMapService,
+                        ),
+                      ],
                       const SizedBox(height: 20),
 
-                      // 4. Peta Lokasi Geografis & Koordinat
-                      _buildLocationMapSection(plant, categoryColor),
+                      // 4. Konteks Geografis & Karakteristik Operasional Umum (M1.B & M1.C)
+                      _buildGeographicAndOperationalContextCard(
+                        context: context,
+                        plant: plant,
+                        eduContext: eduContext,
+                        categoryColor: categoryColor,
+                      ),
                       const SizedBox(height: 20),
 
-                      // 5. Kartu Sumber, Tanggal Data, & Catatan Metodologi
+                      // 5. Manfaat vs Tantangan Lingkungan (Trade-Off) & Pintasan Perbandingan (M1.D & M2.C)
+                      _buildEnvironmentalImpactCard(
+                        context: context,
+                        plant: plant,
+                        eduContext: eduContext,
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 6. Modul Pembelajaran Terkait Kategori Ini (M2.B)
+                      _buildRelatedLearningMaterialsCard(
+                        context: context,
+                        plant: plant,
+                        materialsAsync: materialsAsync,
+                        categoryColor: categoryColor,
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 7. Peta Lokasi Geografis & Koordinat
+                      _buildLocationMapSection(
+                        context,
+                        externalMapService,
+                        plant,
+                        categoryColor,
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 8. Kartu Sumber, Tanggal Data, & Catatan Metodologi
                       _buildSourceVerificationCard(
                         context: context,
                         externalMapService: externalMapService,
@@ -251,8 +295,8 @@ class PlantDetailPage extends ConsumerWidget {
                   ),
                 ),
 
-                // 6. Sticky Bottom Action Bar (2 Tombol Google Maps sesuai presisi koordinat)
-                _buildBottomGoogleMapsBar(
+                // 6. Sticky Bottom Action Bar: Core Loop + 1 aksi utama Google Maps
+                _buildBottomActionBar(
                   context: context,
                   externalMapService: externalMapService,
                   plant: plant,
@@ -265,58 +309,73 @@ class PlantDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildBottomGoogleMapsBar({
+  Widget _buildBottomActionBar({
     required BuildContext context,
     required ExternalMapService externalMapService,
     required PowerPlant plant,
   }) {
     final isApprox = plant.isApproximate;
+    final slug = plant.categorySlug ?? '';
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceWhite,
-        border: Border(top: BorderSide(color: AppColors.divider)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isApprox) ...[
-            PrimaryButton(
-              label: 'Cari di Google Maps',
-              icon: Icons.travel_explore_rounded,
-              onPressed: () =>
-                  _searchPlaceInGoogleMaps(context, externalMapService, plant),
-            ),
-            const SizedBox(height: 8),
-            SecondaryButton(
-              label: 'Lihat titik di Google Maps',
-              icon: Icons.pin_drop_outlined,
-              onPressed: () => _openCoordinatesInGoogleMaps(
-                context,
-                externalMapService,
-                plant,
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
+        decoration: const BoxDecoration(
+          color: AppColors.surfaceWhite,
+          border: Border(top: BorderSide(color: AppColors.divider)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 6,
+              child: PrimaryButton(
+                label: slug.isNotEmpty
+                    ? 'Bandingkan EBT'
+                    : 'Pusat Belajar',
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 14,
+                ),
+                icon: Icons.compare_arrows_rounded,
+                onPressed: () {
+                  if (slug.isNotEmpty) {
+                    context.push(
+                      '${RouteNames.energyComparisonPath}?category=$slug',
+                    );
+                  } else {
+                    context.go(RouteNames.learningPath);
+                  }
+                },
               ),
             ),
-          ] else ...[
-            PrimaryButton(
-              label: 'Lihat titik di Google Maps',
-              icon: Icons.pin_drop_outlined,
-              onPressed: () => _openCoordinatesInGoogleMaps(
-                context,
-                externalMapService,
-                plant,
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 5,
+              child: SecondaryButton(
+                label: isApprox ? 'Cari Maps' : 'Buka Maps',
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 14,
+                ),
+                icon: isApprox
+                    ? Icons.travel_explore_rounded
+                    : Icons.pin_drop_outlined,
+                onPressed: () => isApprox
+                    ? _searchPlaceInGoogleMaps(
+                        context,
+                        externalMapService,
+                        plant,
+                      )
+                    : _openCoordinatesInGoogleMaps(
+                        context,
+                        externalMapService,
+                        plant,
+                      ),
               ),
-            ),
-            const SizedBox(height: 8),
-            SecondaryButton(
-              label: 'Cari di Google Maps',
-              icon: Icons.travel_explore_rounded,
-              onPressed: () =>
-                  _searchPlaceInGoogleMaps(context, externalMapService, plant),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -579,8 +638,9 @@ class PlantDetailPage extends ConsumerWidget {
     final operatorValue = plant.operatorName?.trim().isNotEmpty == true
         ? plant.operatorName!
         : 'Belum tercatat';
-    final coordLabel =
-        plant.isApproximate ? 'Koordinat (Lokasi perkiraan)' : 'Koordinat Peta';
+    final coordLabel = plant.isApproximate
+        ? 'Koordinat (Lokasi perkiraan)'
+        : 'Koordinat Peta';
 
     return Column(
       children: [
@@ -652,8 +712,8 @@ class PlantDetailPage extends ConsumerWidget {
       slug,
       plant.categoryName ?? 'Energi Terbarukan',
     );
-    final descText = (plant.description != null &&
-            plant.description!.trim().isNotEmpty)
+    final descText =
+        (plant.description != null && plant.description!.trim().isNotEmpty)
         ? plant.description!
         : 'Deskripsi ringkas pembangkit belum tercantum pada sumber data.';
 
@@ -703,7 +763,580 @@ class PlantDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildLocationMapSection(PowerPlant plant, Color categoryColor) {
+  Widget _buildCapacityAndStatusExplanationCard(
+    PowerPlant plant,
+    PlantEducationalContext eduContext,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.mintGreen.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppColors.freshGreen.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.info_outline_rounded,
+                size: 19,
+                color: AppColors.forestGreen,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Memahami Kapasitas & Status Pembangkit',
+                  style: AppTextStyles.subtitle.copyWith(fontSize: 15),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            eduContext.capacityAndStatusExplanation,
+            style: AppTextStyles.body.copyWith(
+              fontSize: 13.5,
+              color: AppColors.textPrimary,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlantCaseStudyCard({
+    required PowerPlant plant,
+    required PlantEducationalContext eduContext,
+    required ExternalMapService externalMapService,
+  }) {
+    final hasSourceUrl =
+        plant.sourceUrl != null && plant.sourceUrl!.trim().isNotEmpty;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.mintGreen.withValues(alpha: 0.48),
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppColors.sageGreen),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.star_outline_rounded,
+                size: 20,
+                color: AppColors.forestGreen,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Catatan Studi Kasus Pembangkit Ini',
+                  style: AppTextStyles.subtitle.copyWith(fontSize: 15),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            eduContext.plantSpecificHighlight!,
+            style: AppTextStyles.body.copyWith(
+              fontSize: 13.5,
+              color: AppColors.textPrimary,
+              height: 1.5,
+            ),
+          ),
+          if (eduContext.highlightSourceLabel != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Rujukan: ${eduContext.highlightSourceLabel}',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.forestGreen,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          if (hasSourceUrl) ...[
+            const SizedBox(height: 6),
+            TextButton.icon(
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(48, 36),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: () =>
+                  externalMapService.openExternalUrl(plant.sourceUrl!),
+              icon: const Icon(Icons.open_in_new_rounded, size: 15),
+              label: const Text('Buka Tautan Sumber'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGeographicAndOperationalContextCard({
+    required BuildContext context,
+    required PowerPlant plant,
+    required PlantEducationalContext eduContext,
+    required Color categoryColor,
+  }) {
+    final slug = plant.categorySlug ?? '';
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.terrain_rounded,
+                size: 20,
+                color: AppColors.forestGreen,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Karakteristik Kategori & Wilayah (Umum)',
+                  style: AppTextStyles.subtitle,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.offWhite,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.divider),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  eduContext.geographicReasonTitle,
+                  style: AppTextStyles.subtitle.copyWith(fontSize: 14),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  eduContext.geographicReasonBody,
+                  style: AppTextStyles.body.copyWith(
+                    fontSize: 13.5,
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.offWhite,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.divider),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  eduContext.operationalCharacteristicsTitle,
+                  style: AppTextStyles.subtitle.copyWith(fontSize: 14),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  eduContext.operationalCharacteristicsBody,
+                  style: AppTextStyles.body.copyWith(
+                    fontSize: 13.5,
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceWhite,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.divider),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.tune_rounded,
+                        size: 16,
+                        color: AppColors.forestGreen,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          eduContext.designVariationNote,
+                          style: AppTextStyles.caption.copyWith(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            height: 1.45,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (slug.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            SecondaryButton(
+              label: 'Bandingkan Karakteristik & Dampak',
+              icon: Icons.compare_arrows_rounded,
+              onPressed: () => context.push(
+                '${RouteNames.energyComparisonPath}?category=$slug',
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnvironmentalImpactCard({
+    required BuildContext context,
+    required PowerPlant plant,
+    required PlantEducationalContext eduContext,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.eco_outlined,
+                size: 20,
+                color: AppColors.forestGreen,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Manfaat & Tantangan Lingkungan (Trade-off)',
+                  style: AppTextStyles.subtitle,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Setiap teknologi energi terbarukan memiliki manfaat dekarbonisasi sekaligus tantangan lingkungan yang perlu dikelola.',
+            style: AppTextStyles.caption.copyWith(
+              fontSize: 12.5,
+              color: AppColors.textSecondary,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: AppColors.mintGreen.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.freshGreen.withValues(alpha: 0.25),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle_outline_rounded,
+                      size: 17,
+                      color: AppColors.forestGreen,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Manfaat Utama Transisi Energi',
+                      style: AppTextStyles.subtitle.copyWith(
+                        fontSize: 13.5,
+                        color: AppColors.forestGreen,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ...eduContext.environmentalBenefits.map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '• ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.forestGreen,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            item,
+                            style: AppTextStyles.caption.copyWith(
+                              fontSize: 12.5,
+                              color: AppColors.textPrimary,
+                              height: 1.45,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFFBEB),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      size: 17,
+                      color: Color(0xFFB45309),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Tantangan Lingkungan & Teknis',
+                        style: AppTextStyles.subtitle.copyWith(
+                          fontSize: 13.5,
+                          color: const Color(0xFFB45309),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ...eduContext.environmentalChallenges.map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '• ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFB45309),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            item,
+                            style: AppTextStyles.caption.copyWith(
+                              fontSize: 12.5,
+                              color: AppColors.textPrimary,
+                              height: 1.45,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.menu_book_outlined,
+                size: 15,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  eduContext.referenceAttribution,
+                  style: AppTextStyles.caption.copyWith(
+                    fontSize: 11.5,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRelatedLearningMaterialsCard({
+    required BuildContext context,
+    required PowerPlant plant,
+    required AsyncValue<List<LearningMaterial>> materialsAsync,
+    required Color categoryColor,
+  }) {
+    final slug = plant.categorySlug ?? '';
+    final materials = materialsAsync.maybeWhen(
+      data: (list) => LearningIntegrationHelper.selectRelevantMaterialsForPlant(
+        plant: plant,
+        allMaterials: list,
+      ),
+      orElse: () => const <LearningMaterial>[],
+    );
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.school_outlined,
+                size: 20,
+                color: AppColors.forestGreen,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Pelajari Materi Terkait',
+                  style: AppTextStyles.subtitle,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Pahami prinsip kerja, kondisi geografis, dan dampak lingkungan dari jenis energi ini melalui modul pembelajaran:',
+            style: AppTextStyles.caption.copyWith(
+              fontSize: 12.5,
+              color: AppColors.textSecondary,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...materials.map(
+            (material) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () =>
+                    context.push('/learning/material/${material.slug}'),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.offWhite,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.divider),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: categoryColor.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.menu_book_rounded,
+                          size: 19,
+                          color: plant.categorySlug == 'solar'
+                              ? AppColors.forestGreen
+                              : categoryColor,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              material.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.subtitle.copyWith(
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              '${material.readMinutes} menit baca • ${material.difficultyLabel}',
+                              style: AppTextStyles.caption.copyWith(
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.textSecondary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (slug.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => context.push('/learning/category/$slug'),
+                icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                label: const Text('Buka Halaman Kategori Energi'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationMapSection(
+    BuildContext context,
+    ExternalMapService externalMapService,
+    PowerPlant plant,
+    Color categoryColor,
+  ) {
     final point = LatLng(plant.latitude, plant.longitude);
 
     return Container(
@@ -750,12 +1383,12 @@ class PlantDetailPage extends ConsumerWidget {
                         ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFEF3C7),
-                          borderRadius:
-                              BorderRadius.circular(AppTheme.pillRadius),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.pillRadius,
+                          ),
                           border: Border.all(
-                            color: const Color(0xFFF59E0B).withValues(
-                              alpha: 0.45,
-                            ),
+                            color: const Color(0xFFF59E0B)
+                                .withValues(alpha: 0.45),
                           ),
                         ),
                         child: Text(
@@ -776,8 +1409,9 @@ class PlantDetailPage extends ConsumerWidget {
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.offWhite,
-                        borderRadius:
-                            BorderRadius.circular(AppTheme.pillRadius),
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.pillRadius,
+                        ),
                         border: Border.all(color: AppColors.divider),
                       ),
                       child: Text(
@@ -868,6 +1502,36 @@ class PlantDetailPage extends ConsumerWidget {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => plant.isApproximate
+                    ? _openCoordinatesInGoogleMaps(
+                        context,
+                        externalMapService,
+                        plant,
+                      )
+                    : _searchPlaceInGoogleMaps(
+                        context,
+                        externalMapService,
+                        plant,
+                      ),
+                icon: Icon(
+                  plant.isApproximate
+                      ? Icons.pin_drop_outlined
+                      : Icons.travel_explore_rounded,
+                  size: 16,
+                ),
+                label: Text(
+                  plant.isApproximate
+                      ? 'Lihat titik koordinat perkiraan di Google Maps'
+                      : 'Cari nama lokasi di Google Maps',
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -945,9 +1609,8 @@ class PlantDetailPage extends ConsumerWidget {
           if (hasSourceNotes) ...[
             const SizedBox(height: 10),
             Theme(
-              data: Theme.of(context).copyWith(
-                dividerColor: Colors.transparent,
-              ),
+              data: Theme.of(context)
+                  .copyWith(dividerColor: Colors.transparent),
               child: Container(
                 decoration: BoxDecoration(
                   color: AppColors.offWhite,
@@ -994,11 +1657,8 @@ class PlantDetailPage extends ConsumerWidget {
             SecondaryButton(
               label: 'Lihat Sumber',
               icon: Icons.open_in_new_rounded,
-              onPressed: () => _openSourceUrl(
-                context,
-                externalMapService,
-                plant.sourceUrl!,
-              ),
+              onPressed: () =>
+                  _openSourceUrl(context, externalMapService, plant.sourceUrl!),
             ),
           ],
         ],
@@ -1060,9 +1720,10 @@ class _MetricTile extends StatelessWidget {
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.forestGreen,
               fontWeight: FontWeight.w700,
-              fontSize: 13.5,
+              fontSize: 13,
+              height: 1.25,
             ),
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -1110,36 +1771,16 @@ class _AnimatedCategorySceneBannerState
   List<Color> _gradientForSlug(String slug) {
     switch (slug.toLowerCase().trim()) {
       case 'solar':
-        return const [
-          Color(0xFF0F5132),
-          Color(0xFF1E7E48),
-          Color(0xFFD97706),
-        ];
+        return const [Color(0xFF0F5132), Color(0xFF1E7E48), Color(0xFFD97706)];
       case 'hydro':
-        return const [
-          Color(0xFF0C4A6E),
-          Color(0xFF0284C7),
-          Color(0xFF15803D),
-        ];
+        return const [Color(0xFF0C4A6E), Color(0xFF0284C7), Color(0xFF15803D)];
       case 'wind':
-        return const [
-          Color(0xFF115E59),
-          Color(0xFF0D9488),
-          Color(0xFF22C55E),
-        ];
+        return const [Color(0xFF115E59), Color(0xFF0D9488), Color(0xFF22C55E)];
       case 'geothermal':
-        return const [
-          Color(0xFF7C2D12),
-          Color(0xFFC2410C),
-          Color(0xFF14532D),
-        ];
+        return const [Color(0xFF7C2D12), Color(0xFFC2410C), Color(0xFF14532D)];
       case 'bioenergy':
       default:
-        return const [
-          Color(0xFF14532D),
-          Color(0xFF15803D),
-          Color(0xFF4ADE80),
-        ];
+        return const [Color(0xFF14532D), Color(0xFF15803D), Color(0xFF4ADE80)];
     }
   }
 
@@ -1226,8 +1867,8 @@ class _AnimatedCategorySceneBannerState
                           slug == 'wind'
                               ? Icons.cyclone_rounded
                               : slug == 'solar'
-                                  ? Icons.wb_sunny_outlined
-                                  : Icons.autorenew_rounded,
+                              ? Icons.wb_sunny_outlined
+                              : Icons.autorenew_rounded,
                           size: 74,
                           color: Colors.white.withValues(alpha: 0.22),
                         ),
@@ -1299,20 +1940,17 @@ class _InteractiveEnergyFlowSectionState
           (
             title: '1. Tangkap Sinar',
             icon: Icons.wb_sunny_rounded,
-            detail:
-                'Panel fotovoltaik menyerap foton radiasi matahari dan membangkitkan arus listrik searah (DC) pada sel semikonduktor silikon.',
+            detail: 'Panel fotovoltaik menyerap foton radiasi matahari dan membangkitkan arus listrik searah (DC) pada sel semikonduktor silikon.',
           ),
           (
             title: '2. Konversi Inverter',
             icon: Icons.electrical_services_rounded,
-            detail:
-                'Inverter mengubah arus DC dari rangkaian modul surya menjadi arus bolak-balik (AC) yang sinkron dengan frekuensi jaringan.',
+            detail: 'Inverter mengubah arus DC dari rangkaian modul surya menjadi arus bolak-balik (AC) yang sinkron dengan frekuensi jaringan.',
           ),
           (
             title: '3. Saluran Grid',
             icon: Icons.bolt_rounded,
-            detail:
-                'Tegangan dinaikkan melalui transformator step-up lalu disalurkan ke jaringan listrik PLN untuk rumah dan industri.',
+            detail: 'Tegangan dinaikkan melalui transformator step-up lalu disalurkan ke jaringan listrik PLN untuk rumah dan industri.',
           ),
         ];
       case 'hydro':
@@ -1320,20 +1958,17 @@ class _InteractiveEnergyFlowSectionState
           (
             title: '1. Aliran Air',
             icon: Icons.water_drop_rounded,
-            detail:
-                'Air dari waduk atau bendungan dialirkan melalui pipa pesat (penstock) untuk mengubah energi potensial gravitasi menjadi energi kinetik.',
+            detail: 'Air dari waduk atau bendungan dialirkan melalui pipa pesat (penstock) untuk mengubah energi potensial gravitasi menjadi energi kinetik.',
           ),
           (
             title: '2. Putaran Turbin',
             icon: Icons.settings_suggest_rounded,
-            detail:
-                'Dorongan air bertekanan tinggi memutar sudu turbin air yang terhubung langsung pada poros generator.',
+            detail: 'Dorongan air bertekanan tinggi memutar sudu turbin air yang terhubung langsung pada poros generator.',
           ),
           (
             title: '3. Induksi Listrik',
             icon: Icons.bolt_rounded,
-            detail:
-                'Generator mengubah energi mekanik putaran menjadi energi listrik AC ramah lingkungan dan air dikembalikan ke daerah aliran sungai.',
+            detail: 'Generator mengubah energi mekanik putaran menjadi energi listrik AC ramah lingkungan dan air dikembalikan ke daerah aliran sungai.',
           ),
         ];
       case 'wind':
@@ -1341,20 +1976,17 @@ class _InteractiveEnergyFlowSectionState
           (
             title: '1. Hembusan Angin',
             icon: Icons.air_rounded,
-            detail:
-                'Bilah rotor aerodinamis menangkap energi kinetik angin pada ketinggian menara dan mulai berputar mengikuti arah angin.',
+            detail: 'Bilah rotor aerodinamis menangkap energi kinetik angin pada ketinggian menara dan mulai berputar mengikuti arah angin.',
           ),
           (
             title: '2. Nacelle & Generator',
             icon: Icons.wind_power_rounded,
-            detail:
-                'Poros di dalam nacelle memutar generator (baik melalui gearbox maupun direct-drive) untuk menghasilkan energi listrik.',
+            detail: 'Poros di dalam nacelle memutar generator (baik melalui gearbox maupun direct-drive) untuk menghasilkan energi listrik.',
           ),
           (
             title: '3. Gardu & Jaringan',
             icon: Icons.bolt_rounded,
-            detail:
-                'Listrik dari tiap menara turbin dikumpulkan di gardu induk pembangkit lalu diinjeksikan ke jaringan transmisi.',
+            detail: 'Listrik dari tiap menara turbin dikumpulkan di gardu induk pembangkit lalu diinjeksikan ke jaringan transmisi.',
           ),
         ];
       case 'geothermal':
@@ -1362,20 +1994,17 @@ class _InteractiveEnergyFlowSectionState
           (
             title: '1. Uap Panas Bumi',
             icon: Icons.local_fire_department_rounded,
-            detail:
-                'Sumur produksi mengalirkan fluida dan uap bersuhu tinggi dari reservoar geotermal di bawah permukaan bumi.',
+            detail: 'Sumur produksi mengalirkan fluida dan uap bersuhu tinggi dari reservoar geotermal di bawah permukaan bumi.',
           ),
           (
             title: '2. Turbin Uap',
             icon: Icons.settings_input_component_rounded,
-            detail:
-                'Pemisah uap (separator) mengalirkan uap bersih bertekanan untuk memutar turbin uap dan generator secara stabil 24 jam (baseload).',
+            detail: 'Pemisah uap (separator) mengalirkan uap bersih bertekanan untuk memutar turbin uap dan generator secara stabil 24 jam (baseload).',
           ),
           (
             title: '3. Injeksi Ulang',
             icon: Icons.recycling_rounded,
-            detail:
-                'Uap yang telah dikondensasi diinjeksikan kembali ke dalam sumur injeksi agar tekanan reservoar bumi tetap lestari.',
+            detail: 'Uap yang telah dikondensasi diinjeksikan kembali ke dalam sumur injeksi agar tekanan reservoar bumi tetap lestari.',
           ),
         ];
       case 'bioenergy':
@@ -1384,20 +2013,17 @@ class _InteractiveEnergyFlowSectionState
           (
             title: '1. Bahan Organik',
             icon: Icons.eco_rounded,
-            detail:
-                'Residu pertanian/perkebunan (cangkang sawit, sekam, kayu energi) atau limbah cair organik dikumpulkan sebagai bahan bakar terbarukan.',
+            detail: 'Residu pertanian/perkebunan (cangkang sawit, sekam, kayu energi) atau limbah cair organik dikumpulkan sebagai bahan bakar terbarukan.',
           ),
           (
             title: '2. Termal / Biogas',
             icon: Icons.local_fire_department_rounded,
-            detail:
-                'Biomassa dibakar di boiler uap (PLTBm) atau difermentasi menjadi gas metana (PLTBg) untuk menggerakkan turbin/mesin gas.',
+            detail: 'Biomassa dibakar di boiler uap (PLTBm) atau difermentasi menjadi gas metana (PLTBg) untuk menggerakkan turbin/mesin gas.',
           ),
           (
             title: '3. Listrik Bersih',
             icon: Icons.bolt_rounded,
-            detail:
-                'Generator membangkitkan listrik sekaligus membantu pengelolaan limbah agroindustri secara sirkular.',
+            detail: 'Generator membangkitkan listrik sekaligus membantu pengelolaan limbah agroindustri secara sirkular.',
           ),
         ];
     }

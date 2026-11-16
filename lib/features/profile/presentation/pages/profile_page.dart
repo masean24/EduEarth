@@ -79,13 +79,38 @@ class ProfilePage extends ConsumerWidget {
           ),
           data: (profile) {
             if (session == null) {
-              return EmptyView(
-                icon: Icons.person_outline_rounded,
-                title: 'Belum Masuk ke Akun',
-                description:
-                    'Masuk ke akun EduEarth Anda untuk mengelola profil, melihat progres belajar, dan menyimpan bookmark.',
-                actionLabel: 'Masuk (Login)',
-                onAction: () => context.push(RouteNames.loginPath),
+              return SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  24,
+                  24,
+                  AppTheme.bottomNavScrollPadding + bottomSafe,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    EmptyView(
+                      icon: Icons.person_outline_rounded,
+                      assetPath: 'assets/images/mascot/eco_wave.png',
+                      title: 'Mode Tamu Aktif',
+                      description:
+                          'Anda sedang menjelajah tanpa akun. Masuk ke akun EduEarth untuk menyimpan riwayat kuis, perkembangan skor, bookmark, dan badge belajar.',
+                      actionLabel: 'Masuk / Daftar Akun',
+                      onAction: () => context.push(RouteNames.loginPath),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () => context.push(RouteNames.settingsPath),
+                      icon: const Icon(Icons.tune_rounded, size: 18),
+                      label: const Text('Pengaturan Tampilan & Efek Kaca'),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => context.push(RouteNames.aboutPath),
+                      icon: const Icon(Icons.info_outline_rounded, size: 18),
+                      label: const Text('Tentang EduEarth & Sumber Data'),
+                    ),
+                  ],
+                ),
               );
             }
 
@@ -156,11 +181,11 @@ class ProfilePage extends ConsumerWidget {
                     const SizedBox(height: 18),
                   ],
 
-                  // 3. Grup Menu: Aktivitas & Pembelajaran
+                  // 3. Grup Menu: Pembelajaran Inti & Progres
                   Padding(
                     padding: const EdgeInsets.only(left: 4, bottom: 8),
                     child: Text(
-                      'Aktivitas & Pembelajaran',
+                      'Pembelajaran Inti & Progres',
                       style: AppTextStyles.subtitle.copyWith(fontSize: 15),
                     ),
                   ),
@@ -169,24 +194,50 @@ class ProfilePage extends ConsumerWidget {
                     child: Column(
                       children: [
                         _MoodboardMenuTile(
-                          icon: Icons.menu_book_rounded,
-                          iconBackground: const Color(0xFFFEF9C3),
-                          iconColor: const Color(0xFFD97706),
-                          title: 'Progres Belajar Saya',
-                          subtitle: 'Riwayat nilai kuis & statistik belajar',
+                          icon: Icons.trending_up_rounded,
+                          iconBackground: AppColors.mintGreen,
+                          iconColor: AppColors.forestGreen,
+                          title: 'Progres Belajar & Skor',
+                          subtitle: 'Perkembangan skor Awal → Terbaru & materi',
                           onTap: () => context.push(RouteNames.myLearningPath),
                         ),
                         const Divider(height: 1, indent: 68),
                         _MoodboardMenuTile(
+                          icon: Icons.compare_arrows_rounded,
+                          iconBackground: const Color(0xFFE0F2FE),
+                          iconColor: AppColors.skyBlue,
+                          title: 'Perbandingan 5 Energi',
+                          subtitle: 'Karakteristik teknis & trade-off lingkungan',
+                          onTap: () =>
+                              context.push(RouteNames.energyComparisonPath),
+                        ),
+                        const Divider(height: 1, indent: 68),
+                        _MoodboardMenuTile(
                           icon: Icons.bookmark_rounded,
-                          iconBackground: AppColors.mintGreen,
-                          iconColor: AppColors.forestGreen,
+                          iconBackground: const Color(0xFFFEF9C3),
+                          iconColor: const Color(0xFFD97706),
                           title: 'Daftar Tersimpan',
                           subtitle:
                               '$bookmarkCount materi & pembangkit favorit',
                           onTap: () => context.push(RouteNames.bookmarksPath),
                         ),
-                        const Divider(height: 1, indent: 68),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // 4. Grup Menu: Fitur Pendukung & Panduan
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, bottom: 8),
+                    child: Text(
+                      'Fitur Pendukung & Panduan',
+                      style: AppTextStyles.subtitle.copyWith(fontSize: 15),
+                    ),
+                  ),
+                  Container(
+                    decoration: AppTheme.cardDecoration(),
+                    child: Column(
+                      children: [
                         _MoodboardMenuTile(
                           icon: Icons.emoji_events_rounded,
                           iconBackground: const Color(0xFFFEF9C3),
@@ -197,47 +248,21 @@ class ProfilePage extends ConsumerWidget {
                           onTap: () =>
                               context.push(RouteNames.achievementsPath),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // 4. Grup Menu: Eksplorasi & Informasi
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 8),
-                    child: Text(
-                      'Eksplorasi & Informasi',
-                      style: AppTextStyles.subtitle.copyWith(fontSize: 15),
-                    ),
-                  ),
-                  Container(
-                    decoration: AppTheme.cardDecoration(),
-                    child: Column(
-                      children: [
-                        _MoodboardMenuTile(
-                          icon: Icons.compare_arrows_rounded,
-                          iconBackground: AppColors.mintGreen,
-                          iconColor: AppColors.forestGreen,
-                          title: 'Perbandingan Energi',
-                          subtitle: 'Bandingkan karakteristik 5 sumber EBT',
-                          onTap: () =>
-                              context.push(RouteNames.energyComparisonPath),
-                        ),
                         const Divider(height: 1, indent: 68),
                         _MoodboardMenuTile(
                           icon: Icons.campaign_rounded,
                           iconBackground: const Color(0xFFE0F2FE),
                           iconColor: AppColors.skyBlue,
-                          title: 'Pusat Informasi',
-                          subtitle: 'Pengumuman & pembaruan materi EduEarth',
+                          title: 'Pusat Informasi & Panduan',
+                          subtitle: 'Panduan 4 pilar & catatan dataset',
                           onTap: () =>
                               context.push(RouteNames.notificationsPath),
                         ),
                         const Divider(height: 1, indent: 68),
                         _MoodboardMenuTile(
                           icon: Icons.search_rounded,
-                          iconBackground: const Color(0xFFE0F2FE),
-                          iconColor: AppColors.skyBlue,
+                          iconBackground: AppColors.mintGreen,
+                          iconColor: AppColors.forestGreen,
                           title: 'Pencarian Global',
                           subtitle: 'Cari cepat pembangkit, materi, dan kuis',
                           onTap: () => context.push(RouteNames.searchPath),

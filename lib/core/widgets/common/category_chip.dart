@@ -111,8 +111,8 @@ class CategoryChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accentColor = categorySlug != null
-        ? AppColors.colorForCategorySlug(categorySlug!)
-        : AppColors.freshGreen;
+        ? AppColors.foregroundColorForCategorySlug(categorySlug)
+        : AppColors.actionGreen;
 
     final chipContent = Row(
       mainAxisSize: MainAxisSize.min,
@@ -204,6 +204,56 @@ class CategoryChip extends StatelessWidget {
           child: chipContent,
         ),
       ),
+    );
+  }
+}
+
+/// Pembungkus daftar chip horizontal dengan petunjuk gulir visual di sisi kanan
+/// agar kategori ke-5 (`Bioenergi`) tidak tampak terpotong tanpa arah.
+class HorizontalChipStrip extends StatelessWidget {
+  const HorizontalChipStrip({
+    super.key,
+    required this.child,
+    this.fadeColor = AppColors.offWhite,
+  });
+
+  final Widget child;
+  final Color fadeColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [Colors.white, Colors.white, Colors.transparent],
+              stops: [0.0, 0.90, 1.0],
+            ).createShader(bounds),
+            blendMode: BlendMode.dstIn,
+            child: child,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceWhite.withValues(alpha: 0.92),
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.divider),
+          ),
+          alignment: Alignment.center,
+          child: const Icon(
+            Icons.chevron_right_rounded,
+            size: 16,
+            color: AppColors.forestGreen,
+          ),
+        ),
+        const SizedBox(width: 8),
+      ],
     );
   }
 }

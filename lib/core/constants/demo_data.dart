@@ -1,4 +1,4 @@
-// DEMO DATA — bukan data nyata.
+// DEMO DATA — bukan data nyata untuk tabel power_plants.
 // Hanya digunakan sebagai fallback lokal apabila aplikasi dijalankan tanpa
 // kredensial Supabase (AppConfig.isSupabaseConfigured == false).
 // PENTING: Sesuai aturan keamanan Fase 4, file ini TIDAK menyimpan kunci jawaban kuis.
@@ -16,125 +16,82 @@ class DemoData {
 
   static const Map<String, Map<String, dynamic>> comparisonBySlug = {
     'solar': {
-      'sumber_energi':
-          'Radiasi cahaya matahari yang dikonversi melalui efek fotovoltaik pada sel surya',
-      'karakter_pasokan':
-          'Intermiten; berproduksi optimal pada siang hari dan bergantung pada cuaca serta tutupan awan',
-      'faktor_kapasitas':
-          'Relatif rendah hingga menengah karena siklus penyinaran harian matahari',
-      'emisi_siklus_hidup':
-          'Sangat rendah saat beroperasi; jejak emisi terutama berasal dari proses manufaktur modul surya',
-      'kebutuhan_lahan':
-          'Fleksibel; dapat memanfaatkan atap bangunan, lahan terbuka, maupun permukaan waduk (PLTS terapung)',
-      'keunggulan_utama':
-          'Bersifat modular, waktu pemasangan relatif cepat, serta pemeliharaan harian sederhana',
-      'tantangan_utama':
-          'Memerlukan penyimpan energi (baterai) atau penyeimbang jaringan saat malam dan cuaca mendung',
-      'karakter_lokasi':
-          'Daerah terbuka dengan paparan radiasi matahari konsisten dan minim bayangan penghalang',
+      'sumber_energi': 'Radiasi cahaya matahari yang dikonversi melalui efek fotovoltaik pada sel semikonduktor silikon.',
+      'karakter_pasokan': 'Umumnya bersifat variabel (intermiten); berproduksi optimal pada siang hari dan dipengaruhi tutupan awan.',
+      'faktor_kapasitas': 'Umumnya relatif rendah hingga menengah karena mengikuti jam penyinaran matahari harian.',
+      'emisi_siklus_hidup': 'Sangat rendah saat beroperasi (tanpa pembakaran bahan bakar); jejak emisi siklus hidup terutama berasal dari proses manufaktur modul dan konstruksi.',
+      'kebutuhan_lahan': 'Umumnya membutuhkan area permukaan yang luas per satuan MW di daratan, namun dapat memanfaatkan atap bangunan atau permukaan waduk (PLTS terapung).',
+      'keunggulan_utama': 'Bersifat modular, tidak memerlukan air pendingin turbin, dan tidak menghasilkan emisi gas buang saat beroperasi.',
+      'tantangan_utama': 'Fluktuasi daya saat mendung/malam hari memerlukan dukungan penyimpanan baterai (BESS) atau pembangkit penyeimbang di jaringan.',
+      'karakter_lokasi': 'Umumnya cocok di wilayah dengan iradiasi matahari konsisten, lahan terbuka atau perairan tenang, dan minim bayangan penghalang.',
+      'manfaat_lingkungan': 'Menghasilkan listrik tanpa pembakaran bahan bakar fosil saat operasi serta dapat dipasang pada permukaan waduk buatan untuk menghemat lahan darat.',
+      'tantangan_lingkungan': 'Membutuhkan tata guna lahan yang terencana pada instalasi darat skala besar serta pengelolaan daur ulang limbah modul surya dan baterai di akhir masa pakai.',
+      'variasi_desain': 'Karakteristik tiap PLTS dapat berbeda antara PLTS tanpa penyimpanan, PLTS dengan baterai (BESS), PLTS darat (ground-mounted), maupun PLTS terapung (floating PV).',
     },
     'hydro': {
-      'sumber_energi':
-          'Energi potensial dan kinetik dari aliran sungai atau terjunan air waduk',
-      'karakter_pasokan':
-          'Stabil dan fleksibel; dapat dioperasikan untuk memikul beban dasar maupun beban puncak',
-      'faktor_kapasitas':
-          'Menengah hingga tinggi, mengikuti ketersediaan debit air sepanjang musim',
-      'emisi_siklus_hidup':
-          'Sangat rendah selama masa operasi pembangkitan listrik',
-      'kebutuhan_lahan':
-          'Luas untuk sistem bendungan berwaduk; relatif ringkas untuk sistem aliran sungai langsung (run-of-river)',
-      'keunggulan_utama':
-          'Umur teknis infrastruktur panjang dan mampu merespons perubahan beban jaringan dengan cepat',
-      'tantangan_utama':
-          'Kebutuhan investasi konstruksi sipil awal besar serta sensitif terhadap musim kemarau',
-      'karakter_lokasi':
-          'Wilayah dengan daerah aliran sungai berdebit stabil dan topografi berlembah atau berbukit',
+      'sumber_energi': 'Energi potensial gravitasi dan kinetik dari aliran sungai atau terjunan air waduk.',
+      'karakter_pasokan': 'Umumnya stabil dan fleksibel; pada sistem berwaduk dapat diatur untuk menopang beban dasar maupun beban puncak.',
+      'faktor_kapasitas': 'Umumnya menengah hingga tinggi, bergantung pada ketersediaan debit air Daerah Aliran Sungai (DAS) lintas musim.',
+      'emisi_siklus_hidup': 'Sangat rendah selama operasi pembangkitan listrik; emisi siklus hidup berasal dari konstruksi sipil bendungan dan kondisi biogenik waduk.',
+      'kebutuhan_lahan': 'Luas untuk sistem bendungan berwaduk besar; relatif lebih ringkas untuk sistem aliran sungai langsung (run-of-river).',
+      'keunggulan_utama': 'Umur teknis infrastruktur panjang dan mampu merespons perubahan beban jaringan listrik dengan cepat.',
+      'tantangan_utama': 'Waktu dan biaya konstruksi sipil awal tinggi serta produksi daya dapat menurun saat musim kemarau panjang.',
+      'karakter_lokasi': 'Umumnya cocok di wilayah bertopografi pegunungan/perbukitan (memiliki beda tinggi/head) dengan aliran sungai berdebit memadai.',
+      'manfaat_lingkungan': 'Menyuplai energi rendah karbon dalam kapasitas besar sekaligus membantu menstabilkan jaringan listrik saat pembangkit cuaca (surya/angin) berfluktuasi.',
+      'tantangan_lingkungan': 'Pembuatan waduk besar dapat mengubah ekosistem sungai, memengaruhi migrasi ikan, memerlukan alih fungsi lahan genangan, dan menuntut kelestarian hutan hulu DAS.',
+      'variasi_desain': 'PLTA berwaduk (reservoir), PLTA aliran sungai langsung (run-of-river), dan PLTA Pumped Storage memiliki fleksibilitas operasional serta dampak lahan yang berbeda.',
     },
     'wind': {
-      'sumber_energi':
-          'Energi kinetik hembusan massa udara yang memutar bilah rotor turbin angin',
-      'karakter_pasokan':
-          'Variabel / intermiten; mengikuti fluktuasi kecepatan angin harian dan musiman',
-      'faktor_kapasitas':
-          'Menengah pada koridor angin yang memiliki hembusan konsisten',
-      'emisi_siklus_hidup':
-          'Sangat rendah; tidak menghasilkan emisi pembakaran selama turbin beroperasi',
-      'kebutuhan_lahan':
-          'Area di sekitar menara turbin masih dapat dimanfaatkan bersama untuk pertanian atau penggembalaan',
-      'keunggulan_utama':
-          'Tidak memerlukan air pendingin dan dapat membangkitkan listrik baik siang maupun malam hari',
-      'tantangan_utama':
-          'Terbatas pada wilayah dengan profil kecepatan angin yang memadai serta membutuhkan manajemen kestabilan frekuensi',
-      'karakter_lokasi':
-          'Kawasan pesisir, perbukitan terbuka, atau celah pegunungan dengan hembusan angin terarah',
+      'sumber_energi': 'Energi kinetik hembusan massa udara yang memutar bilah aerodinamis rotor turbin angin.',
+      'karakter_pasokan': 'Umumnya variabel (intermiten); mengikuti fluktuasi kecepatan angin harian maupun pola angin musiman (monsun).',
+      'faktor_kapasitas': 'Umumnya rendah hingga menengah, sangat bergantung pada kelas kecepatan angin lokal dan tinggi menara.',
+      'emisi_siklus_hidup': 'Sangat rendah; tidak menghasilkan emisi gas buang pembakaran selama turbin beroperasi.',
+      'kebutuhan_lahan': 'Jarak antar-menara membutuhkan area hamparan terbuka, namun lahan di sekitar kaki menara umumnya masih dapat digunakan untuk pertanian/penggembalaan.',
+      'keunggulan_utama': 'Dapat membangkitkan listrik siang maupun malam hari saat angin berhembus dan tidak memerlukan air pendingin.',
+      'tantangan_utama': 'Terbatas pada lokasi dengan koridor angin yang memadai serta memerlukan pengaturan kestabilan frekuensi jaringan.',
+      'karakter_lokasi': 'Umumnya cocok di kawasan pesisir, punggung perbukitan terbuka, atau celah pegunungan dengan hembusan angin terarah.',
+      'manfaat_lingkungan': 'Menghasilkan listrik tanpa emisi pembakaran dan tanpa konsumsi air pada masa operasional.',
+      'tantangan_lingkungan': 'Membutuhkan kajian lokasi untuk meminimalkan risiko tabrakan satwa terbang (burung/kelelawar), kebisingan mekanis, serta dampak visual lanskap.',
+      'variasi_desain': 'Kinerja tiap PLTB bervariasi menurut tinggi menara (hub height), diameter rotor, profil angin musiman, dan dukungan sistem penyimpanan di gardu induk.',
     },
     'geothermal': {
-      'sumber_energi':
-          'Panas alami dan uap dari reservoar hidrotermal di dalam kerak bumi',
-      'karakter_pasokan':
-          'Beban dasar (baseload) yang beroperasi kontinu tanpa bergantung pada cuaca atau pergantian musim',
-      'faktor_kapasitas':
-          'Sangat tinggi dibandingkan pembangkit energi terbarukan berbasis cuaca',
-      'emisi_siklus_hidup':
-          'Rendah, terlebih dengan penerapan sistem reinjeksi fluida kembali ke dalam reservoar',
-      'kebutuhan_lahan':
-          'Kompak per satuan kapasitas pembangkitan dibandingkan energi surya atau bendungan air',
-      'keunggulan_utama':
-          'Keluaran daya sangat stabil sepanjang tahun sehingga andal sebagai penopang utama jaringan listrik',
-      'tantangan_utama':
-          'Risiko geologi pada tahap eksplorasi sumur awal serta waktu pengembangan proyek yang bertahap',
-      'karakter_lokasi':
-          'Kawasan sabuk vulkanik aktif yang memiliki manifestasi dan reservoar panas bumi',
+      'sumber_energi': 'Panas alami dan uap bertekanan dari reservoar hidrotermal di dalam kerak bumi.',
+      'karakter_pasokan': 'Umumnya berperan sebagai pemikul beban dasar (baseload) yang beroperasi kontinu 24 jam tanpa bergantung cuaca harian.',
+      'faktor_kapasitas': 'Umumnya tinggi dibandingkan pembangkit energi terbarukan berbasis cuaca.',
+      'emisi_siklus_hidup': 'Rendah dibandingkan pembangkit fosil, terutama dengan penerapan injeksi ulang (reinjection) fluida kembali ke sumur.',
+      'kebutuhan_lahan': 'Tapak fasilitas permukaan per satuan MW umumnya relatif ringkas dibandingkan ladang surya atau waduk air.',
+      'keunggulan_utama': 'Keluaran daya stabil sepanjang tahun sehingga andal sebagai tulang punggung jaringan kelistrikan.',
+      'tantangan_utama': 'Risiko ketidakpastian geologi bawah permukaan pada tahap pengeboran eksplorasi awal dan durasi pengembangan proyek yang panjang.',
+      'karakter_lokasi': 'Umumnya berada di sepanjang jalur sabuk vulkanik aktif (Ring of Fire) yang memiliki sistem hidrotermal bawah permukaan.',
+      'manfaat_lingkungan': 'Menyediakan pasokan listrik beban dasar rendah karbon yang stabil tanpa ketergantungan pada bahan bakar fosil.',
+      'tantangan_lingkungan': 'Banyak prospek berada di kawasan hutan/pegunungan sehingga memerlukan pengelolaan pembukaan lahan, reinjeksi air termal (brine), dan pengendalian gas non-kondensabel (seperti H₂S).',
+      'variasi_desain': 'Teknologi PLTP bervariasi antara sistem uap kering (dry steam), uap pemisahan (flash steam), dan siklus biner (binary cycle) sesuai suhu dan tekanan reservoar.',
     },
     'bioenergy': {
-      'sumber_energi':
-          'Bahan organik terbarukan seperti residu pertanian, perkebunan, limbah cair organik, atau biogas',
-      'karakter_pasokan':
-          'Dapat dikendalikan (dispatchable) selama rantai pasok bahan baku organik terjaga',
-      'faktor_kapasitas':
-          'Menengah hingga tinggi, bergantung pada kontinuitas suplai bahan baku biomassa atau biogas',
-      'emisi_siklus_hidup':
-          'Rendah dalam siklus karbon tertutup apabila memanfaatkan limbah organik secara berkelanjutan',
-      'kebutuhan_lahan':
-          'Umumnya terintegrasi dengan fasilitas pengolahan agroindustri atau instalasi pengolah limbah',
-      'keunggulan_utama':
-          'Membantu mengelola limbah organik dan mengurangi pelepasan gas metana sekaligus menghasilkan energi',
-      'tantangan_utama':
-          'Memerlukan pengelolaan logistik pengumpulan, penyimpanan, dan pengendalian kadar air bahan baku',
-      'karakter_lokasi':
-          'Sentra perkebunan, pertanian, atau fasilitas pengolahan produk agroindustri',
+      'sumber_energi': 'Bahan organik terbarukan seperti residu pertanian/perkebunan (biomassa padat) atau limbah cair organik (biogas).',
+      'karakter_pasokan': 'Umumnya dapat dikendalikan jadwal operasinya (dispatchable) selama pasokan bahan baku organik tersedia.',
+      'faktor_kapasitas': 'Umumnya menengah hingga tinggi, bergantung pada kontinuitas rantai pasok bahan baku biomassa atau biogas.',
+      'emisi_siklus_hidup': 'Bergantung pada sumber bahan baku; rendah apabila memanfaatkan limbah/residu agroindustri secara berkelanjutan.',
+      'kebutuhan_lahan': 'Fasilitas pembangkit umumnya terintegrasi di dekat pabrik pengolahan agroindustri, namun perkebunan bahan baku membutuhkan lahan.',
+      'keunggulan_utama': 'Mengubah residu organik menjadi energi sekaligus membantu pengelolaan limbah pertanian/perkebunan.',
+      'tantangan_utama': 'Membutuhkan kepastian logistik pengumpulan, transportasi, penyimpanan, dan pengendalian kadar air bahan baku lintas musim.',
+      'karakter_lokasi': 'Umumnya cocok di dekat sentra perkebunan, pertanian, atau pabrik pengolahan agroindustri (seperti kelapa sawit, padi, atau tebu).',
+      'manfaat_lingkungan': 'Mendukung sirkularitas limbah organik dan pada reaktor biogas (PLTBg) membantu menangkap gas metana dari limbah cair agar tidak lepas ke atmosfer.',
+      'tantangan_lingkungan': 'Wajib memastikan bahan baku berasal dari limbah/residu lestari (bukan deforestasi) serta mengendalikan emisi partikulat/gas buang pada pembakaran boiler PLTBm.',
+      'variasi_desain': 'Berbeda nyata antara PLTBm (pembakaran termokimia biomassa padat seperti cangkang sawit/sekam) dan PLTBg (fermentasi anaerobik limbah cair menjadi gas metana).',
     },
   };
 
-  static const List<EnergyCategory> categories = [
+  static final List<EnergyCategory> categories = [
     EnergyCategory(
       id: 'demo-cat-solar',
       slug: 'solar',
       name: 'Solar Energy',
       shortCode: 'PLTS',
-      description:
-          'Energi surya memanfaatkan radiasi matahari melalui sel fotovoltaik untuk menghasilkan listrik bersih.',
+      description: 'Energi surya memanfaatkan radiasi matahari melalui sel fotovoltaik untuk menghasilkan listrik bersih.',
       icon: 'wb_sunny_rounded',
       colorHex: '#FACC15',
-      comparison: {
-        'sumber_energi':
-            'Radiasi cahaya matahari yang dikonversi melalui efek fotovoltaik pada sel surya',
-        'karakter_pasokan':
-            'Intermiten; berproduksi optimal pada siang hari dan bergantung pada cuaca serta tutupan awan',
-        'faktor_kapasitas':
-            'Relatif rendah hingga menengah karena siklus penyinaran harian matahari',
-        'emisi_siklus_hidup':
-            'Sangat rendah saat beroperasi; jejak emisi terutama berasal dari proses manufaktur modul surya',
-        'kebutuhan_lahan':
-            'Fleksibel; dapat memanfaatkan atap bangunan, lahan terbuka, maupun permukaan waduk (PLTS terapung)',
-        'keunggulan_utama':
-            'Bersifat modular, waktu pemasangan relatif cepat, serta pemeliharaan harian sederhana',
-        'tantangan_utama':
-            'Memerlukan penyimpan energi (baterai) atau penyeimbang jaringan saat malam dan cuaca mendung',
-        'karakter_lokasi':
-            'Daerah terbuka dengan paparan radiasi matahari konsisten dan minim bayangan penghalang',
-      },
+      comparison: comparisonBySlug['solar']!,
       sortOrder: 1,
     ),
     EnergyCategory(
@@ -142,28 +99,10 @@ class DemoData {
       slug: 'hydro',
       name: 'Hydropower',
       shortCode: 'PLTA',
-      description:
-          'Energi air memanfaatkan aliran sungai atau terjunan air waduk untuk memutar turbin pembangkit.',
+      description: 'Energi air memanfaatkan aliran sungai atau terjunan air waduk untuk memutar turbin pembangkit.',
       icon: 'water_drop_rounded',
       colorHex: '#38A6C8',
-      comparison: {
-        'sumber_energi':
-            'Energi potensial dan kinetik dari aliran sungai atau terjunan air waduk',
-        'karakter_pasokan':
-            'Stabil dan fleksibel; dapat dioperasikan untuk memikul beban dasar maupun beban puncak',
-        'faktor_kapasitas':
-            'Menengah hingga tinggi, mengikuti ketersediaan debit air sepanjang musim',
-        'emisi_siklus_hidup':
-            'Sangat rendah selama masa operasi pembangkitan listrik',
-        'kebutuhan_lahan':
-            'Luas untuk sistem bendungan berwaduk; relatif ringkas untuk sistem aliran sungai langsung (run-of-river)',
-        'keunggulan_utama':
-            'Umur teknis infrastruktur panjang dan mampu merespons perubahan beban jaringan dengan cepat',
-        'tantangan_utama':
-            'Kebutuhan investasi konstruksi sipil awal besar serta sensitif terhadap musim kemarau',
-        'karakter_lokasi':
-            'Wilayah dengan daerah aliran sungai berdebit stabil dan topografi berlembah atau berbukit',
-      },
+      comparison: comparisonBySlug['hydro']!,
       sortOrder: 2,
     ),
     EnergyCategory(
@@ -171,28 +110,10 @@ class DemoData {
       slug: 'wind',
       name: 'Wind Energy',
       shortCode: 'PLTB',
-      description:
-          'Energi angin mengubah energi kinetik hembusan angin menjadi energi listrik melalui bilah turbin.',
+      description: 'Energi angin mengubah energi kinetik hembusan angin menjadi energi listrik melalui bilah turbin.',
       icon: 'air_rounded',
       colorHex: '#0EA5E9',
-      comparison: {
-        'sumber_energi':
-            'Energi kinetik hembusan massa udara yang memutar bilah rotor turbin angin',
-        'karakter_pasokan':
-            'Variabel / intermiten; mengikuti fluktuasi kecepatan angin harian dan musiman',
-        'faktor_kapasitas':
-            'Menengah pada koridor angin yang memiliki hembusan konsisten',
-        'emisi_siklus_hidup':
-            'Sangat rendah; tidak menghasilkan emisi pembakaran selama turbin beroperasi',
-        'kebutuhan_lahan':
-            'Area di sekitar menara turbin masih dapat dimanfaatkan bersama untuk pertanian atau penggembalaan',
-        'keunggulan_utama':
-            'Tidak memerlukan air pendingin dan dapat membangkitkan listrik baik siang maupun malam hari',
-        'tantangan_utama':
-            'Terbatas pada wilayah dengan profil kecepatan angin yang memadai serta membutuhkan manajemen kestabilan frekuensi',
-        'karakter_lokasi':
-            'Kawasan pesisir, perbukitan terbuka, atau celah pegunungan dengan hembusan angin terarah',
-      },
+      comparison: comparisonBySlug['wind']!,
       sortOrder: 3,
     ),
     EnergyCategory(
@@ -200,28 +121,10 @@ class DemoData {
       slug: 'geothermal',
       name: 'Geothermal Energy',
       shortCode: 'PLTP',
-      description:
-          'Energi panas bumi memanfaatkan uap dan panas alami dari perut bumi sebagai pembangkit beban dasar.',
+      description: 'Energi panas bumi memanfaatkan uap dan panas alami dari perut bumi sebagai pembangkit beban dasar.',
       icon: 'thermostat_rounded',
       colorHex: '#F97316',
-      comparison: {
-        'sumber_energi':
-            'Panas alami dan uap dari reservoar hidrotermal di dalam kerak bumi',
-        'karakter_pasokan':
-            'Beban dasar (baseload) yang beroperasi kontinu tanpa bergantung pada cuaca atau pergantian musim',
-        'faktor_kapasitas':
-            'Sangat tinggi dibandingkan pembangkit energi terbarukan berbasis cuaca',
-        'emisi_siklus_hidup':
-            'Rendah, terlebih dengan penerapan sistem reinjeksi fluida kembali ke dalam reservoar',
-        'kebutuhan_lahan':
-            'Kompak per satuan kapasitas pembangkitan dibandingkan energi surya atau bendungan air',
-        'keunggulan_utama':
-            'Keluaran daya sangat stabil sepanjang tahun sehingga andal sebagai penopang utama jaringan listrik',
-        'tantangan_utama':
-            'Risiko geologi pada tahap eksplorasi sumur awal serta waktu pengembangan proyek yang bertahap',
-        'karakter_lokasi':
-            'Kawasan sabuk vulkanik aktif yang memiliki manifestasi dan reservoar panas bumi',
-      },
+      comparison: comparisonBySlug['geothermal']!,
       sortOrder: 4,
     ),
     EnergyCategory(
@@ -229,28 +132,10 @@ class DemoData {
       slug: 'bioenergy',
       name: 'Bioenergy',
       shortCode: 'PLTBm / PLTBg',
-      description:
-          'Bioenergi mengolah biomassa organik dan biogas menjadi energi listrik maupun bahan bakar bersih.',
+      description: 'Bioenergi mengolah biomassa organik dan biogas menjadi energi listrik maupun bahan bakar bersih.',
       icon: 'eco_rounded',
       colorHex: '#22C55E',
-      comparison: {
-        'sumber_energi':
-            'Bahan organik terbarukan seperti residu pertanian, perkebunan, limbah cair organik, atau biogas',
-        'karakter_pasokan':
-            'Dapat dikendalikan (dispatchable) selama rantai pasok bahan baku organik terjaga',
-        'faktor_kapasitas':
-            'Menengah hingga tinggi, bergantung pada kontinuitas suplai bahan baku biomassa atau biogas',
-        'emisi_siklus_hidup':
-            'Rendah dalam siklus karbon tertutup apabila memanfaatkan limbah organik secara berkelanjutan',
-        'kebutuhan_lahan':
-            'Umumnya terintegrasi dengan fasilitas pengolahan agroindustri atau instalasi pengolah limbah',
-        'keunggulan_utama':
-            'Membantu mengelola limbah organik dan mengurangi pelepasan gas metana sekaligus menghasilkan energi',
-        'tantangan_utama':
-            'Memerlukan pengelolaan logistik pengumpulan, penyimpanan, dan pengendalian kadar air bahan baku',
-        'karakter_lokasi':
-            'Sentra perkebunan, pertanian, atau fasilitas pengolahan produk agroindustri',
-      },
+      comparison: comparisonBySlug['bioenergy']!,
       sortOrder: 5,
     ),
   ];
@@ -264,8 +149,7 @@ class DemoData {
       categoryName: 'Solar Energy',
       categoryShortCode: 'PLTS',
       name: '[DEMO] Titik Simulasi Energi Surya A',
-      description:
-          'Data simulasi fiktif untuk menguji tampilan marker dan kartu kategori Solar Energy (PLTS) pada peta pengembangan EduEarth.',
+      description: 'Data simulasi fiktif untuk menguji tampilan marker dan kartu kategori Solar Energy (PLTS) pada peta pengembangan EduEarth.',
       province: 'Wilayah Simulasi Barat',
       city: 'Zona Uji 01',
       latitude: -2.0000,
@@ -281,8 +165,7 @@ class DemoData {
       categoryName: 'Hydropower',
       categoryShortCode: 'PLTA',
       name: '[DEMO] Titik Simulasi Energi Air B',
-      description:
-          'Data simulasi fiktif untuk menguji tampilan marker dan kartu kategori Hydropower (PLTA) pada peta pengembangan EduEarth.',
+      description: 'Data simulasi fiktif untuk menguji tampilan marker dan kartu kategori Hydropower (PLTA) pada peta pengembangan EduEarth.',
       province: 'Wilayah Simulasi Tengah',
       city: 'Zona Uji 02',
       latitude: -3.0000,
@@ -298,8 +181,7 @@ class DemoData {
       categoryName: 'Wind Energy',
       categoryShortCode: 'PLTB',
       name: '[DEMO] Titik Simulasi Energi Angin C',
-      description:
-          'Data simulasi fiktif untuk menguji tampilan marker dan kartu kategori Wind Energy (PLTB) pada peta pengembangan EduEarth.',
+      description: 'Data simulasi fiktif untuk menguji tampilan marker dan kartu kategori Wind Energy (PLTB) pada peta pengembangan EduEarth.',
       province: 'Wilayah Simulasi Selatan',
       city: 'Zona Uji 03',
       latitude: -5.0000,
@@ -315,8 +197,7 @@ class DemoData {
       categoryName: 'Geothermal Energy',
       categoryShortCode: 'PLTP',
       name: '[DEMO] Titik Simulasi Panas Bumi D',
-      description:
-          'Data simulasi fiktif untuk menguji tampilan marker dan kartu kategori Geothermal Energy (PLTP) pada peta pengembangan EduEarth.',
+      description: 'Data simulasi fiktif untuk menguji tampilan marker dan kartu kategori Geothermal Energy (PLTP) pada peta pengembangan EduEarth.',
       province: 'Wilayah Simulasi Tengah',
       city: 'Zona Uji 04',
       latitude: -7.0000,
@@ -332,8 +213,7 @@ class DemoData {
       categoryName: 'Bioenergy',
       categoryShortCode: 'PLTBm / PLTBg',
       name: '[DEMO] Titik Simulasi Bioenergi E',
-      description:
-          'Data simulasi fiktif untuk menguji tampilan marker dan kartu kategori Bioenergy (PLTBm/PLTBg) pada peta pengembangan EduEarth.',
+      description: 'Data simulasi fiktif untuk menguji tampilan marker dan kartu kategori Bioenergy (PLTBm/PLTBg) pada peta pengembangan EduEarth.',
       province: 'Wilayah Simulasi Timur',
       city: 'Zona Uji 05',
       latitude: -4.0000,
@@ -344,7 +224,7 @@ class DemoData {
     ),
   ];
 
-  // DEMO DATA — materi konsep dasar draf untuk mode lokal tanpa Supabase
+  // DEMO DATA — materi konsep dasar & modul ke-9 untuk fallback lokal
   static const List<LearningMaterial> materials = [
     LearningMaterial(
       id: 'demo-mat-solar',
@@ -352,16 +232,15 @@ class DemoData {
       categorySlug: 'solar',
       categoryName: 'Energi Surya',
       categoryShortCode: 'PLTS',
-      title: 'Konsep Dasar Pembangkit Listrik Tenaga Surya (PLTS)',
+      title:
+          'Teknologi Pembangkit Listrik Tenaga Surya (PLTS) & Efek Fotovoltaik',
       slug: 'draf-konsep-dasar-plts',
-      summary:
-          'Pengenalan prinsip efek fotovoltaik, komponen utama sistem PLTS, serta kelebihan dan keterbatasan energi surya secara umum.',
-      contentMd:
-          '## Pengertian Umum\n\n**Pembangkit Listrik Tenaga Surya (PLTS)** mengubah radiasi cahaya matahari menjadi energi listrik melalui sel fotovoltaik.\n\n## Cara Kerja\n1. Penyerapan foton oleh semikonduktor.\n2. Timbul arus searah (DC).\n3. Konversi DC ke AC oleh inverter.',
-      readMinutes: 4,
+      summary: 'Memahami proses perubahan foton cahaya matahari menjadi listrik searah (DC) hingga bolak-balik (AC), arsitektur komponen PLTS, serta inovasi PLTS Terapung di Indonesia.',
+      contentMd: '## Pengertian Umum\n\n**Pembangkit Listrik Tenaga Surya (PLTS)** mengubah radiasi cahaya matahari menjadi energi listrik melalui sel fotovoltaik.\n\n## Cara Kerja\n1. Penyerapan foton oleh semikonduktor.\n2. Timbul arus searah (DC).\n3. Konversi DC ke AC oleh inverter.',
+      readMinutes: 6,
       difficulty: 'beginner',
       sortOrder: 1,
-      isDraft: true,
+      isDraft: false,
     ),
     LearningMaterial(
       id: 'demo-mat-hydro',
@@ -369,30 +248,99 @@ class DemoData {
       categorySlug: 'hydro',
       categoryName: 'Energi Air',
       categoryShortCode: 'PLTA',
-      title: 'Konsep Dasar Pembangkit Listrik Tenaga Air (PLTA)',
+      title: 'Pembangkit Listrik Tenaga Air (PLTA): Energi Gravitasi & Penyeimbang Jaringan',
       slug: 'draf-konsep-dasar-plta',
-      summary:
-          'Penjelasan konversi energi potensial dan kinetik air menjadi energi mekanik turbin dan listrik.',
-      contentMd:
-          '## Pengertian Umum\n\n**Pembangkit Listrik Tenaga Air (PLTA)** memanfaatkan aliran atau terjunan air untuk memutar turbin dan generator listrik.',
-      readMinutes: 5,
+      summary: 'Mempelajari cara kerja waduk, pipa pesat (penstock), dan turbin air dalam menghasilkan listrik serta peran strategis PLTA menjaga kestabilan frekuensi jaringan listrik.',
+      contentMd: '## Pengertian Umum\n\n**Pembangkit Listrik Tenaga Air (PLTA)** memanfaatkan aliran atau terjunan air untuk memutar turbin dan generator listrik.',
+      readMinutes: 6,
       difficulty: 'beginner',
-      sortOrder: 1,
-      isDraft: true,
+      sortOrder: 2,
+      isDraft: false,
+    ),
+    LearningMaterial(
+      id: 'demo-mat-transition',
+      categoryId: 'demo-cat-solar',
+      categorySlug: 'solar',
+      categoryName: 'Transisi Energi',
+      categoryShortCode: 'EBT',
+      title: 'Transisi Energi Indonesia: Manfaat dan Tantangan Lingkungan Energi Terbarukan',
+      slug: 'transisi-energi-dan-dampak-lingkungan',
+      summary: 'Memahami pengertian transisi energi, alasan peralihan dari bahan bakar fosil, serta telaah berimbang manfaat dan tantangan lingkungan (trade-off) dari 5 kategori energi terbarukan di Indonesia.',
+      contentMd: '> **Intisari Konsep:** Transisi energi bertujuan mengurangi emisi gas rumah kaca dari sektor ketenagalistrikan dengan beralih secara bertahap dari bahan bakar fosil ke sumber energi terbarukan, sembari mengelola tantangan teknis dan dampak ekologis lokal setiap jenis pembangkit secara bertanggung jawab.\n\n## 1. Pengertian Transisi Energi\nTransisi energi adalah transformasi struktural sistem penyediaan dan pemanfaatan energi dari sistem yang didominasi bahan bakar fosil (batu bara, minyak bumi, dan gas alam) menuju sumber energi rendah karbon.\n\n## 2. Trade-Off Lingkungan 5 Kategori EBT\nSetiap teknologi energi terbarukan umumnya memiliki manfaat penurunan emisi saat operasi, tetapi juga memiliki tantangan lingkungan lokal (seperti kebutuhan lahan PLTS/PLTA waduk, intermitensi cuaca PLTS/PLTB, pengelolaan kawasan hutan PLTP, dan keberlanjutan rantai pasok biomassa).\n\n### Referensi Ilmiah\n- IPCC AR6 WGIII (2022), Chapter 6: Energy Systems\n- IRENA Renewable Power Generation Briefs\n- Kementerian ESDM — Direktorat Jenderal EBTKE',
+      readMinutes: 7,
+      difficulty: 'intermediate',
+      sortOrder: 9,
+      isDraft: false,
     ),
   ];
 
-  // DEMO DATA — daftar kuis & soal TANPA kunci jawaban
+  // DEMO DATA — daftar 5 kuis terverifikasi TANPA kunci jawaban
   static const List<Quiz> quizzes = [
     Quiz(
       id: '11111111-1111-4111-8111-111111111101',
-      title: 'Dasar-Dasar Energi Terbarukan',
-      description:
-          'Uji pemahaman konsep fundamental tentang cara kerja PLTS, PLTA, PLTB, PLTP, dan Bioenergi.',
+      title: 'Eksplorasi Dasar 5 Energi Terbarukan',
+      description: 'Kuis pengantar seru untuk menguji pemahaman prinsip kerja PLTS, PLTA, PLTB, PLTP, dan Bioenergi di Indonesia.',
       difficulty: 'beginner',
       timeLimitSeconds: 180,
       isPublished: true,
-      isDraft: true,
+      isDraft: false,
+    ),
+    Quiz(
+      id: '11111111-1111-4111-8111-111111111102',
+      categoryId: 'demo-cat-solar',
+      categorySlug: 'solar',
+      categoryName: 'Energi Surya & Angin',
+      categoryShortCode: 'PLTS / PLTB',
+      title: 'Teknologi Surya (PLTS) & Angin (PLTB)',
+      description: 'Uji wawasan teknis tentang efek fotovoltaik, fungsi inverter, aerodinamika bilah turbin angin, dan solusi penyimpanan baterai.',
+      difficulty: 'intermediate',
+      timeLimitSeconds: 240,
+      isPublished: true,
+      isDraft: false,
+    ),
+    Quiz(
+      id: '11111111-1111-4111-8111-111111111103',
+      categoryId: 'demo-cat-geothermal',
+      categorySlug: 'geothermal',
+      categoryName: 'Air & Panas Bumi',
+      categoryShortCode: 'PLTA / PLTP',
+      title: 'Air (PLTA) & Panas Bumi (PLTP): Penopang Jaringan',
+      description: 'Tantangan mengenai sistem hidrotermal bawah bumi, pipa pesat (penstock), injeksi ulang uap, dan kestabilan beban dasar.',
+      difficulty: 'intermediate',
+      timeLimitSeconds: 240,
+      isPublished: true,
+      isDraft: false,
+    ),
+    Quiz(
+      id: '11111111-1111-4111-8111-111111111104',
+      categoryId: 'demo-cat-bioenergy',
+      categorySlug: 'bioenergy',
+      categoryName: 'Bioenergi',
+      categoryShortCode: 'PLTBm / PLTBg',
+      title: 'Sirkularitas Bioenergi: Biomassa & Biogas',
+      description: 'Kenali bagaimana limbah organik perkebunan dan pertanian diubah menjadi listrik bersih melalui jalur termokimia dan biokimia.',
+      difficulty: 'beginner',
+      timeLimitSeconds: 180,
+      isPublished: true,
+      isDraft: false,
+    ),
+    Quiz(
+      id: '11111111-1111-4111-8111-111111111105',
+      title: 'Tantangan Master: Peta Pembangkit & Transisi Energi Nusantara',
+      description: 'Kuis tingkat lanjut seputar sebaran pembangkit nyata di Indonesia, kurva beban listrik, dan strategi Smart Grid kepulauan.',
+      difficulty: 'advanced',
+      timeLimitSeconds: 300,
+      isPublished: true,
+      isDraft: false,
+    ),
+    Quiz(
+      id: '11111111-1111-4111-8111-111111111106',
+      title: 'Transisi Energi & Trade-Off Lingkungan Nusantara',
+      description: 'Uji pemahamanmu mengenai kajian emisi siklus hidup (LCA), manfaat dekarbonisasi, serta tantangan dan trade-off lingkungan dari 5 kategori energi terbarukan di Indonesia.',
+      difficulty: 'intermediate',
+      timeLimitSeconds: 240,
+      isPublished: true,
+      isDraft: false,
     ),
   ];
 
@@ -400,28 +348,17 @@ class DemoData {
     QuizQuestion(
       id: '22222222-2222-4222-8222-222222222101',
       quizId: '11111111-1111-4111-8111-111111111101',
-      question:
-          'Fenomena fisika apa yang dimanfaatkan oleh sel surya pada PLTS untuk mengubah cahaya matahari secara langsung menjadi listrik?',
+      question: 'Fenomena fisika apa yang dimanfaatkan oleh sel surya pada PLTS untuk mengubah cahaya matahari secara langsung menjadi listrik?',
       options: [
         QuizOption(
           id: 'a',
           text: 'Efek fotovoltaik pada material semikonduktor',
         ),
-        QuizOption(
-          id: 'b',
-          text: 'Pembakaran termokimia biomassa padat',
-        ),
-        QuizOption(
-          id: 'c',
-          text: 'Fermentasi anaerobik mikroorganisme',
-        ),
-        QuizOption(
-          id: 'd',
-          text: 'Tekanan hidrostatik air pada pipa pesat',
-        ),
+        QuizOption(id: 'b', text: 'Pembakaran termokimia biomassa padat'),
+        QuizOption(id: 'c', text: 'Fermentasi anaerobik mikroorganisme'),
+        QuizOption(id: 'd', text: 'Tekanan hidrostatik air pada pipa pesat'),
       ],
-      explanation:
-          'Sel surya bekerja menggunakan efek fotovoltaik pada material semikonduktor.',
+      explanation: 'Sel surya bekerja menggunakan efek fotovoltaik pada material semikonduktor.',
       sortOrder: 1,
     ),
   ];
@@ -431,8 +368,7 @@ class DemoData {
       id: 'demo-ach-1',
       code: 'first_bookmark',
       title: 'Penjelajah Ingin Tahu',
-      description:
-          'Menyimpan materi pembelajaran atau pembangkit pertama ke Daftar Tersimpan.',
+      description: 'Menyimpan materi pembelajaran atau pembangkit pertama ke Daftar Tersimpan.',
       icon: 'bookmark_added_rounded',
       points: 10,
       sortOrder: 1,
@@ -441,8 +377,7 @@ class DemoData {
       id: 'demo-ach-2',
       code: 'avid_learner',
       title: 'Pembelajar Energi Bersih',
-      description:
-          'Menyimpan minimal 2 materi pembelajaran energi terbarukan untuk dipelajari.',
+      description: 'Menyimpan minimal 2 materi pembelajaran energi terbarukan untuk dipelajari.',
       icon: 'menu_book_rounded',
       points: 20,
       sortOrder: 2,
@@ -451,8 +386,7 @@ class DemoData {
       id: 'demo-ach-3',
       code: 'library_guardian',
       title: 'Kolektor Pustaka Hijau',
-      description:
-          'Menyimpan minimal 5 materi pembelajaran energi terbarukan di Daftar Tersimpan.',
+      description: 'Menyimpan minimal 5 materi pembelajaran energi terbarukan di Daftar Tersimpan.',
       icon: 'auto_stories_rounded',
       points: 35,
       sortOrder: 3,
@@ -461,8 +395,7 @@ class DemoData {
       id: 'demo-ach-4',
       code: 'plant_collector',
       title: 'Pemeta Nusantara',
-      description:
-          'Menyimpan minimal 2 lokasi pembangkit energi terbarukan di Indonesia.',
+      description: 'Menyimpan minimal 2 lokasi pembangkit energi terbarukan di Indonesia.',
       icon: 'map_rounded',
       points: 20,
       sortOrder: 4,
@@ -471,8 +404,7 @@ class DemoData {
       id: 'demo-ach-5',
       code: 'grid_explorer',
       title: 'Penjelajah Jaringan EBT',
-      description:
-          'Menyimpan minimal 5 lokasi pembangkit energi terbarukan dari peta Nusantara.',
+      description: 'Menyimpan minimal 5 lokasi pembangkit energi terbarukan dari peta Nusantara.',
       icon: 'explore_rounded',
       points: 35,
       sortOrder: 5,
@@ -481,8 +413,7 @@ class DemoData {
       id: 'demo-ach-6',
       code: 'all_rounder_saver',
       title: 'Kolektor Seimbang',
-      description:
-          'Menyimpan setidaknya 1 materi pembelajaran sekaligus 1 lokasi pembangkit.',
+      description: 'Menyimpan setidaknya 1 materi pembelajaran sekaligus 1 lokasi pembangkit.',
       icon: 'stars_rounded',
       points: 25,
       sortOrder: 6,
@@ -491,8 +422,7 @@ class DemoData {
       id: 'demo-ach-7',
       code: 'first_quiz',
       title: 'Langkah Pertama Kuis',
-      description:
-          'Menyelesaikan percobaan kuis energi terbarukan pertama hingga tuntas.',
+      description: 'Menyelesaikan percobaan kuis energi terbarukan pertama hingga tuntas.',
       icon: 'quiz_rounded',
       points: 15,
       sortOrder: 7,
@@ -531,8 +461,7 @@ class DemoData {
       id: 'demo-ach-11',
       code: 'consistent_scholar',
       title: 'Cendekiawan Konsisten',
-      description:
-          'Meraih skor tinggi (minimal 80) sebanyak 3 kali atau lebih pada kuis EduEarth.',
+      description: 'Meraih skor tinggi (minimal 80) sebanyak 3 kali atau lebih pada kuis EduEarth.',
       icon: 'school_rounded',
       points: 45,
       sortOrder: 11,
@@ -541,24 +470,38 @@ class DemoData {
       id: 'demo-ach-12',
       code: 'perfect_score',
       title: 'Master Skor Sempurna 100',
-      description:
-          'Menjawab seluruh pertanyaan dengan benar (skor 100) pada kuis EduEarth.',
+      description: 'Menjawab seluruh pertanyaan dengan benar (skor 100) pada kuis EduEarth.',
       icon: 'emoji_events_rounded',
       points: 60,
       sortOrder: 12,
     ),
   ];
 
-  // DEMO DATA — 1 pengumuman contoh untuk mode lokal tanpa Supabase
+  // Panduan belajar & informasi metodologi data untuk Pusat Informasi
   static final List<AppNotification> notifications = [
     AppNotification(
       id: '00000000-0000-0000-0000-000000000601',
-      title: '[CONTOH] Selamat Datang di Pusat Informasi EduEarth',
-      body:
-          'Ini adalah pengumuman contoh untuk menguji fitur Notification Center pada aplikasi EduEarth. Pengumuman resmi mengenai pembaruan materi dan peta pembangkit akan ditampilkan di halaman ini.',
+      title: 'Panduan Alur Belajar 4 Pilar EduEarth',
+      body: 'Mulai eksplorasi dari Peta Pembangkit (Explore), pelajari alasan geografis dan cara kerja di Detail Pembangkit & Pusat Edukasi (Learn), bandingkan manfaat serta tantangan lingkungan di Perbandingan Energi (Understand Impact), lalu uji pemahamanmu di Kuis (Evaluate).',
       category: 'info',
       isPublished: true,
-      createdAt: DateTime.utc(2026, 11, 3, 1, 0),
+      createdAt: DateTime.utc(2026, 11, 10, 2, 0),
+    ),
+    AppNotification(
+      id: '00000000-0000-0000-0000-000000000602',
+      title: 'Modul Baru: Manfaat & Tantangan Lingkungan Transisi Energi',
+      body: 'Kini tersedia modul pembelajaran ke-9 yang mengulas mengapa transisi dari energi fosil diperlukan sekaligus tantangan lingkungan (trade-off) dari PLTS, PLTA, PLTB, PLTP, dan Bioenergi berdasarkan literatur IPCC, IRENA, dan ESDM.',
+      category: 'content',
+      isPublished: true,
+      createdAt: DateTime.utc(2026, 11, 10, 3, 0),
+    ),
+    AppNotification(
+      id: '00000000-0000-0000-0000-000000000603',
+      title: 'Catatan Akurasi Data: 128 Pembangkit & Presisi Lokasi',
+      body: 'Basis data EduEarth memuat 128 titik pembangkit (85 Beroperasi, 9 Konstruksi, 34 Rencana). Sebanyak 64 titik memiliki koordinat tapak presisi (exact) dan 64 titik berlabel "Lokasi perkiraan" (approximate) yang mewakili wilayah administratif desa/kecamatan/kabupaten menurut sumber.',
+      category: 'update',
+      isPublished: true,
+      createdAt: DateTime.utc(2026, 11, 10, 4, 0),
     ),
   ];
 }

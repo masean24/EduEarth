@@ -15,8 +15,10 @@ import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../models/energy_category.dart';
 import '../../../../models/learning_material.dart';
 import '../../../../routes/route_names.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../plants/presentation/providers/plants_providers.dart';
 import '../providers/learning_providers.dart';
+import '../providers/reading_progress_provider.dart';
 
 /// Halaman Utama Pembelajaran ("Pusat Edukasi") sesuai `docs/design/moodboard.png`.
 ///
@@ -99,7 +101,7 @@ class _LearningDashboardPageState
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _buildEducationMascotBanner(context),
+                  _buildEducationMascotBanner(context, materialsAsync),
                   const SizedBox(height: 16),
                   _buildCategoryChips(categories),
                   if (selectedCategory != null) ...[
@@ -117,7 +119,19 @@ class _LearningDashboardPageState
     );
   }
 
-  Widget _buildEducationMascotBanner(BuildContext context) {
+  Widget _buildEducationMascotBanner(
+    BuildContext context,
+    AsyncValue<List<LearningMaterial>> materialsAsync,
+  ) {
+    final isGuestSession = ref.watch(isGuestSessionProvider);
+    final readingState = ref.watch(readingProgressProvider);
+    final totalModules = materialsAsync.asData?.value.length ?? 9;
+    final startedCount = readingState.startedCount();
+    final completedCount = readingState.completedCount();
+    final overallRatio = totalModules > 0
+        ? (startedCount / totalModules).clamp(0.0, 1.0)
+        : 0.0;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -141,12 +155,65 @@ class _LearningDashboardPageState
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  'Pilih kategori di bawah untuk menyaring materi atau bandingkan karakteristik 5 sumber energi bersih.',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.forestGreen,
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pilih kategori di bawah untuk menyaring materi atau bandingkan karakteristik 5 sumber energi bersih.',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.forestGreen,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (isGuestSession)
+                      InkWell(
+                        onTap: () => context.push(RouteNames.loginPath),
+                        child: Text(
+                          'Mode Tamu • Progres baca tidak disimpan. Masuk untuk mencatat kemajuan →',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.forestGreen,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      )
+                    else ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '$startedCount/$totalModules modul mulai dibaca',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.forestGreen,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                          Text(
+                            '$completedCount selesai ✓',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.forestGreen,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                        child: LinearProgressIndicator(
+                          value: overallRatio,
+                          minHeight: 6,
+                          backgroundColor: AppColors.surfaceWhite,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            AppColors.freshGreen,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],
@@ -198,9 +265,11 @@ class _LearningDashboardPageState
   Widget _buildCategoryChips(List<EnergyCategory> categories) {
     return SizedBox(
       height: 38,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
+      child: HorizontalChipStrip(
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.only(right: 28),
+          children: [
           CategoryChip(
             label: 'Semua',
             isSelected: _selectedCategorySlug == null,
@@ -227,6 +296,7 @@ class _LearningDashboardPageState
             );
           }),
         ],
+        ),
       ),
     );
   }
@@ -317,16 +387,96 @@ class _LearningDashboardPageState
           );
         }
 
+        final isGuestSession = ref.watch(isGuestSessionProvider);
+        final readingState = ref.watch(readingProgressProvider);
+        final lastSlug = isGuestSession ? null : readingState.lastReadSlug;
+        final lastReadMaterial = lastSlug == null
+            ? null
+            : materials.where((m) => m.slug == lastSlug).firstOrNull;
+
         return Column(
-          children: filtered.map((mat) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: MaterialCard(
-                material: mat,
-                onTap: () => context.push('/learning/material/${mat.slug}'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (lastReadMaterial != null && _selectedCategorySlug == null) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceWhite,
+                  borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+                  border: Border.all(
+                    color: AppColors.freshGreen.withValues(alpha: 0.45),
+                  ),
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => context.push(
+                    '/learning/material/${lastReadMaterial.slug}',
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.mintGreen,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.auto_stories_rounded,
+                          size: 20,
+                          color: AppColors.forestGreen,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Terakhir Dibaca • ${(readingState.progressFor(lastReadMaterial.slug) * 100).round()}% selesai',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.forestGreen,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              lastReadMaterial.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.subtitle.copyWith(
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.play_circle_fill_rounded,
+                        color: AppColors.forestGreen,
+                        size: 24,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            );
-          }).toList(),
+            ],
+            ...filtered.map((mat) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: MaterialCard(
+                  material: mat,
+                  readingProgress: isGuestSession
+                      ? null
+                      : readingState.progressFor(mat.slug),
+                  onTap: () => context.push('/learning/material/${mat.slug}'),
+                ),
+              );
+            }),
+          ],
         );
       },
     );

@@ -23,8 +23,33 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Jelajahi Pembangkit Energi Terbarukan Indonesia'),
+      find.text('Jelajahi Peta & Studi Kasus Pembangkit Indonesia'),
       findsOneWidget,
     );
+    expect(find.text('1 • Explore Nusantara'), findsOneWidget);
+  });
+
+  testWidgets('Completed onboarding navigates cleanly to Home & Comparison', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'onboarding_completed': true,
+    });
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: EduEarthApp(),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Alur Belajar EduEarth (4 Pilar)'), findsOneWidget);
+    final comparisonBtn = find.text('Perbandingan & Dampak');
+    await tester.ensureVisible(comparisonBtn);
+    await tester.tap(comparisonBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Perbandingan & Dampak Energi'), findsOneWidget);
   });
 }

@@ -16,5 +16,6 @@ class AppConstants {
   // Kunci penyimpanan lokal (SharedPreferences)
   static const String prefOnboardingCompleted = 'onboarding_completed';
   static const String prefReduceMotionAndGlass = 'reduce_glass_effect';
+  static const String prefGuestMode = 'guest_mode';
 }
 

@@ -13,6 +13,8 @@ import '../../../../core/widgets/common/screen_header.dart';
 import '../../../../routes/route_names.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../bookmark/presentation/providers/bookmark_providers.dart';
+import '../../../learning/presentation/providers/learning_providers.dart';
+import '../../../learning/presentation/providers/reading_progress_provider.dart';
 import '../../../quiz/presentation/providers/quiz_providers.dart';
 
 /// Halaman Progres Belajar Saya (My Learning) Fase 5.
@@ -28,6 +30,8 @@ class MyLearningPage extends ConsumerWidget {
     final isAuthenticated = ref.watch(isAuthenticatedProvider);
     final attemptsAsync = ref.watch(userQuizAttemptsProvider);
     final bookmarksAsync = ref.watch(userBookmarksProvider);
+    final materialsAsync = ref.watch(allLearningMaterialsProvider);
+    final readingState = ref.watch(readingProgressProvider);
 
     return Scaffold(
       appBar: ScreenHeaderBar(
@@ -45,9 +49,10 @@ class MyLearningPage extends ConsumerWidget {
         child: !isAuthenticated
             ? EmptyView(
                 icon: Icons.school_outlined,
-                title: 'Masuk untuk Melihat Progres Belajar',
+                assetPath: 'assets/images/mascot/eco_wave.png',
+                title: 'Masuk untuk Menyimpan Progres',
                 description:
-                    'Riwayat skor kuis dan materi pembelajaran yang Anda simpan akan tercatat di halaman ini.',
+                    'Mode tamu tidak menyimpan progres baca atau skor kuis. Masuk ke akun EduEarth untuk mencatat perkembangan skor dan materi belajarmu.',
                 actionLabel: 'Masuk (Login)',
                 onAction: () => context.push(RouteNames.loginPath),
               )
@@ -81,8 +86,20 @@ class MyLearningPage extends ConsumerWidget {
                         final materialBookmarks = bookmarks
                             .where((b) => b.material != null)
                             .toList();
+                        final plantBookmarksCount = bookmarks
+                            .where((b) => b.plant != null)
+                            .length;
+                        final allMaterials =
+                            materialsAsync.asData?.value ?? const [];
+                        final readMaterials = allMaterials
+                            .where(
+                              (m) => readingState.progressFor(m.slug) > 0.02,
+                            )
+                            .toList();
 
-                        if (attempts.isEmpty && materialBookmarks.isEmpty) {
+                        if (attempts.isEmpty &&
+                            materialBookmarks.isEmpty &&
+                            readMaterials.isEmpty) {
                           return EmptyView(
                             icon: Icons.auto_stories_outlined,
                             title: 'Belum Ada Aktivitas Belajar',
@@ -97,6 +114,17 @@ class MyLearningPage extends ConsumerWidget {
                             .map((a) => a.quizId)
                             .toSet()
                             .length;
+                        final quizSummaries = summarizeQuizAttempts(attempts);
+                        final quizTitleById = <String, String>{};
+                        for (final a in attempts) {
+                          if (a.quizTitle != null &&
+                              a.quizTitle!.trim().isNotEmpty) {
+                            quizTitleById.putIfAbsent(
+                              a.quizId,
+                              () => a.quizTitle!.trim(),
+                            );
+                          }
+                        }
                         final avgScore = attempts.isEmpty
                             ? 0
                             : (attempts
@@ -114,6 +142,45 @@ class MyLearningPage extends ConsumerWidget {
                               averageScore: avgScore,
                               savedMaterialsCount: materialBookmarks.length,
                             ),
+                            if (quizSummaries.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              _buildScoreProgressionCard(
+                                summaries: quizSummaries.values.toList(),
+                                titleById: quizTitleById,
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+                            _buildFourPillarMasteryCard(
+                              context: context,
+                              savedPlantsCount: plantBookmarksCount,
+                              startedMaterialsCount:
+                                  readingState.startedCount(),
+                              completedMaterialsCount:
+                                  readingState.completedCount(),
+                              uniqueQuizzesCount: uniqueQuizzesCount,
+                            ),
+                            if (readMaterials.isNotEmpty) ...[
+                              const SizedBox(height: 24),
+                              Text(
+                                'Progres Baca Materi (${readMaterials.length})',
+                                style: AppTextStyles.title,
+                              ),
+                              const SizedBox(height: 12),
+                              ...readMaterials.map((mat) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: MaterialCard(
+                                    material: mat,
+                                    readingProgress: readingState.progressFor(
+                                      mat.slug,
+                                    ),
+                                    onTap: () => context.push(
+                                      '/learning/material/${mat.slug}',
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
                             const SizedBox(height: 24),
                             Text(
                               'Materi Tersimpan (${materialBookmarks.length})',
@@ -140,6 +207,9 @@ class MyLearningPage extends ConsumerWidget {
                                   padding: const EdgeInsets.only(bottom: 12),
                                   child: MaterialCard(
                                     material: mat,
+                                    readingProgress: readingState.progressFor(
+                                      mat.slug,
+                                    ),
                                     onTap: () => context.push(
                                       '/learning/material/${mat.slug}',
                                     ),
@@ -269,6 +339,223 @@ class MyLearningPage extends ConsumerWidget {
           _SummaryMetric(
             label: 'Materi Disimpan',
             value: '$savedMaterialsCount',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScoreProgressionCard({
+    required List<QuizAttemptSummary> summaries,
+    required Map<String, String> titleById,
+  }) {
+    final avgInitial = (summaries
+                .map((s) => s.initialScore)
+                .reduce((a, b) => a + b) /
+            summaries.length)
+        .round();
+    final avgLatest = (summaries
+                .map((s) => s.latestScore)
+                .reduce((a, b) => a + b) /
+            summaries.length)
+        .round();
+    final avgDelta = avgLatest - avgInitial;
+    final avgDeltaText = avgDelta > 0
+        ? '+$avgDelta poin'
+        : avgDelta == 0
+        ? 'Tetap'
+        : '$avgDelta poin';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.trending_up_rounded,
+                size: 19,
+                color: AppColors.forestGreen,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Perkembangan Skor (Pre-Check → Terbaru)',
+                  style: AppTextStyles.subtitle.copyWith(fontSize: 15),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: avgDelta > 0
+                      ? AppColors.mintGreen
+                      : AppColors.offWhite,
+                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                  border: Border.all(
+                    color: avgDelta > 0
+                        ? AppColors.sageGreen
+                        : AppColors.divider,
+                  ),
+                ),
+                child: Text(
+                  avgDeltaText,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.forestGreen,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Rata-rata skor awal: $avgInitial → terbaru: $avgLatest',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...summaries.map((summary) {
+            final title = titleById[summary.quizId] ?? 'Kuis Energi Terbarukan';
+            final delta = summary.scoreDelta;
+            final deltaLabel = delta > 0
+                ? '+$delta'
+                : delta == 0
+                ? '0'
+                : '$delta';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.offWhite,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            summary.hasMultipleAttempts
+                                ? 'Awal: ${summary.initialScore} → Terbaru: ${summary.latestScore} (${summary.attemptCount}x percobaan)'
+                                : 'Skor Awal (Pre-Check): ${summary.initialScore} • Kerjakan ulang setelah belajar',
+                            style: AppTextStyles.caption.copyWith(
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (summary.hasMultipleAttempts) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: delta > 0
+                              ? AppColors.mintGreen
+                              : AppColors.surfaceWhite,
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.pillRadius,
+                          ),
+                          border: Border.all(
+                            color: delta > 0
+                                ? AppColors.sageGreen
+                                : AppColors.divider,
+                          ),
+                        ),
+                        child: Text(
+                          deltaLabel,
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.forestGreen,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFourPillarMasteryCard({
+    required BuildContext context,
+    required int savedPlantsCount,
+    required int startedMaterialsCount,
+    required int completedMaterialsCount,
+    required int uniqueQuizzesCount,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.auto_graph_rounded,
+                size: 19,
+                color: AppColors.forestGreen,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Jejak Belajar 4 Pilar EduEarth',
+                  style: AppTextStyles.subtitle.copyWith(fontSize: 15),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '• Explore: $savedPlantsCount pembangkit disimpan dari peta\n'
+            '• Learn: $startedMaterialsCount modul mulai dibaca ($completedMaterialsCount selesai ≥85%)\n'
+            '• Understand Impact: Bandingkan 5 kategori EBT & trade-off lingkungan\n'
+            '• Evaluate: $uniqueQuizzesCount dari 6 topik kuis telah dikerjakan',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
+              fontSize: 12.2,
+            ),
           ),
         ],
       ),

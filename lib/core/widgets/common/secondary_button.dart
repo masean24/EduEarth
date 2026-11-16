@@ -12,12 +12,14 @@ class SecondaryButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.isExpanded = true,
+    this.padding,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
   final bool isExpanded;
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +33,7 @@ class SecondaryButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppTheme.buttonRadius),
         ),
         minimumSize: const Size(48, 52),
+        padding: padding,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

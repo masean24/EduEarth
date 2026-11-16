@@ -38,11 +38,13 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     if (onboardingAsync.isLoading) {
       await ref.read(onboardingStatusProvider.future);
     }
+    await ref.read(isGuestModeProvider.notifier).restoreSavedGuestMode();
     if (!mounted) return;
 
     final isOnboardingDone =
         ref.read(onboardingStatusProvider).value ?? false;
     final isAuthenticated = ref.read(isAuthenticatedProvider);
+    final isGuestMode = ref.read(isGuestModeProvider);
     final isSupabaseReady = ref.read(isSupabaseInitializedProvider);
 
     if (!isOnboardingDone) {
@@ -50,7 +52,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
       return;
     }
 
-    if (isSupabaseReady && !isAuthenticated) {
+    if (isSupabaseReady && !isAuthenticated && !isGuestMode) {
       context.go(RouteNames.loginPath);
       return;
     }

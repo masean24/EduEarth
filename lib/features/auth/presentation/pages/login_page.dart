@@ -9,6 +9,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/primary_button.dart';
+import '../../../../core/widgets/common/secondary_button.dart';
 import '../../../../core/widgets/common/soft_image_placeholder.dart';
 import '../../../../routes/route_names.dart';
 import '../../../../services/supabase_service.dart';
@@ -254,16 +255,27 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                               fontWeight: FontWeight.w700,
                                             ),
                                       ),
-                                      GestureDetector(
-                                        onTap: authAsync.isLoading
-                                            ? null
-                                            : _handleForgotPassword,
-                                        child: Text(
-                                          'Lupa Kata Sandi?',
-                                          style: AppTextStyles.caption.copyWith(
-                                            color: AppColors.freshGreen,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 13,
+                                      Semantics(
+                                        button: true,
+                                        label: 'Lupa Kata Sandi',
+                                        child: GestureDetector(
+                                          behavior: HitTestBehavior.opaque,
+                                          onTap: authAsync.isLoading
+                                              ? null
+                                              : _handleForgotPassword,
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 10,
+                                              horizontal: 4,
+                                            ),
+                                            child: Text(
+                                              'Lupa Kata Sandi?',
+                                              style: AppTextStyles.caption.copyWith(
+                                                color: AppColors.actionGreen,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 13,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -317,22 +329,58 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                           fontSize: 14,
                                         ),
                                       ),
-                                      GestureDetector(
-                                        onTap: authAsync.isLoading
-                                            ? null
-                                            : () => context.go(
-                                                  RouteNames.registerPath,
-                                                ),
-                                        child: Text(
-                                          'Daftar Sekarang',
-                                          style: AppTextStyles.body.copyWith(
-                                            color: AppColors.forestGreen,
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 14,
+                                      Semantics(
+                                        button: true,
+                                        label: 'Daftar Sekarang',
+                                        child: GestureDetector(
+                                          behavior: HitTestBehavior.opaque,
+                                          onTap: authAsync.isLoading
+                                              ? null
+                                              : () => context.go(
+                                                    RouteNames.registerPath,
+                                                  ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 10,
+                                              horizontal: 4,
+                                            ),
+                                            child: Text(
+                                              'Daftar Sekarang',
+                                              style: AppTextStyles.body.copyWith(
+                                                color: AppColors.forestGreen,
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 14,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Divider(height: 1),
+                                  const SizedBox(height: 14),
+                                  SecondaryButton(
+                                    label: 'Jelajahi sebagai Tamu',
+                                    icon: Icons.explore_outlined,
+                                    onPressed: authAsync.isLoading
+                                        ? null
+                                        : () {
+                                            ref
+                                                .read(
+                                                  isGuestModeProvider.notifier,
+                                                )
+                                                .enterGuestMode();
+                                            context.go(RouteNames.homePath);
+                                          },
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Mode tamu: bebas buka peta, materi, & perbandingan energi tanpa menyimpan progres baca atau skor kuis.',
+                                    textAlign: TextAlign.center,
+                                    style: AppTextStyles.caption.copyWith(
+                                      fontSize: 11.5,
+                                    ),
                                   ),
                                 ],
                               ),

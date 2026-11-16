@@ -19,6 +19,7 @@ import '../../../../models/energy_category.dart';
 import '../../../../models/power_plant.dart';
 import '../../../../routes/route_names.dart';
 import '../../../../services/external_map_service.dart';
+import '../../../../services/location_service.dart';
 import '../../../plants/presentation/providers/plants_providers.dart';
 
 /// Halaman Peta Eksplorasi Pembangkit (Explore Map).
@@ -33,12 +34,19 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
 
-  static const LatLng _indonesiaCenter = LatLng(-2.5489, 118.0149);
-  static const double _defaultZoom = 4.6;
+  static final CameraFit _indonesiaCameraFit = CameraFit.bounds(
+    bounds: LatLngBounds(
+      const LatLng(-11.0, 94.8),
+      const LatLng(6.2, 141.2),
+    ),
+    padding: const EdgeInsets.fromLTRB(16, 175, 16, 130),
+  );
 
   String _localSearchQuery = '';
   String? _selectedPlantId;
   bool _isPreviewDismissed = false;
+  bool _hasTileError = false;
+  bool _isLocating = false;
 
   @override
   void dispose() {
@@ -48,7 +56,49 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
   }
 
   void _resetCamera() {
-    _mapController.move(_indonesiaCenter, _defaultZoom);
+    _mapController.fitCamera(_indonesiaCameraFit);
+  }
+
+  PowerPlant? _pickFlagshipPlant(List<PowerPlant> plants) {
+    if (plants.isEmpty) return null;
+    return plants
+            .where(
+              (p) =>
+                  !p.isApproximate &&
+                  p.operationalStatus.trim().toLowerCase() == 'operating',
+            )
+            .firstOrNull ??
+        plants.where((p) => !p.isApproximate).firstOrNull ??
+        plants.first;
+  }
+
+  Future<void> _centerOnUserLocation() async {
+    if (_isLocating) return;
+    setState(() => _isLocating = true);
+    try {
+      final result =
+          await ref.read(locationServiceProvider).getCurrentLocation();
+      if (!mounted) return;
+      if (result.hasPosition) {
+        final pos = result.position!;
+        _mapController.move(LatLng(pos.latitude, pos.longitude), 10.5);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Peta dipusatkan ke lokasi Anda.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.message ?? 'Lokasi perangkat belum tersedia.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLocating = false);
+      }
+    }
   }
 
   void _selectPlantOnMap(PowerPlant plant) {
@@ -83,10 +133,11 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
 
     PowerPlant? activePreviewPlant;
     if (!_isPreviewDismissed && visiblePlants.isNotEmpty) {
-      activePreviewPlant = visiblePlants
-              .where((p) => p.id == _selectedPlantId)
-              .firstOrNull ??
-          visiblePlants.first;
+      activePreviewPlant = _selectedPlantId != null
+          ? visiblePlants.where((p) => p.id == _selectedPlantId).firstOrNull
+          : (_localSearchQuery.trim().isNotEmpty
+                ? _pickFlagshipPlant(visiblePlants)
+                : null);
     }
 
     return Scaffold(
@@ -96,16 +147,20 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
           // 1. Peta OpenStreetMap
           FlutterMap(
             mapController: _mapController,
-            options: const MapOptions(
-              initialCenter: _indonesiaCenter,
-              initialZoom: _defaultZoom,
-              minZoom: 3.5,
+            options: MapOptions(
+              initialCameraFit: _indonesiaCameraFit,
+              minZoom: 3.2,
               maxZoom: 18.0,
             ),
             children: [
               TileLayer(
                 urlTemplate: AppConstants.osmTileUrl,
                 userAgentPackageName: AppConstants.appPackageName,
+                errorTileCallback: (_, _, _) {
+                  if (!_hasTileError && mounted) {
+                    setState(() => _hasTileError = true);
+                  }
+                },
               ),
               if (visiblePlants.isNotEmpty)
                 MarkerLayer(
@@ -199,12 +254,19 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
                                 ),
                               ),
                               if (_localSearchQuery.isNotEmpty)
-                                GestureDetector(
-                                  onTap: () {
+                                IconButton(
+                                  tooltip: 'Hapus pencarian',
+                                  constraints: const BoxConstraints(
+                                    minWidth: 44,
+                                    minHeight: 44,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  visualDensity: VisualDensity.compact,
+                                  onPressed: () {
                                     _searchController.clear();
                                     setState(() => _localSearchQuery = '');
                                   },
-                                  child: const Icon(
+                                  icon: const Icon(
                                     Icons.close_rounded,
                                     size: 18,
                                     color: AppColors.textSecondary,
@@ -248,20 +310,34 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
             ),
             data: (_) {
               if (visiblePlants.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: GlassContainer(
-                      tintOpacity: 0.9,
+                return Positioned(
+                  top: 215,
+                  left: 16,
+                  right: 16,
+                  bottom: AppTheme.mapOverlayBottomPadding + 16,
+                  child: Center(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceWhite.withValues(alpha: 0.96),
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.cardRadius,
+                        ),
+                        border: Border.all(color: AppColors.divider),
+                        boxShadow: AppTheme.softCardShadow,
+                      ),
                       child: EmptyView(
                         icon: Icons.location_off_outlined,
+                        assetPath: 'assets/images/mascot/eco_thinking.png',
                         title: 'Tidak Ada Pembangkit Ditemukan',
                         description:
                             'Tidak ada pembangkit yang cocok dengan filter kategori, status, atau pencarian saat ini.',
                         actionLabel: 'Reset Filter & Pencarian',
                         onAction: () {
                           _searchController.clear();
-                          setState(() => _localSearchQuery = '');
+                          setState(() {
+                            _localSearchQuery = '';
+                            _selectedPlantId = null;
+                          });
                           ref
                               .read(selectedCategoryFilterProvider.notifier)
                               .selectCategory(null);
@@ -278,106 +354,197 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
             },
           ),
 
-          // 4. Kartu Preview Pembangkit di Bawah + Tombol Terdekat + Atribusi OSM
-          Positioned(
-            left: AppTheme.bottomNavHorizontalMargin,
-            right: AppTheme.bottomNavHorizontalMargin,
-            bottom: AppTheme.mapOverlayBottomPadding +
-                MediaQuery.viewPaddingOf(context).bottom,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        externalMapService.openExternalUrl(
-                          'https://www.openstreetmap.org/copyright',
-                        );
-                      },
+          // 4. Kartu Preview Pembangkit di Bawah + Tombol Lokasi Saya + Atribusi OSM
+          if (plantsAsync.asData != null && visiblePlants.isNotEmpty)
+            Positioned(
+              left: AppTheme.bottomNavHorizontalMargin,
+              right: AppTheme.bottomNavHorizontalMargin,
+              bottom: AppTheme.mapOverlayBottomPadding +
+                  MediaQuery.viewPaddingOf(context).bottom,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_hasTileError) ...[
+                    Align(
+                      alignment: Alignment.centerLeft,
                       child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: 10,
+                          vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceWhite.withValues(
-                            alpha: 0.88,
+                          color: AppColors.warningBg,
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.pillRadius,
                           ),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.divider),
+                          border: Border.all(
+                            color: AppColors.warningFg.withValues(alpha: 0.4),
+                          ),
                         ),
                         child: Text(
-                          AppConstants.osmAttribution,
-                          style: AppTextStyles.caption.copyWith(fontSize: 10),
-                        ),
-                      ),
-                    ),
-                    Material(
-                      color: AppColors.surfaceWhite,
-                      shape: const CircleBorder(),
-                      elevation: 2,
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: () =>
-                            context.push(RouteNames.nearbyPlantsPath),
-                        child: Container(
-                          width: 46,
-                          height: 46,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.divider),
-                          ),
-                          child: const Icon(
-                            Icons.near_me_rounded,
-                            color: AppColors.forestGreen,
-                            size: 22,
+                          'Ubin peta dasar sedang offline — pin pembangkit tetap aktif',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.warningFg,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
                           ),
                         ),
                       ),
                     ),
                   ],
-                ),
-                if (activePreviewPlant != null) ...[
-                  const SizedBox(height: 10),
-                  _MapPlantPreviewCard(
-                    plant: activePreviewPlant,
-                    onOpenDetail: () =>
-                        context.push('/plants/${activePreviewPlant!.id}'),
-                    onOpenGoogleMaps: () async {
-                      final plant = activePreviewPlant!;
-                      final ok = plant.isApproximate
-                          ? await externalMapService.searchPlaceInGoogleMaps(
-                              name: plant.name,
-                              city: plant.city,
-                              province: plant.province,
-                            )
-                          : await externalMapService
-                              .openCoordinatesInGoogleMaps(
-                              latitude: plant.latitude,
-                              longitude: plant.longitude,
-                            );
-                      if (!ok && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Gagal membuka aplikasi Google Maps.',
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          externalMapService.openExternalUrl(
+                            'https://www.openstreetmap.org/copyright',
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceWhite.withValues(
+                              alpha: 0.90,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.divider),
+                          ),
+                          child: Text(
+                            AppConstants.osmAttribution,
+                            style: AppTextStyles.caption.copyWith(fontSize: 10.5),
+                          ),
+                        ),
+                      ),
+                      Semantics(
+                        button: true,
+                        label: 'Pusatkan ke lokasi saya',
+                        child: Tooltip(
+                          message: 'Pusatkan ke lokasi saya',
+                          child: Material(
+                            color: AppColors.surfaceWhite,
+                            shape: const CircleBorder(),
+                            elevation: 2,
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: _centerOnUserLocation,
+                              child: Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: AppColors.divider),
+                                ),
+                                child: _isLocating
+                                    ? const Padding(
+                                        padding: EdgeInsets.all(13),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.my_location_rounded,
+                                        color: AppColors.forestGreen,
+                                        size: 22,
+                                      ),
+                              ),
                             ),
                           ),
-                        );
-                      }
-                    },
-                    onClose: () {
-                      setState(() => _isPreviewDismissed = true);
-                    },
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 10),
+                  if (activePreviewPlant != null)
+                    _MapPlantPreviewCard(
+                      plant: activePreviewPlant,
+                      onOpenDetail: () =>
+                          context.push('/plants/${activePreviewPlant!.id}'),
+                      onOpenGoogleMaps: () async {
+                        final plant = activePreviewPlant!;
+                        final ok = plant.isApproximate
+                            ? await externalMapService.searchPlaceInGoogleMaps(
+                                name: plant.name,
+                                city: plant.city,
+                                province: plant.province,
+                              )
+                            : await externalMapService
+                                .openCoordinatesInGoogleMaps(
+                                latitude: plant.latitude,
+                                longitude: plant.longitude,
+                              );
+                        if (!ok && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Gagal membuka aplikasi Google Maps.',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      onClose: () {
+                        setState(() {
+                          _selectedPlantId = null;
+                          _isPreviewDismissed = true;
+                        });
+                      },
+                    )
+                  else
+                    GlassContainer(
+                      borderRadius: AppTheme.pillRadius,
+                      blur: 14,
+                      tintOpacity: 0.86,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.touch_app_rounded,
+                            size: 18,
+                            color: AppColors.forestGreen,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Ketuk pin di peta (${visiblePlants.length} titik)',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.forestGreen,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              final target = _pickFlagshipPlant(visiblePlants);
+                              if (target != null) {
+                                _selectPlantOnMap(target);
+                              }
+                            },
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              minimumSize: const Size(48, 36),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text('Lihat unggulan'),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
-              ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -391,10 +558,11 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
 
     return SizedBox(
       height: 36,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [
+      child: HorizontalChipStrip(
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(16, 0, 32, 0),
+          children: [
           CategoryChip(
             label: 'Semua',
             isSelected: selectedSlug == null,
@@ -425,6 +593,7 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
             );
           }),
         ],
+        ),
       ),
     );
   }
@@ -523,11 +692,11 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
     final Color borderColor = isPlanned
         ? markerColor
         : isConstruction
-            ? const Color(0xFFD97706)
+            ? AppColors.warningFg
             : AppColors.surfaceWhite;
 
     final Color iconColor = isPlanned
-        ? (slug == 'solar' ? const Color(0xFFD97706) : AppColors.forestGreen)
+        ? (slug == 'solar' ? AppColors.warningFg : AppColors.forestGreen)
         : (slug == 'solar' ? AppColors.forestGreen : AppColors.surfaceWhite);
 
     return Marker(
@@ -582,7 +751,7 @@ class _ExploreMapPageState extends ConsumerState<ExploreMapPage> {
                           height: 14,
                           decoration: BoxDecoration(
                             color: isConstruction
-                                ? const Color(0xFFD97706)
+                                ? AppColors.warningFg
                                 : AppColors.slateGray,
                             shape: BoxShape.circle,
                             border: Border.all(
@@ -693,9 +862,15 @@ class _MapPlantPreviewCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    GestureDetector(
-                      onTap: onClose,
-                      child: const Icon(
+                    IconButton(
+                      tooltip: 'Tutup pratinjau',
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                      ),
+                      padding: EdgeInsets.zero,
+                      onPressed: onClose,
+                      icon: const Icon(
                         Icons.close_rounded,
                         size: 18,
                         color: AppColors.textMuted,
@@ -769,60 +944,72 @@ class _MapPlantPreviewCard extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Material(
-                        color: AppColors.forestGreen,
-                        borderRadius: BorderRadius.circular(
-                          AppTheme.pillRadius,
-                        ),
-                        child: InkWell(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        child: Material(
+                          color: AppColors.actionGreen,
                           borderRadius: BorderRadius.circular(
                             AppTheme.pillRadius,
                           ),
-                          onTap: onOpenDetail,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.pillRadius,
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Lihat Detail',
-                                  style: AppTextStyles.caption.copyWith(
-                                    color: AppColors.surfaceWhite,
-                                    fontWeight: FontWeight.w700,
+                            onTap: onOpenDetail,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 11,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Lihat Detail',
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: AppColors.surfaceWhite,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(
-                                  Icons.arrow_forward_rounded,
-                                  size: 14,
-                                  color: AppColors.surfaceWhite,
-                                ),
-                              ],
+                                  const SizedBox(width: 5),
+                                  const Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 16,
+                                    color: AppColors.surfaceWhite,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Tooltip(
                       message: plant.isApproximate
                           ? 'Cari di Google Maps'
                           : 'Lihat titik di Google Maps',
-                      child: Material(
-                        color: AppColors.mintGreen,
-                        shape: const CircleBorder(),
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          onTap: onOpenGoogleMaps,
-                          child: const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.open_in_new_rounded,
-                              size: 16,
-                              color: AppColors.forestGreen,
+                      child: InkResponse(
+                        onTap: onOpenGoogleMaps,
+                        radius: 24,
+                        customBorder: const CircleBorder(),
+                        child: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: Center(
+                            child: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: const BoxDecoration(
+                                color: AppColors.mintGreen,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.open_in_new_rounded,
+                                size: 17,
+                                color: AppColors.forestGreen,
+                              ),
                             ),
                           ),
                         ),

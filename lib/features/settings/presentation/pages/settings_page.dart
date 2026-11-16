@@ -74,35 +74,16 @@ class SettingsPage extends ConsumerWidget {
                   Icons.info_outline_rounded,
                   color: AppColors.forestGreen,
                 ),
-                title: Text('Tentang EduEarth', style: AppTextStyles.bodyMedium),
+                title: Text(
+                  'Tentang EduEarth',
+                  style: AppTextStyles.bodyMedium,
+                ),
                 subtitle: Text(
                   'Tujuan aplikasi, 5 kategori energi, dan atribusi peta',
                   style: AppTextStyles.caption,
                 ),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => context.push(RouteNames.aboutPath),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Card(
-              child: ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-                ),
-                leading: const Icon(
-                  Icons.palette_outlined,
-                  color: AppColors.forestGreen,
-                ),
-                title: Text(
-                  'Showcase Komponen & Design System',
-                  style: AppTextStyles.bodyMedium,
-                ),
-                subtitle: Text(
-                  'Pratinjau komponen UI, tiga state UI, dan GlassContainer',
-                  style: AppTextStyles.caption,
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => context.push(RouteNames.designShowcasePath),
               ),
             ),
             const SizedBox(height: 24),
@@ -124,4 +105,3 @@ class SettingsPage extends ConsumerWidget {
     );
   }
 }
-

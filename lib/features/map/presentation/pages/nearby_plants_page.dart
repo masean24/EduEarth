@@ -56,8 +56,7 @@ class NearbyPlantsPage extends ConsumerWidget {
             Expanded(
               child: nearbyAsync.when(
                 loading: () => const LoadingView(
-                  message:
-                      'Mendeteksi lokasi Anda dan mencari pembangkit terdekat...',
+                  message: 'Mendeteksi lokasi Anda dan mencari pembangkit terdekat...',
                 ),
                 error: (error, _) => ErrorView(
                   message: error.toString(),
@@ -70,10 +69,9 @@ class NearbyPlantsPage extends ConsumerWidget {
                   if (loc.accessState == LocationAccessState.serviceDisabled) {
                     return EmptyView(
                       icon: Icons.location_disabled_rounded,
+                      assetPath: 'assets/images/mascot/eco_thinking.png',
                       title: 'Layanan Lokasi (GPS) Nonaktif',
-                      description:
-                          loc.message ??
-                          'Aktifkan layanan lokasi perangkat untuk menemukan pembangkit terdekat.',
+                      description: loc.message ?? 'Aktifkan layanan lokasi perangkat untuk menemukan pembangkit terdekat.',
                       actionLabel: 'Buka Pengaturan Lokasi',
                       onAction: () async {
                         await locationService.openLocationSettings();
@@ -86,10 +84,9 @@ class NearbyPlantsPage extends ConsumerWidget {
                   if (loc.accessState == LocationAccessState.permissionDenied) {
                     return EmptyView(
                       icon: Icons.location_off_outlined,
+                      assetPath: 'assets/images/mascot/eco_thinking.png',
                       title: 'Izin Lokasi Ditolak',
-                      description:
-                          loc.message ??
-                          'EduEarth memerlukan izin lokasi untuk mengurutkan jarak pembangkit terdekat.',
+                      description: loc.message ?? 'EduEarth memerlukan izin lokasi untuk mengurutkan jarak pembangkit terdekat.',
                       actionLabel: 'Minta Izin Lokasi Lagi',
                       onAction: () => ref.invalidate(nearbyPlantsStateProvider),
                     );
@@ -100,10 +97,9 @@ class NearbyPlantsPage extends ConsumerWidget {
                       LocationAccessState.permissionDeniedForever) {
                     return EmptyView(
                       icon: Icons.settings_outlined,
+                      assetPath: 'assets/images/mascot/eco_thinking.png',
                       title: 'Izin Lokasi Diblokir Permanen',
-                      description:
-                          loc.message ??
-                          'Silakan aktifkan izin lokasi untuk EduEarth di pengaturan aplikasi.',
+                      description: loc.message ?? 'Silakan aktifkan izin lokasi untuk EduEarth di pengaturan aplikasi.',
                       actionLabel: 'Buka Pengaturan Aplikasi',
                       onAction: () async {
                         await locationService.openAppSettings();
@@ -197,7 +193,7 @@ class NearbyPlantsPage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Radius Pencarian Jarak (PostGIS ST_DWithin):',
+            'Pilih Radius Jarak dari Lokasimu:',
             style: AppTextStyles.caption,
           ),
           const SizedBox(height: 8),
@@ -217,8 +213,7 @@ class NearbyPlantsPage extends ConsumerWidget {
                   selectedColor: AppColors.mintGreen,
                   labelStyle: AppTextStyles.caption.copyWith(
                     color: AppColors.forestGreen,
-                    fontWeight:
-                        isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppTheme.pillRadius),
@@ -237,4 +232,3 @@ class NearbyPlantsPage extends ConsumerWidget {
     );
   }
 }
-

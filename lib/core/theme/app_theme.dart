@@ -89,7 +89,7 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.offWhite,
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       colorScheme: const ColorScheme.light(
-        primary: AppColors.freshGreen,
+        primary: AppColors.actionGreen,
         onPrimary: AppColors.surfaceWhite,
         primaryContainer: AppColors.mintGreen,
         onPrimaryContainer: AppColors.forestGreen,
@@ -137,7 +137,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.freshGreen,
+          backgroundColor: AppColors.actionGreen,
           foregroundColor: AppColors.surfaceWhite,
           elevation: 0,
           minimumSize: const Size(48, 52),
@@ -146,6 +146,12 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(buttonRadius),
           ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.actionGreen,
+          minimumSize: const Size(48, 44),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -179,7 +185,7 @@ class AppTheme {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(buttonRadius),
           borderSide: const BorderSide(
-            color: AppColors.freshGreen,
+            color: AppColors.actionGreen,
             width: 1.5,
           ),
         ),

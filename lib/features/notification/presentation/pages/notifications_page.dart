@@ -58,7 +58,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
     return Scaffold(
       appBar: ScreenHeaderBar(
         title: 'Pusat Informasi',
-        subtitle: 'Pengumuman publik & pembaruan EduEarth',
+        subtitle: 'Panduan belajar 4 pilar & catatan dataset EduEarth',
         actions: [
           ScreenHeaderAction(
             icon: Icons.refresh_rounded,

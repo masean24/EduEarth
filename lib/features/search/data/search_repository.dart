@@ -91,6 +91,7 @@ class SearchRepository {
           .from('learning_materials')
           .select('*, energy_categories(slug, name, short_code)')
           .eq('is_published', true)
+          .eq('is_draft', false)
           .or('title.ilike.$pattern,summary.ilike.$pattern')
           .order('sort_order', ascending: true)
           .limit(20);

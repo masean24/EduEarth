@@ -45,32 +45,32 @@ class GlassBottomNav extends StatelessWidget {
   static const List<GlassBottomNavItem> defaultTabs = <GlassBottomNavItem>[
     GlassBottomNavItem(
       branchIndex: 1,
-      label: 'Explore',
+      label: 'Jelajah',
       icon: Icons.explore_outlined,
       activeIcon: Icons.explore_rounded,
     ),
     GlassBottomNavItem(
       branchIndex: 2,
-      label: 'Learn',
+      label: 'Belajar',
       icon: Icons.menu_book_outlined,
       activeIcon: Icons.menu_book_rounded,
     ),
     GlassBottomNavItem(
       branchIndex: 0,
-      label: 'Home',
+      label: 'Beranda',
       icon: Icons.home_outlined,
       activeIcon: Icons.home_rounded,
       isCenterDocked: true,
     ),
     GlassBottomNavItem(
       branchIndex: 3,
-      label: 'Quiz',
-      icon: Icons.help_outline_rounded,
-      activeIcon: Icons.help_rounded,
+      label: 'Kuis',
+      icon: Icons.quiz_outlined,
+      activeIcon: Icons.quiz_rounded,
     ),
     GlassBottomNavItem(
       branchIndex: 4,
-      label: 'Profile',
+      label: 'Profil',
       icon: Icons.person_outline_rounded,
       activeIcon: Icons.person_rounded,
     ),
@@ -109,32 +109,37 @@ class GlassBottomNav extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: items.map((item) {
                       if (item.isCenterDocked) {
-                        // Ruang tengah untuk label "Home" (ikon lingkaran ada di layer atas Stack)
+                        // Ruang tengah untuk label "Beranda" (ikon lingkaran ada di layer atas Stack)
                         final isHomeSelected = currentIndex == item.branchIndex;
                         return Expanded(
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () => onTap(item.branchIndex),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Text(
-                                  item.label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTextStyles.caption.copyWith(
-                                    fontSize: 11.5,
-                                    height: 1.1,
-                                    color: isHomeSelected
-                                        ? AppColors.forestGreen
-                                        : const Color(0xFF7B8D9E),
-                                    fontWeight: isHomeSelected
-                                        ? FontWeight.w800
-                                        : FontWeight.w600,
+                          child: Semantics(
+                            selected: isHomeSelected,
+                            button: true,
+                            label: 'Tab ${item.label}',
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => onTap(item.branchIndex),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    item.label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.caption.copyWith(
+                                      fontSize: 11.5,
+                                      height: 1.1,
+                                      color: isHomeSelected
+                                          ? AppColors.forestGreen
+                                          : AppColors.navInactive,
+                                      fontWeight: isHomeSelected
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 3),
-                              ],
+                                  const SizedBox(height: 3),
+                                ],
+                              ),
                             ),
                           ),
                         );
@@ -186,7 +191,7 @@ class GlassBottomNav extends StatelessWidget {
                                         size: 22,
                                         color: isSelected
                                             ? AppColors.forestGreen
-                                            : const Color(0xFF7B8D9E),
+                                            : AppColors.navInactive,
                                       ),
                                     ),
                                     const SizedBox(height: 3),
@@ -199,7 +204,7 @@ class GlassBottomNav extends StatelessWidget {
                                         height: 1.1,
                                         color: isSelected
                                             ? AppColors.forestGreen
-                                            : const Color(0xFF7B8D9E),
+                                            : AppColors.navInactive,
                                         fontWeight: isSelected
                                             ? FontWeight.w800
                                             : FontWeight.w600,
@@ -274,12 +279,11 @@ class GlassBottomNav extends StatelessWidget {
                   colors: isSelected
                       ? const [
                           AppColors.forestGreen,
-                          Color(0xFF1E7E48),
-                          AppColors.freshGreen,
+                          AppColors.actionGreen,
                         ]
                       : [
-                          AppColors.forestGreen.withValues(alpha: 0.85),
-                          AppColors.freshGreen.withValues(alpha: 0.85),
+                          AppColors.forestGreen.withValues(alpha: 0.90),
+                          AppColors.actionGreen.withValues(alpha: 0.90),
                         ],
                 ),
               ),

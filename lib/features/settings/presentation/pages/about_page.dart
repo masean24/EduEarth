@@ -66,10 +66,14 @@ class AboutPage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-            Text('Tujuan Aplikasi', style: AppTextStyles.title),
+            Text('Tujuan & Empat Pilar Pembelajaran', style: AppTextStyles.title),
             const SizedBox(height: 8),
             Text(
-              'EduEarth dirancang untuk membantu pelajar dan masyarakat Indonesia memahami potensi serta cara kerja energi terbarukan melalui peta pembangkit interaktif, materi pembelajaran ringkas, dan kuis edukatif.',
+              'EduEarth dirancang sebagai aplikasi pembelajaran energi terbarukan berbasis peta untuk pelajar (SMP–SMA/SMK) dan masyarakat umum di Indonesia, dengan 9 modul bertingkat (Pemula, Menengah, Lanjut) melalui 4 pilar terintegrasi:\n'
+              '1. Explore — Eksplorasi geospasial 128 pembangkit tercatat & catatan studi kasus nyata.\n'
+              '2. Learn — Pembelajaran prinsip kerja, variasi desain, dan penyimpanan/jaringan listrik.\n'
+              '3. Understand Impact — Perbandingan manfaat dekarbonisasi dan tantangan/trade-off lingkungan berbasis kajian siklus hidup (LCA IPCC & IRENA).\n'
+              '4. Evaluate — Pengujian pemahaman melalui 6 paket kuis berpenilaian server-side, pembahasan ilmiah, dan pelacakan perkembangan skor.',
               style: AppTextStyles.body,
             ),
             const SizedBox(height: 22),

@@ -30,6 +30,7 @@ class LearningRepository {
             '*, energy_categories!inner(slug, name, short_code)',
           )
           .eq('is_published', true)
+          .eq('is_draft', false)
           .order('sort_order', ascending: true)
           .order('created_at', ascending: true);
 
@@ -67,6 +68,7 @@ class LearningRepository {
           )
           .eq('slug', slug)
           .eq('is_published', true)
+          .eq('is_draft', false)
           .maybeSingle();
 
       if (row == null) {
