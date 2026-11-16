@@ -1,7 +1,9 @@
 import 'package:eduearth/core/constants/demo_data.dart';
+import 'package:eduearth/core/widgets/glass/glass_bottom_nav.dart';
 import 'package:eduearth/features/auth/presentation/providers/auth_provider.dart';
 import 'package:eduearth/features/learning/domain/learning_integration_helper.dart';
 import 'package:eduearth/features/learning/presentation/providers/reading_progress_provider.dart';
+import 'package:eduearth/features/plants/presentation/providers/plants_providers.dart';
 import 'package:eduearth/features/quiz/presentation/providers/quiz_providers.dart';
 import 'package:eduearth/models/learning_material.dart';
 import 'package:eduearth/models/power_plant.dart';
@@ -9,6 +11,7 @@ import 'package:eduearth/models/quiz_attempt.dart';
 import 'package:eduearth/routes/route_names.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -467,6 +470,122 @@ void main() {
       expect(q2.latestScore, 60);
       expect(q2.scoreDelta, 0);
       expect(q2.hasMultipleAttempts, isFalse);
+    });
+  });
+
+  group('Explore Map Nearby Mode', () {
+    PowerPlant plantAt(String id, String name, double lat, double lng) {
+      return PowerPlant(
+        id: id,
+        categoryId: 'solar',
+        name: name,
+        province: 'Jawa',
+        latitude: lat,
+        longitude: lng,
+      );
+    }
+
+    test('MapNearbyNotifier manages activation, radius, and disable lifecycle', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      var state = container.read(mapNearbyProvider);
+      expect(state.isEnabled, isFalse);
+      expect(state.radiusMeters, 500000);
+      expect(state.hasLocation, isFalse);
+      expect(state.pendingAutoActivate, isFalse);
+
+      container.read(mapNearbyProvider.notifier).requestAutoActivate();
+      expect(container.read(mapNearbyProvider).pendingAutoActivate, isTrue);
+
+      container.read(mapNearbyProvider.notifier).consumePendingAutoActivate();
+      expect(container.read(mapNearbyProvider).pendingAutoActivate, isFalse);
+
+      container.read(mapNearbyProvider.notifier).enable(
+            userLat: -6.2,
+            userLng: 106.8,
+          );
+      state = container.read(mapNearbyProvider);
+      expect(state.isEnabled, isTrue);
+      expect(state.hasLocation, isTrue);
+      expect(state.userCenter, const LatLng(-6.2, 106.8));
+
+      container.read(mapNearbyProvider.notifier).setRadiusMeters(250000);
+      expect(container.read(mapNearbyProvider).radiusMeters, 250000);
+
+      container.read(mapNearbyProvider.notifier).disable();
+      state = container.read(mapNearbyProvider);
+      expect(state.isEnabled, isFalse);
+      expect(state.hasLocation, isFalse);
+      expect(state.userCenter, isNull);
+    });
+
+    test('filterAndSortPlantsByRadius filters by distance and sorts ascending', () {
+      const jakartaLat = -6.2000;
+      const jakartaLng = 106.8166;
+      final plants = [
+        plantAt('sby', 'Surabaya', -7.2575, 112.7521), // ~663 km
+        plantAt('bdg', 'Bandung', -6.9175, 107.6191), // ~119 km
+        plantAt('bgr', 'Bogor', -6.5971, 106.8060), // ~44 km
+      ];
+
+      final r50 = filterAndSortPlantsByRadius(
+        plants: plants,
+        userLat: jakartaLat,
+        userLng: jakartaLng,
+        radiusMeters: 50000,
+      );
+      expect(r50.map((p) => p.id).toList(), ['bgr']);
+      expect(r50.first.distanceMeters, isNotNull);
+      expect(r50.first.distanceMeters!, lessThan(50000));
+
+      final r250 = filterAndSortPlantsByRadius(
+        plants: plants,
+        userLat: jakartaLat,
+        userLng: jakartaLng,
+        radiusMeters: 250000,
+      );
+      expect(r250.map((p) => p.id).toList(), ['bgr', 'bdg']);
+      expect(r250[0].distanceMeters!, lessThan(r250[1].distanceMeters!));
+
+      final r1500 = filterAndSortPlantsByRadius(
+        plants: plants,
+        userLat: jakartaLat,
+        userLng: jakartaLng,
+        radiusMeters: 1500000,
+      );
+      expect(r1500.map((p) => p.id).toList(), ['bgr', 'bdg', 'sby']);
+    });
+
+    test('formatRadiusLabel and computeNearbyRadiusCorners return expected values', () {
+      expect(formatRadiusLabel(50000), '50 km');
+      expect(formatRadiusLabel(500000), '500 km');
+      expect(formatRadiusLabel(1500000), '1.500 km');
+      expect(formatRadiusLabel(800), '800 m');
+
+      const center = LatLng(-6.2, 106.8);
+      final corners = computeNearbyRadiusCorners(
+        center: center,
+        radiusMeters: 500000,
+      );
+      expect(corners.southWest.latitude, lessThan(center.latitude));
+      expect(corners.northEast.latitude, greaterThan(center.latitude));
+      expect(corners.southWest.longitude, lessThan(center.longitude));
+      expect(corners.northEast.longitude, greaterThan(center.longitude));
+    });
+
+    test('GlassBottomNav places Jelajah (Explore Map) as center docked tab', () {
+      const tabs = GlassBottomNav.defaultTabs;
+      expect(tabs.map((t) => t.label).toList(), [
+        'Beranda',
+        'Belajar',
+        'Jelajah',
+        'Kuis',
+        'Profil',
+      ]);
+      expect(tabs.map((t) => t.branchIndex).toList(), [0, 2, 1, 3, 4]);
+      expect(tabs[2].isCenterDocked, isTrue);
+      expect(tabs.where((t) => t.isCenterDocked).length, 1);
     });
   });
 }

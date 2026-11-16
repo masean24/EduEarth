@@ -17,7 +17,6 @@ import '../features/learning/presentation/pages/energy_comparison_page.dart';
 import '../features/learning/presentation/pages/learning_dashboard_page.dart';
 import '../features/learning/presentation/pages/learning_detail_page.dart';
 import '../features/map/presentation/pages/explore_map_page.dart';
-import '../features/map/presentation/pages/nearby_plants_page.dart';
 import '../features/notification/presentation/pages/notifications_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/onboarding/presentation/providers/onboarding_provider.dart';
@@ -144,11 +143,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id'] ?? '';
           return PlantDetailPage(plantId: id);
         },
-      ),
-      GoRoute(
-        name: RouteNames.nearbyPlantsName,
-        path: RouteNames.nearbyPlantsPath,
-        builder: (context, state) => const NearbyPlantsPage(),
       ),
       GoRoute(
         name: RouteNames.energyCategoryName,

@@ -23,13 +23,13 @@ class GlassBottomNavItem {
   final bool isCenterDocked;
 }
 
-/// Navigasi bawah 5 tab bergaya kapsul modern dengan tombol **Home** di tengah
-/// (`Explore | Learn | Home (Center) | Quiz | Profile`).
+/// Navigasi bawah 5 tab bergaya kapsul modern dengan tombol **Jelajah (Peta)** di tengah
+/// (`Beranda | Belajar | Jelajah (Tengah) | Kuis | Profil`).
 ///
 /// Dirancang proporsional untuk layar mobile:
 /// - Bar kapsul memiliki tinggi 64 dp dengan sudut membulat lembut.
-/// - Tombol **Home** di tengah memiliki lingkaran hijau berbingkai putih yang
-///   menonjol halus (12 dp di atas kapsul) agar elegan dan tidak menutupi konten.
+/// - Tombol **Jelajah** di tengah memiliki lingkaran hijau berbingkai putih yang
+///   menonjol halus (12 dp di atas kapsul) agar fitur peta utama mudah dijangkau.
 class GlassBottomNav extends StatelessWidget {
   const GlassBottomNav({
     super.key,
@@ -44,10 +44,10 @@ class GlassBottomNav extends StatelessWidget {
 
   static const List<GlassBottomNavItem> defaultTabs = <GlassBottomNavItem>[
     GlassBottomNavItem(
-      branchIndex: 1,
-      label: 'Jelajah',
-      icon: Icons.explore_outlined,
-      activeIcon: Icons.explore_rounded,
+      branchIndex: 0,
+      label: 'Beranda',
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
     ),
     GlassBottomNavItem(
       branchIndex: 2,
@@ -56,10 +56,10 @@ class GlassBottomNav extends StatelessWidget {
       activeIcon: Icons.menu_book_rounded,
     ),
     GlassBottomNavItem(
-      branchIndex: 0,
-      label: 'Beranda',
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
+      branchIndex: 1,
+      label: 'Jelajah',
+      icon: Icons.explore_outlined,
+      activeIcon: Icons.explore_rounded,
       isCenterDocked: true,
     ),
     GlassBottomNavItem(
@@ -109,11 +109,11 @@ class GlassBottomNav extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: items.map((item) {
                       if (item.isCenterDocked) {
-                        // Ruang tengah untuk label "Beranda" (ikon lingkaran ada di layer atas Stack)
-                        final isHomeSelected = currentIndex == item.branchIndex;
+                        // Ruang tengah untuk label tab utama (ikon lingkaran ada di layer atas Stack)
+                        final isCenterSelected = currentIndex == item.branchIndex;
                         return Expanded(
                           child: Semantics(
-                            selected: isHomeSelected,
+                            selected: isCenterSelected,
                             button: true,
                             label: 'Tab ${item.label}',
                             child: GestureDetector(
@@ -129,10 +129,10 @@ class GlassBottomNav extends StatelessWidget {
                                     style: AppTextStyles.caption.copyWith(
                                       fontSize: 11.5,
                                       height: 1.1,
-                                      color: isHomeSelected
+                                      color: isCenterSelected
                                           ? AppColors.forestGreen
                                           : AppColors.navInactive,
-                                      fontWeight: isHomeSelected
+                                      fontWeight: isCenterSelected
                                           ? FontWeight.w800
                                           : FontWeight.w600,
                                     ),
@@ -222,10 +222,10 @@ class GlassBottomNav extends StatelessWidget {
                 ),
               ),
 
-              // Tombol bulat Home di tengah (menonjol proporsional 12 dp di atas kapsul)
+              // Tombol bulat tab utama di tengah (menonjol proporsional 12 dp di atas kapsul)
               Positioned(
                 top: 2,
-                child: _buildCenterHomeButton(),
+                child: _buildCenterDockedButton(),
               ),
             ],
           ),
@@ -234,7 +234,7 @@ class GlassBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildCenterHomeButton() {
+  Widget _buildCenterDockedButton() {
     final centerItem = items.firstWhere(
       (item) => item.isCenterDocked,
       orElse: () => defaultTabs[2],

@@ -40,9 +40,6 @@ class RouteNames {
   static const String plantDetailName = 'plant-detail';
   static const String plantDetailPath = '/plants/:id';
 
-  static const String nearbyPlantsName = 'nearby-plants';
-  static const String nearbyPlantsPath = '/nearby-plants';
-
   static const String energyCategoryName = 'energy-category';
   static const String energyCategoryPath = '/learning/category/:slug';
 

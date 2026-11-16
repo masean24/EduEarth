@@ -7,7 +7,7 @@ import '../../theme/app_theme.dart';
 import 'category_chip.dart';
 import 'soft_image_placeholder.dart';
 
-/// Kartu pembangkit energi reusable untuk Home, Nearby Plants, dan Search.
+/// Kartu pembangkit energi reusable untuk Home, Peta Pembangkit Terdekat, dan Search.
 ///
 /// Menambahkan lencana jelas `DATA DEMO` bila `plant.isDemo == true`.
 /// Mendukung mode banner bergambar (`isFeaturedBanner: true`) sesuai gaya

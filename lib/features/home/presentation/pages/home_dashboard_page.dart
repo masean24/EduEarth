@@ -103,7 +103,12 @@ class HomeDashboardPage extends ConsumerWidget {
                       ScreenHeaderAction(
                         tooltip: 'Pembangkit Terdekat',
                         icon: Icons.near_me_outlined,
-                        onTap: () => context.push(RouteNames.nearbyPlantsPath),
+                        onTap: () {
+                          ref
+                              .read(mapNearbyProvider.notifier)
+                              .requestAutoActivate();
+                          context.go(RouteNames.exploreMapPath);
+                        },
                       ),
                       ScreenHeaderAction(
                         tooltip: 'Bookmark Tersimpan',

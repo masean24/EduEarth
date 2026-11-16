@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../../models/energy_category.dart';
 import '../../../../models/power_plant.dart';
-import '../../../../services/location_service.dart';
 import '../../data/plants_repository.dart';
 
 final plantsRepositoryProvider = Provider<PlantsRepository>((ref) {
@@ -95,56 +95,177 @@ final plantDetailProvider =
   return repo.getPlantById(id);
 });
 
-/// Radius pencarian pembangkit terdekat dalam meter (default: 500 km agar mencakup
-/// titik di kepulauan Indonesia, dapat diubah oleh pengguna di halaman Nearby).
-class NearbyRadiusMetersNotifier extends Notifier<int> {
-  @override
-  int build() => 500000;
-
-  void setRadiusMeters(int meters) {
-    state = meters;
-  }
-}
-
-final nearbyRadiusMetersProvider =
-    NotifierProvider<NearbyRadiusMetersNotifier, int>(
-  NearbyRadiusMetersNotifier.new,
-);
-
-/// State gabungan hasil lokasi pengguna dan daftar pembangkit terdekat.
-class NearbyPlantsViewState {
-  const NearbyPlantsViewState({
-    required this.locationResult,
-    this.plants = const <PowerPlant>[],
+/// Opsi pilihan radius pencarian pembangkit terdekat pada peta eksplorasi.
+class NearbyRadiusOption {
+  const NearbyRadiusOption({
+    required this.label,
+    required this.meters,
   });
 
-  final LocationResult locationResult;
-  final List<PowerPlant> plants;
+  final String label;
+  final int meters;
 }
 
-final nearbyPlantsStateProvider =
-    FutureProvider<NearbyPlantsViewState>((ref) async {
-  final locationService = ref.watch(locationServiceProvider);
-  final repo = ref.watch(plantsRepositoryProvider);
-  final radiusMeters = ref.watch(nearbyRadiusMetersProvider);
-  final selectedCategorySlug = ref.watch(selectedCategoryFilterProvider);
+/// Pilihan radius jarak default untuk Mode Pembangkit Terdekat di peta.
+const List<NearbyRadiusOption> kNearbyRadiusOptions = [
+  NearbyRadiusOption(label: '50 km', meters: 50000),
+  NearbyRadiusOption(label: '250 km', meters: 250000),
+  NearbyRadiusOption(label: '500 km', meters: 500000),
+  NearbyRadiusOption(label: '1.500 km', meters: 1500000),
+];
 
-  final locationResult = await locationService.getCurrentLocation();
-  if (!locationResult.hasPosition) {
-    return NearbyPlantsViewState(locationResult: locationResult);
+/// Memformat angka meter menjadi label radius ringkas berbahasa Indonesia.
+String formatRadiusLabel(int meters) {
+  for (final option in kNearbyRadiusOptions) {
+    if (option.meters == meters) return option.label;
+  }
+  if (meters >= 1000000) {
+    final km = meters ~/ 1000;
+    final thousands = km ~/ 1000;
+    final rem = (km % 1000).toString().padLeft(3, '0');
+    return '$thousands.$rem km';
+  }
+  if (meters >= 1000) {
+    return '${meters ~/ 1000} km';
+  }
+  return '$meters m';
+}
+
+/// State untuk Mode Pembangkit Terdekat langsung di dalam `ExploreMapPage`.
+class MapNearbyState {
+  const MapNearbyState({
+    this.isEnabled = false,
+    this.radiusMeters = 500000,
+    this.userLat,
+    this.userLng,
+    this.pendingAutoActivate = false,
+  });
+
+  final bool isEnabled;
+  final int radiusMeters;
+  final double? userLat;
+  final double? userLng;
+  final bool pendingAutoActivate;
+
+  bool get hasLocation => userLat != null && userLng != null;
+
+  LatLng? get userCenter => hasLocation ? LatLng(userLat!, userLng!) : null;
+
+  MapNearbyState copyWith({
+    bool? isEnabled,
+    int? radiusMeters,
+    double? userLat,
+    double? userLng,
+    bool clearUserLocation = false,
+    bool? pendingAutoActivate,
+  }) {
+    return MapNearbyState(
+      isEnabled: isEnabled ?? this.isEnabled,
+      radiusMeters: radiusMeters ?? this.radiusMeters,
+      userLat: clearUserLocation ? null : (userLat ?? this.userLat),
+      userLng: clearUserLocation ? null : (userLng ?? this.userLng),
+      pendingAutoActivate: pendingAutoActivate ?? this.pendingAutoActivate,
+    );
+  }
+}
+
+/// Mengelola state Mode Pembangkit Terdekat pada peta eksplorasi.
+class MapNearbyNotifier extends Notifier<MapNearbyState> {
+  @override
+  MapNearbyState build() => const MapNearbyState();
+
+  /// Menandai agar `ExploreMapPage` otomatis mengaktifkan Mode Terdekat
+  /// setelah berpindah tab dari halaman Beranda.
+  void requestAutoActivate() {
+    state = state.copyWith(pendingAutoActivate: true);
   }
 
-  final pos = locationResult.position!;
-  final nearby = await repo.getNearbyPlants(
-    latitude: pos.latitude,
-    longitude: pos.longitude,
-    radiusMeters: radiusMeters,
-    categorySlug: selectedCategorySlug,
-  );
+  void consumePendingAutoActivate() {
+    if (!state.pendingAutoActivate) return;
+    state = state.copyWith(pendingAutoActivate: false);
+  }
 
-  return NearbyPlantsViewState(
-    locationResult: locationResult,
-    plants: nearby,
+  void enable({
+    required double userLat,
+    required double userLng,
+    int? radiusMeters,
+  }) {
+    state = state.copyWith(
+      isEnabled: true,
+      userLat: userLat,
+      userLng: userLng,
+      radiusMeters: radiusMeters ?? state.radiusMeters,
+      pendingAutoActivate: false,
+    );
+  }
+
+  void setRadiusMeters(int meters) {
+    state = state.copyWith(radiusMeters: meters);
+  }
+
+  void disable() {
+    state = state.copyWith(
+      isEnabled: false,
+      clearUserLocation: true,
+      pendingAutoActivate: false,
+    );
+  }
+}
+
+final mapNearbyProvider = NotifierProvider<MapNearbyNotifier, MapNearbyState>(
+  MapNearbyNotifier.new,
+);
+
+/// Menyaring dan mengurutkan daftar pembangkit dalam [radiusMeters] dari lokasi
+/// pengguna, sekaligus mengisi properti `distanceMeters` tiap item (terdekat dulu).
+List<PowerPlant> filterAndSortPlantsByRadius({
+  required List<PowerPlant> plants,
+  required double userLat,
+  required double userLng,
+  required int radiusMeters,
+}) {
+  const distance = Distance();
+  final origin = LatLng(userLat, userLng);
+  final withinRadius = <PowerPlant>[];
+
+  for (final plant in plants) {
+    final meters = distance.distance(
+      origin,
+      LatLng(plant.latitude, plant.longitude),
+    );
+    if (meters <= radiusMeters) {
+      withinRadius.add(plant.copyWith(distanceMeters: meters));
+    }
+  }
+
+  withinRadius.sort(
+    (a, b) => (a.distanceMeters ?? double.infinity)
+        .compareTo(b.distanceMeters ?? double.infinity),
   );
-});
+  return withinRadius;
+}
+
+/// Menghitung sudut batas barat-daya dan timur-laut (SW, NE) untuk sebuah
+/// lingkaran radius agar kamera peta dapat di-zoom pas ke cakupan radius.
+({LatLng southWest, LatLng northEast}) computeNearbyRadiusCorners({
+  required LatLng center,
+  required int radiusMeters,
+}) {
+  const distance = Distance();
+  final north = distance.offset(center, radiusMeters, 0);
+  final east = distance.offset(center, radiusMeters, 90);
+  final south = distance.offset(center, radiusMeters, 180);
+  final west = distance.offset(center, radiusMeters, 270);
+
+  return (
+    southWest: LatLng(
+      south.latitude.clamp(-85.0, 85.0),
+      west.longitude.clamp(-180.0, 180.0),
+    ),
+    northEast: LatLng(
+      north.latitude.clamp(-85.0, 85.0),
+      east.longitude.clamp(-180.0, 180.0),
+    ),
+  );
+}
 
