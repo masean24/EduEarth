@@ -74,7 +74,12 @@ final currentSessionProvider = Provider<Session?>((ref) {
   final repo = ref.watch(authRepositoryProvider);
   final authStateAsync = ref.watch(authStateStreamProvider);
   return authStateAsync.maybeWhen(
-    data: (authState) => authState.session,
+    data: (authState) {
+      if (authState.event == AuthChangeEvent.signedOut) {
+        return null;
+      }
+      return authState.session ?? repo.currentSession;
+    },
     orElse: () => repo.currentSession,
   );
 });
@@ -108,7 +113,8 @@ class AuthController extends AsyncNotifier<void> {
       await repo.signInWithPassword(email: email, password: password);
     });
     if (!state.hasError) {
-      ref.read(isGuestModeProvider.notifier).exitGuestMode();
+      ref.invalidate(currentSessionProvider);
+      await ref.read(isGuestModeProvider.notifier).exitGuestMode();
     }
     return !state.hasError;
   }
@@ -137,7 +143,8 @@ class AuthController extends AsyncNotifier<void> {
     }
 
     if (response?.session != null) {
-      ref.read(isGuestModeProvider.notifier).exitGuestMode();
+      ref.invalidate(currentSessionProvider);
+      await ref.read(isGuestModeProvider.notifier).exitGuestMode();
     }
 
     final needsConfirmation =
