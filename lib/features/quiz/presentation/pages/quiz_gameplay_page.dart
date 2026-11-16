@@ -17,6 +17,7 @@ import '../../../../models/quiz_question.dart';
 import '../../../../routes/route_names.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/quiz_providers.dart';
+import '../widgets/quiz_dashboard_sections.dart';
 
 /// Halaman Pengerjaan Kuis (Quiz Gameplay) yang interaktif & modern:
 /// - Wajib login & penilaian tetap dilakukan 100% di server via RPC `submit_quiz_attempt`.
@@ -172,6 +173,7 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
     final isAuthenticated = ref.watch(isAuthenticatedProvider);
     if (!isAuthenticated) {
       return Scaffold(
+        backgroundColor: QuizLightPalette.canvasBg,
         appBar: AppBar(title: const Text('Kuis Energi Terbarukan')),
         body: SafeArea(
           child: EmptyView(
@@ -199,6 +201,7 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
         }
       },
       child: Scaffold(
+        backgroundColor: QuizLightPalette.canvasBg,
         body: SafeArea(
           child: quizAsync.when(
             loading: () => const LoadingView(
@@ -489,7 +492,7 @@ class _QuizGameplayPageState extends ConsumerState<QuizGameplayPage> {
                         minHeight: 7,
                         backgroundColor: AppColors.offWhite,
                         valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppColors.freshGreen,
+                          QuizLightPalette.heroMid,
                         ),
                       ),
                     ),

@@ -7,7 +7,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/validators.dart';
-import '../../../../core/widgets/common/empty_view.dart';
 import '../../../../core/widgets/common/error_view.dart';
 import '../../../../core/widgets/common/loading_view.dart';
 import '../../../../core/widgets/common/primary_button.dart';
@@ -20,19 +19,24 @@ import '../../../achievement/presentation/providers/achievement_providers.dart';
 import '../../../achievement/presentation/widgets/achievement_unlock_dialog.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../bookmark/presentation/providers/bookmark_providers.dart';
+import '../../../learning/presentation/providers/learning_providers.dart';
+import '../../../learning/presentation/providers/reading_progress_provider.dart';
+import '../../../notification/presentation/providers/notification_providers.dart';
 import '../../../quiz/presentation/providers/quiz_providers.dart';
 import '../providers/profile_providers.dart';
+import '../widgets/profile_sections.dart';
 
-/// Halaman Profil Pengguna (Tab Profile) dengan:
-/// - Kartu Hero Identitas Nature-Tech (Avatar, Nama, Gelar Penjelajah, Poin, & 3 Statistik Interaktif)
-/// - Etalase Horizontal Koleksi Lencana (ketuk badge terbuka untuk memutar animasi perayaan)
-/// - Grup Menu Terstruktur & Informasi Versi Aplikasi
+/// Halaman Profil Pengguna (Tab Profile) bergaya Light Nature Tech modern:
+/// - Hero card identitas, level poin lencana, & 4 statistik interaktif nyata
+/// - Kartu aksi cepat "Lanjutkan belajar" kontekstual dari progres baca & kuis
+/// - Etalase horizontal koleksi lencana terbuka vs terkunci
+/// - Grid 2x2 "Belajar & progres" & kartu menu rapi "Akun & pengaturan"
+/// - Tombol keluar akun dengan dialog konfirmasi aman
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
   Future<void> _showEditProfileSheet(
     BuildContext context,
-    WidgetRef ref,
     UserProfile? currentProfile,
   ) async {
     await showModalBottomSheet<void>(
@@ -49,11 +53,24 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  static String _explorerRankLabel(int unlockedBadges) {
-    if (unlockedBadges >= 9) return '🏆 Master EduEarth';
-    if (unlockedBadges >= 5) return '⚡ Ahli Transisi Nusantara';
-    if (unlockedBadges >= 2) return '🌿 Duta Energi Bersih';
-    return '🌱 Penjelajah Energi';
+  Future<void> _handleSignOut(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showProfileSignOutConfirmDialog(context);
+    if (!confirmed || !context.mounted) return;
+    await ref.read(authControllerProvider.notifier).signOut();
+  }
+
+  void _showLockedAchievementHint(BuildContext context, Achievement item) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('Terkunci: ${item.description}'),
+        action: SnackBarAction(
+          label: 'Detail',
+          onPressed: () => context.push(RouteNames.achievementsPath),
+        ),
+      ),
+    );
   }
 
   @override
@@ -62,12 +79,18 @@ class ProfilePage extends ConsumerWidget {
     final profileAsync = ref.watch(currentUserProfileProvider);
     final bookmarksAsync = ref.watch(userBookmarksProvider);
     final attemptsAsync = ref.watch(userQuizAttemptsProvider);
+    final quizSummariesAsync = ref.watch(quizAttemptsByQuizIdProvider);
+    final quizzesAsync = ref.watch(publishedQuizzesProvider);
+    final materialsAsync = ref.watch(allLearningMaterialsProvider);
+    final readingState = ref.watch(readingProgressProvider);
     final achievementsAsync = ref.watch(achievementsListProvider);
+    final unreadNotifications = ref.watch(unreadNotificationsCountProvider);
     final authController = ref.watch(authControllerProvider);
 
     final bottomSafe = MediaQuery.viewPaddingOf(context).bottom;
 
     return Scaffold(
+      backgroundColor: ProfileLightPalette.canvasBg,
       body: SafeArea(
         bottom: false,
         child: profileAsync.when(
@@ -80,58 +103,55 @@ class ProfilePage extends ConsumerWidget {
           ),
           data: (profile) {
             if (session == null) {
-              return SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  24,
-                  24,
-                  AppTheme.bottomNavScrollPadding + bottomSafe,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    EmptyView(
-                      icon: Icons.person_outline_rounded,
-                      assetPath: 'assets/images/mascot/eco_wave.png',
-                      title: 'Mode Tamu Aktif',
-                      description:
-                          'Anda sedang menjelajah tanpa akun. Masuk ke akun EduEarth untuk menyimpan riwayat kuis, perkembangan skor, bookmark, dan badge belajar.',
-                      actionLabel: 'Masuk / Daftar Akun',
-                      onAction: () => context.push(RouteNames.loginPath),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: () => context.push(RouteNames.settingsPath),
-                      icon: const Icon(Icons.tune_rounded, size: 18),
-                      label: const Text('Pengaturan Tampilan & Efek Kaca'),
-                    ),
-                    TextButton.icon(
-                      onPressed: () => context.push(RouteNames.aboutPath),
-                      icon: const Icon(Icons.info_outline_rounded, size: 18),
-                      label: const Text('Tentang EduEarth & Sumber Data'),
-                    ),
-                  ],
-                ),
+              return _buildGuestProfileView(
+                context: context,
+                bottomSafe: bottomSafe,
+                unreadNotifications: unreadNotifications,
               );
             }
 
             final bookmarkCount = bookmarksAsync.asData?.value.length ?? 0;
             final quizAttemptCount = attemptsAsync.asData?.value.length ?? 0;
+            final readMaterialsCount = readingState.startedCount();
             final avatarUrl = profile?.avatarUrl?.trim() ?? '';
+            final email = session.user.email ?? '';
+            final displayName =
+                (profile?.displayName != null &&
+                        profile!.displayName!.trim().isNotEmpty)
+                    ? profile.displayName!.trim()
+                    : (email.isNotEmpty
+                        ? email.split('@').first
+                        : 'Pengguna EduEarth');
+
             final badgeCount = ref.watch(unlockedAchievementCountProvider);
             final totalPoints = ref.watch(unlockedAchievementPointsProvider);
             final achievements =
                 achievementsAsync.asData?.value ?? const <Achievement>[];
+            final maxPoints = computeTotalPossibleBadgePoints(achievements);
+
+            final materials = materialsAsync.asData?.value ?? const [];
+            final quizzes = quizzesAsync.asData?.value ?? const [];
+            final quizSummaries = quizSummariesAsync.asData?.value ?? const {};
+            final continueTarget = resolveProfileContinueTarget(
+              materials: materials,
+              readingState: readingState,
+              quizzes: quizzes,
+              quizSummaries: quizSummaries,
+            );
 
             return RefreshIndicator(
-              color: AppColors.freshGreen,
+              color: AppColors.actionGreen,
+              backgroundColor: ProfileLightPalette.cardBg,
               onRefresh: () async {
                 ref.invalidate(currentUserProfileProvider);
                 ref.invalidate(userBookmarksProvider);
                 ref.invalidate(userQuizAttemptsProvider);
                 ref.invalidate(achievementsListProvider);
+                ref.invalidate(publishedQuizzesProvider);
+                ref.invalidate(allLearningMaterialsProvider);
               },
               child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(
                   20,
                   16,
@@ -141,13 +161,12 @@ class ProfilePage extends ConsumerWidget {
                 children: [
                   ScreenHeader(
                     title: 'Profil Saya',
-                    subtitle: 'Kelola akun dan pantau progres belajar Anda',
+                    subtitle: 'Kelola akun dan pantau progres belajarmu.',
                     actions: [
                       ScreenHeaderAction(
-                        tooltip: 'Ubah Profil',
-                        icon: Icons.edit_outlined,
-                        onTap: () =>
-                            _showEditProfileSheet(context, ref, profile),
+                        tooltip: 'Pencarian Global',
+                        icon: Icons.search_rounded,
+                        onTap: () => context.push(RouteNames.searchPath),
                       ),
                       ScreenHeaderAction(
                         tooltip: 'Pengaturan Aplikasi',
@@ -156,191 +175,122 @@ class ProfilePage extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-
-                  // 1. Kartu Hero Identitas & Statistik Interaktif
-                  _buildProfileHeroCard(
-                    context: context,
-                    ref: ref,
-                    profile: profile,
-                    email: session.user.email ?? '',
+                  const SizedBox(height: 18),
+                  ProfileHeroCard(
+                    displayName: displayName,
+                    email: email,
                     avatarUrl: avatarUrl,
+                    rankLabel: computeProfileExplorerRankLabel(badgeCount),
+                    earnedPoints: totalPoints,
+                    maxPoints: maxPoints,
                     bookmarkCount: bookmarkCount,
                     quizAttemptCount: quizAttemptCount,
+                    readMaterialsCount: readMaterialsCount,
                     badgeCount: badgeCount,
-                    totalPoints: totalPoints,
-                  ),
-                  const SizedBox(height: 18),
-
-                  // 2. Etalase Koleksi Lencana Horizontal
-                  if (achievements.isNotEmpty) ...[
-                    _buildBadgeShowcaseCard(
-                      context: context,
-                      achievements: achievements,
-                      unlockedCount: badgeCount,
-                    ),
-                    const SizedBox(height: 18),
-                  ],
-
-                  // 3. Grup Menu: Pembelajaran Inti & Progres
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 8),
-                    child: Text(
-                      'Pembelajaran Inti & Progres',
-                      style: AppTextStyles.subtitle.copyWith(fontSize: 15),
-                    ),
-                  ),
-                  Container(
-                    decoration: AppTheme.cardDecoration(),
-                    child: Column(
-                      children: [
-                        _MoodboardMenuTile(
-                          icon: Icons.trending_up_rounded,
-                          iconBackground: AppColors.mintGreen,
-                          iconColor: AppColors.forestGreen,
-                          title: 'Progres Belajar & Skor',
-                          subtitle: 'Perkembangan skor Awal → Terbaru & materi',
-                          onTap: () => context.push(RouteNames.myLearningPath),
-                        ),
-                        const Divider(height: 1, indent: 68),
-                        _MoodboardMenuTile(
-                          icon: Icons.compare_arrows_rounded,
-                          iconBackground: const Color(0xFFE0F2FE),
-                          iconColor: AppColors.skyBlue,
-                          title: 'Perbandingan 5 Energi',
-                          subtitle: 'Karakteristik teknis & trade-off lingkungan',
-                          onTap: () =>
-                              context.push(RouteNames.energyComparisonPath),
-                        ),
-                        const Divider(height: 1, indent: 68),
-                        _MoodboardMenuTile(
-                          icon: Icons.bookmark_rounded,
-                          iconBackground: const Color(0xFFFEF9C3),
-                          iconColor: const Color(0xFFD97706),
-                          title: 'Daftar Tersimpan',
-                          subtitle:
-                              '$bookmarkCount materi & pembangkit favorit',
-                          onTap: () => context.push(RouteNames.bookmarksPath),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // 4. Grup Menu: Fitur Pendukung & Panduan
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 8),
-                    child: Text(
-                      'Fitur Pendukung & Panduan',
-                      style: AppTextStyles.subtitle.copyWith(fontSize: 15),
-                    ),
-                  ),
-                  Container(
-                    decoration: AppTheme.cardDecoration(),
-                    child: Column(
-                      children: [
-                        _MoodboardMenuTile(
-                          icon: Icons.emoji_events_rounded,
-                          iconBackground: const Color(0xFFFEF9C3),
-                          iconColor: const Color(0xFFD97706),
-                          title: 'Pencapaian & Badge',
-                          subtitle:
-                              '$badgeCount lencana terbuka • $totalPoints Poin',
-                          onTap: () =>
-                              context.push(RouteNames.achievementsPath),
-                        ),
-                        const Divider(height: 1, indent: 68),
-                        _MoodboardMenuTile(
-                          icon: Icons.campaign_rounded,
-                          iconBackground: const Color(0xFFE0F2FE),
-                          iconColor: AppColors.skyBlue,
-                          title: 'Pusat Informasi & Panduan',
-                          subtitle: 'Panduan 4 pilar & catatan dataset',
-                          onTap: () =>
-                              context.push(RouteNames.notificationsPath),
-                        ),
-                        const Divider(height: 1, indent: 68),
-                        _MoodboardMenuTile(
-                          icon: Icons.search_rounded,
-                          iconBackground: AppColors.mintGreen,
-                          iconColor: AppColors.forestGreen,
-                          title: 'Pencarian Global',
-                          subtitle: 'Cari cepat pembangkit, materi, dan kuis',
-                          onTap: () => context.push(RouteNames.searchPath),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // 5. Grup Menu: Pengaturan & Tentang
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 8),
-                    child: Text(
-                      'Akun & Pengaturan',
-                      style: AppTextStyles.subtitle.copyWith(fontSize: 15),
-                    ),
-                  ),
-                  Container(
-                    decoration: AppTheme.cardDecoration(),
-                    child: Column(
-                      children: [
-                        _MoodboardMenuTile(
-                          icon: Icons.edit_outlined,
-                          iconBackground: AppColors.mintGreen,
-                          iconColor: AppColors.forestGreen,
-                          title: 'Ubah Profil',
-                          subtitle: 'Perbarui nama tampilan & foto avatar',
-                          onTap: () => _showEditProfileSheet(
-                            context,
-                            ref,
-                            profile,
-                          ),
-                        ),
-                        const Divider(height: 1, indent: 68),
-                        _MoodboardMenuTile(
-                          icon: Icons.settings_outlined,
-                          iconBackground: AppColors.offWhite,
-                          iconColor: AppColors.forestGreen,
-                          title: 'Pengaturan Aplikasi',
-                          subtitle: 'Efek visual Liquid Glass & onboarding',
-                          onTap: () => context.push(RouteNames.settingsPath),
-                        ),
-                        const Divider(height: 1, indent: 68),
-                        _MoodboardMenuTile(
-                          icon: Icons.info_outline_rounded,
-                          iconBackground: AppColors.offWhite,
-                          iconColor: AppColors.forestGreen,
-                          title: 'Tentang EduEarth',
-                          subtitle:
-                              'Sumber data, atribusi, & versi v${AppConstants.appVersion}',
-                          onTap: () => context.push(RouteNames.aboutPath),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-                  PrimaryButton(
-                    label: 'Keluar Akun',
-                    icon: Icons.logout_rounded,
-                    isLoading: authController.isLoading,
-                    onPressed: () async {
-                      await ref
-                          .read(authControllerProvider.notifier)
-                          .signOut();
-                    },
+                    onEditProfileTap: () =>
+                        _showEditProfileSheet(context, profile),
+                    onBookmarksTap: () => context.push(RouteNames.bookmarksPath),
+                    onAttemptsTap: () => context.push(RouteNames.myLearningPath),
+                    onReadMaterialsTap: () =>
+                        context.push(RouteNames.myLearningPath),
+                    onBadgesTap: () => context.push(RouteNames.achievementsPath),
                   ),
                   const SizedBox(height: 14),
-                  Center(
-                    child: Text(
-                      '${AppConstants.appName} v${AppConstants.appVersion} (${AppConstants.appBuildNumber}) • Explore Energy, Understand Earth.',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textMuted,
-                        fontSize: 11,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+                  ProfileContinueBannerCard(
+                    target: continueTarget,
+                    onTap: () => context.push(continueTarget.routePath),
                   ),
+                  if (achievements.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    ProfileBadgeShowcaseSection(
+                      achievements: achievements,
+                      unlockedCount: badgeCount,
+                      onSeeAllTap: () =>
+                          context.push(RouteNames.achievementsPath),
+                      onUnlockedTap: (item) => showAchievementUnlockDialog(
+                        context,
+                        badgeTitles: <String>[item.title],
+                        singleAchievement: item,
+                        isReplay: true,
+                      ),
+                      onLockedTap: (item) =>
+                          _showLockedAchievementHint(context, item),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  _buildSectionTitle('Belajar & progres'),
+                  const SizedBox(height: 12),
+                  ProfileQuickTilesGrid(
+                    tiles: [
+                      ProfileQuickTileData(
+                        title: 'Progres & Skor',
+                        subtitle: 'Perkembangan skor dan materi',
+                        icon: Icons.trending_up_rounded,
+                        iconBackground: AppColors.mintGreen,
+                        iconColor: AppColors.actionGreen,
+                        onTap: () => context.push(RouteNames.myLearningPath),
+                      ),
+                      ProfileQuickTileData(
+                        title: 'Bandingkan 5 Energi',
+                        subtitle: 'Karakteristik dan trade-off',
+                        icon: Icons.compare_arrows_rounded,
+                        iconBackground: const Color(0xFFE0F2FE),
+                        iconColor: const Color(0xFF0E7490),
+                        onTap: () =>
+                            context.push(RouteNames.energyComparisonPath),
+                      ),
+                      ProfileQuickTileData(
+                        title: 'Tersimpan',
+                        subtitle: '$bookmarkCount materi & pembangkit favorit',
+                        icon: Icons.bookmark_rounded,
+                        iconBackground: AppColors.warningBg,
+                        iconColor: AppColors.warningFg,
+                        onTap: () => context.push(RouteNames.bookmarksPath),
+                      ),
+                      ProfileQuickTileData(
+                        title: 'Pusat Informasi',
+                        subtitle: 'Panduan 4 pilar & dataset',
+                        icon: Icons.help_outline_rounded,
+                        iconBackground: AppColors.mintGreen,
+                        iconColor: AppColors.actionGreen,
+                        badgeCount: unreadNotifications,
+                        onTap: () => context.push(RouteNames.notificationsPath),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle('Akun & pengaturan'),
+                  const SizedBox(height: 12),
+                  ProfileSettingsMenuGroup(
+                    rows: [
+                      ProfileMenuRowData(
+                        title: 'Ubah profil',
+                        subtitle: 'Nama tampilan & foto avatar',
+                        icon: Icons.edit_outlined,
+                        onTap: () => _showEditProfileSheet(context, profile),
+                      ),
+                      ProfileMenuRowData(
+                        title: 'Pengaturan aplikasi',
+                        subtitle: 'Efek visual Liquid Glass & onboarding',
+                        icon: Icons.tune_rounded,
+                        onTap: () => context.push(RouteNames.settingsPath),
+                      ),
+                      ProfileMenuRowData(
+                        title: 'Tentang EduEarth',
+                        subtitle:
+                            'Sumber data, atribusi & v${AppConstants.appVersion}',
+                        icon: Icons.info_outline_rounded,
+                        onTap: () => context.push(RouteNames.aboutPath),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ProfileSignOutButton(
+                    isLoading: authController.isLoading,
+                    onPressed: () => _handleSignOut(context, ref),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildVersionCaption(),
                 ],
               ),
             );
@@ -350,527 +300,201 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfileHeroCard({
+  Widget _buildGuestProfileView({
     required BuildContext context,
-    required WidgetRef ref,
-    required UserProfile? profile,
-    required String email,
-    required String avatarUrl,
-    required int bookmarkCount,
-    required int quizAttemptCount,
-    required int badgeCount,
-    required int totalPoints,
+    required double bottomSafe,
+    required int unreadNotifications,
   }) {
-    final displayName = (profile?.displayName != null &&
-            profile!.displayName!.trim().isNotEmpty)
-        ? profile.displayName!.trim()
-        : (email.isNotEmpty ? email.split('@').first : 'Pengguna EduEarth');
-
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.forestGreen,
-            Color(0xFF1E7E48),
-            Color(0xFF3CA662),
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        16,
+        20,
+        AppTheme.bottomNavScrollPadding + bottomSafe,
+      ),
+      children: [
+        ScreenHeader(
+          title: 'Profil Saya',
+          subtitle: 'Masuk untuk menyimpan progres & lencana belajarmu.',
+          actions: [
+            ScreenHeaderAction(
+              tooltip: 'Pencarian Global',
+              icon: Icons.search_rounded,
+              onTap: () => context.push(RouteNames.searchPath),
+            ),
+            ScreenHeaderAction(
+              tooltip: 'Pengaturan Aplikasi',
+              icon: Icons.settings_outlined,
+              onTap: () => context.push(RouteNames.settingsPath),
+            ),
           ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.forestGreen.withValues(alpha: 0.18),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Lingkaran dekoratif halus di latar kanan atas
-          Positioned(
-            right: -30,
-            top: -30,
-            child: Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
+        const SizedBox(height: 18),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: ProfileLightPalette.heroSolid,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: ProfileLightPalette.heroSolid.withValues(alpha: 0.16),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
-            ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Stack(
-                      clipBehavior: Clip.none,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 68,
+                    height: 68,
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.mintGreen,
+                      border: Border.all(
+                        color: AppColors.surfaceWhite,
+                        width: 2.5,
+                      ),
+                    ),
+                    child: const SoftImagePlaceholder(
+                      width: 62,
+                      height: 62,
+                      borderRadius: 31,
+                      assetPath: 'assets/images/mascot/eco_wave.png',
+                      backgroundColor: AppColors.mintGreen,
+                      fallbackIcon: Icons.person_outline_rounded,
+                      iconColor: AppColors.forestGreen,
+                      iconSize: 32,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.surfaceWhite.withValues(
-                              alpha: 0.25,
-                            ),
-                            border: Border.all(
-                              color: AppColors.surfaceWhite,
-                              width: 2,
-                            ),
-                          ),
-                          child: SoftImagePlaceholder(
-                            width: 74,
-                            height: 74,
-                            borderRadius: 37,
-                            networkImageUrl: avatarUrl,
-                            assetPath: 'assets/images/mascot/eco_happy.png',
-                            backgroundColor: AppColors.mintGreen,
-                            fallbackIcon: Icons.person_rounded,
-                            iconColor: AppColors.forestGreen,
-                            iconSize: 38,
+                        Text(
+                          'Mode Tamu Aktif',
+                          style: AppTextStyles.subtitle.copyWith(
+                            color: AppColors.surfaceWhite,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                        Positioned(
-                          right: -2,
-                          bottom: -2,
-                          child: Material(
-                            color: AppColors.freshGreen,
-                            shape: const CircleBorder(),
-                            child: InkWell(
-                              customBorder: const CircleBorder(),
-                              onTap: () => _showEditProfileSheet(
-                                context,
-                                ref,
-                                profile,
-                              ),
-                              child: Container(
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: AppColors.surfaceWhite,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.edit_rounded,
-                                  size: 13,
-                                  color: AppColors.surfaceWhite,
-                                ),
-                              ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Masuk ke akun EduEarth untuk menyimpan riwayat kuis, progres baca, bookmark, dan badge.',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.surfaceWhite.withValues(
+                              alpha: 0.85,
                             ),
+                            fontSize: 12.5,
+                            height: 1.45,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.surfaceWhite.withValues(
-                                    alpha: 0.18,
-                                  ),
-                                  borderRadius: BorderRadius.circular(
-                                    AppTheme.pillRadius,
-                                  ),
-                                  border: Border.all(
-                                    color: AppColors.surfaceWhite.withValues(
-                                      alpha: 0.35,
-                                    ),
-                                  ),
-                                ),
-                                child: Text(
-                                  _explorerRankLabel(badgeCount),
-                                  style: AppTextStyles.caption.copyWith(
-                                    color: AppColors.surfaceWhite,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                              if (totalPoints > 0)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 9,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFEF3C7),
-                                    borderRadius: BorderRadius.circular(
-                                      AppTheme.pillRadius,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    '⚡ $totalPoints Poin',
-                                    style: AppTextStyles.caption.copyWith(
-                                      color: const Color(0xFFB45309),
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            displayName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.display.copyWith(
-                              color: AppColors.surfaceWhite,
-                              fontSize: 21,
-                              height: 1.15,
-                            ),
-                          ),
-                          if (email.isNotEmpty) ...[
-                            const SizedBox(height: 3),
-                            Text(
-                              email,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.mintGreen.withValues(
-                                  alpha: 0.92,
-                                ),
-                                fontSize: 12.5,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                // Baris 3 Statistik Interaktif di dalam kartu hero
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceWhite,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _InteractiveStatItem(
-                          icon: Icons.bookmark_rounded,
-                          iconColor: AppColors.forestGreen,
-                          value: '$bookmarkCount',
-                          label: 'Tersimpan',
-                          onTap: () => context.push(RouteNames.bookmarksPath),
-                        ),
-                      ),
-                      Container(
-                        width: 1,
-                        height: 34,
-                        color: AppColors.divider,
-                      ),
-                      Expanded(
-                        child: _InteractiveStatItem(
-                          icon: Icons.quiz_rounded,
-                          iconColor: AppColors.skyBlue,
-                          value: '$quizAttemptCount',
-                          label: 'Kuis Selesai',
-                          onTap: () => context.push(RouteNames.myLearningPath),
-                        ),
-                      ),
-                      Container(
-                        width: 1,
-                        height: 34,
-                        color: AppColors.divider,
-                      ),
-                      Expanded(
-                        child: _InteractiveStatItem(
-                          icon: Icons.emoji_events_rounded,
-                          iconColor: const Color(0xFFD97706),
-                          value: '$badgeCount',
-                          label: 'Badge',
-                          onTap: () =>
-                              context.push(RouteNames.achievementsPath),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBadgeShowcaseCard({
-    required BuildContext context,
-    required List<Achievement> achievements,
-    required int unlockedCount,
-  }) {
-    final total = achievements.length;
-    final progress = total > 0 ? unlockedCount / total : 0.0;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: AppTheme.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.workspace_premium_rounded,
-                    color: Color(0xFFD97706),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Etalase Lencana ($unlockedCount/$total)',
-                    style: AppTextStyles.subtitle.copyWith(fontSize: 15),
                   ),
                 ],
               ),
-              GestureDetector(
-                onTap: () => context.push(RouteNames.achievementsPath),
-                child: Text(
-                  'Lihat Semua →',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.forestGreen,
-                    fontWeight: FontWeight.w700,
+              const SizedBox(height: 18),
+              SizedBox(
+                height: 48,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.surfaceWhite,
+                    foregroundColor: ProfileLightPalette.heroSolid,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  onPressed: () => context.push(RouteNames.loginPath),
+                  icon: const Icon(Icons.login_rounded, size: 18),
+                  label: const Text(
+                    'Masuk / Daftar Akun',
+                    style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-            child: LinearProgressIndicator(
-              value: progress.clamp(0.04, 1.0),
-              minHeight: 6,
-              backgroundColor: AppColors.offWhite,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.freshGreen,
-              ),
+        ),
+        const SizedBox(height: 22),
+        _buildSectionTitle('Jelajahi tanpa akun'),
+        const SizedBox(height: 12),
+        ProfileQuickTilesGrid(
+          tiles: [
+            ProfileQuickTileData(
+              title: 'Bandingkan 5 Energi',
+              subtitle: 'Karakteristik dan trade-off',
+              icon: Icons.compare_arrows_rounded,
+              iconBackground: const Color(0xFFE0F2FE),
+              iconColor: const Color(0xFF0E7490),
+              onTap: () => context.push(RouteNames.energyComparisonPath),
             ),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            height: 86,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: achievements.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (context, index) {
-                final item = achievements[index];
-                final isUnlocked = item.isUnlocked;
-
-                return GestureDetector(
-                  onTap: () {
-                    if (isUnlocked) {
-                      showAchievementUnlockDialog(
-                        context,
-                        badgeTitles: <String>[item.title],
-                        singleAchievement: item,
-                        isReplay: true,
-                      );
-                    } else {
-                      context.push(RouteNames.achievementsPath);
-                    }
-                  },
-                  child: SizedBox(
-                    width: 72,
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: isUnlocked
-                                ? const LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      Color(0xFFFDE047),
-                                      Color(0xFFF59E0B),
-                                    ],
-                                  )
-                                : null,
-                            color: isUnlocked ? null : AppColors.offWhite,
-                            border: Border.all(
-                              color: isUnlocked
-                                  ? const Color(0xFFD97706)
-                                  : AppColors.divider,
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Icon(
-                            iconForAchievementCode(item.icon),
-                            size: 24,
-                            color: isUnlocked
-                                ? AppColors.surfaceWhite
-                                : AppColors.textMuted,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          item.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.caption.copyWith(
-                            fontSize: 10.5,
-                            fontWeight: isUnlocked
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: isUnlocked
-                                ? AppColors.forestGreen
-                                : AppColors.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InteractiveStatItem extends StatelessWidget {
-  const _InteractiveStatItem({
-    required this.icon,
-    required this.iconColor,
-    required this.value,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final String value;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 16, color: iconColor),
-                const SizedBox(width: 5),
-                Text(
-                  value,
-                  style: AppTextStyles.display.copyWith(
-                    fontSize: 20,
-                    height: 1.1,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-                fontSize: 11,
-              ),
+            ProfileQuickTileData(
+              title: 'Pusat Informasi',
+              subtitle: 'Panduan 4 pilar & dataset',
+              icon: Icons.help_outline_rounded,
+              iconBackground: AppColors.mintGreen,
+              iconColor: AppColors.actionGreen,
+              badgeCount: unreadNotifications,
+              onTap: () => context.push(RouteNames.notificationsPath),
             ),
           ],
         ),
+        const SizedBox(height: 22),
+        _buildSectionTitle('Akun & pengaturan'),
+        const SizedBox(height: 12),
+        ProfileSettingsMenuGroup(
+          rows: [
+            ProfileMenuRowData(
+              title: 'Pengaturan aplikasi',
+              subtitle: 'Efek visual Liquid Glass & onboarding',
+              icon: Icons.tune_rounded,
+              onTap: () => context.push(RouteNames.settingsPath),
+            ),
+            ProfileMenuRowData(
+              title: 'Tentang EduEarth',
+              subtitle: 'Sumber data, atribusi & v${AppConstants.appVersion}',
+              icon: Icons.info_outline_rounded,
+              onTap: () => context.push(RouteNames.aboutPath),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildVersionCaption(),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 2),
+      child: Text(
+        title,
+        style: AppTextStyles.subtitle.copyWith(
+          color: ProfileLightPalette.ink,
+          fontSize: 17,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.25,
+        ),
       ),
     );
   }
-}
 
-class _MoodboardMenuTile extends StatelessWidget {
-  const _MoodboardMenuTile({
-    required this.icon,
-    required this.iconBackground,
-    required this.iconColor,
-    required this.title,
-    this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final Color iconBackground;
-  final Color iconColor;
-  final String title;
-  final String? subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: iconBackground,
-          borderRadius: BorderRadius.circular(12),
+  Widget _buildVersionCaption() {
+    return Center(
+      child: Text(
+        '${AppConstants.appName} v${AppConstants.appVersion} (${AppConstants.appBuildNumber}) • Explore Energy, Understand Earth.',
+        style: AppTextStyles.caption.copyWith(
+          color: ProfileLightPalette.muted,
+          fontSize: 11.5,
         ),
-        child: Icon(icon, color: iconColor, size: 20),
-      ),
-      title: Text(
-        title,
-        style: AppTextStyles.bodyMedium.copyWith(
-          color: AppColors.forestGreen,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 11.5,
-              ),
-            )
-          : null,
-      trailing: const Icon(
-        Icons.chevron_right_rounded,
-        color: AppColors.textSecondary,
-        size: 20,
+        textAlign: TextAlign.center,
       ),
     );
   }

@@ -19,6 +19,7 @@ import '../../../achievement/presentation/widgets/achievement_unlock_dialog.dart
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../learning/domain/learning_integration_helper.dart';
 import '../providers/quiz_providers.dart';
+import '../widgets/quiz_dashboard_sections.dart';
 
 /// Halaman Hasil Kuis (Quiz Result) dengan animasi penghitung skor melingkar,
 /// gelar apresiasi, serta ulasan jawaban benar/salah + pembahasan ilmiah per soal.
@@ -73,6 +74,7 @@ class _QuizResultPageState extends ConsumerState<QuizResultPage> {
     final result = initialResult ?? storedResult;
 
     return Scaffold(
+      backgroundColor: QuizLightPalette.canvasBg,
       appBar: const ScreenHeaderBar(
         title: 'Hasil & Pembahasan',
         subtitle: 'Skor dan ulasan jawaban dari server',
@@ -250,18 +252,9 @@ class _QuizResultPageState extends ConsumerState<QuizResultPage> {
 
     return Container(
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.surfaceWhite,
-            AppColors.mintGreen.withValues(alpha: 0.45),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppColors.sageGreen),
-        boxShadow: AppTheme.softCardShadow,
+      decoration: AppTheme.cardDecoration(
+        backgroundColor: AppColors.surfaceWhite,
+        borderColor: AppColors.sageGreen,
       ),
       child: Column(
         children: [
@@ -282,7 +275,7 @@ class _QuizResultPageState extends ConsumerState<QuizResultPage> {
                     ? Icons.emoji_events_rounded
                     : Icons.psychology_alt_rounded,
                 iconColor: isPassed
-                    ? const Color(0xFFD97706)
+                    ? AppColors.warningFg
                     : AppColors.forestGreen,
                 iconSize: 40,
               ),
@@ -293,10 +286,14 @@ class _QuizResultPageState extends ConsumerState<QuizResultPage> {
                   begin: 0,
                   end: result.score.toDouble(),
                 ),
-                duration: const Duration(milliseconds: 900),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 900),
                 curve: Curves.easeOutCubic,
                 builder: (context, animatedScore, _) {
                   final normalized = (animatedScore / 100).clamp(0.0, 1.0);
+                  final tierColor =
+                      quizScoreTierForScore(result.score).foregroundColor;
                   return SizedBox(
                     width: 86,
                     height: 86,
@@ -311,9 +308,7 @@ class _QuizResultPageState extends ConsumerState<QuizResultPage> {
                             strokeWidth: 8,
                             backgroundColor: AppColors.surfaceWhite,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              isPassed
-                                  ? AppColors.freshGreen
-                                  : const Color(0xFFD97706),
+                              tierColor,
                             ),
                           ),
                         ),
@@ -382,7 +377,7 @@ class _QuizResultPageState extends ConsumerState<QuizResultPage> {
                     const Icon(
                       Icons.check_circle_rounded,
                       size: 15,
-                      color: AppColors.freshGreen,
+                      color: AppColors.actionGreen,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -412,7 +407,7 @@ class _QuizResultPageState extends ConsumerState<QuizResultPage> {
                       const Icon(
                         Icons.info_outline_rounded,
                         size: 15,
-                        color: Color(0xFFD97706),
+                        color: AppColors.warningFg,
                       ),
                       const SizedBox(width: 6),
                       Text(
