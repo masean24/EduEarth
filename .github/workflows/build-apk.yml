@@ -40,20 +40,30 @@ jobs:
       - name: Run widget & unit tests
         run: flutter test
 
-      - name: Build Android Release APK
+      - name: Build Android Release APK (Split per-ABI)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           flutter build apk --release \
+            --split-per-abi \
+            --target-platform android-arm64,android-arm \
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
             --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
 
-      - name: Upload Release APK Artifact
+      - name: Upload arm64-v8a APK (HP Android Modern)
         uses: actions/upload-artifact@v4
         with:
-          name: EduEarth-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: EduEarth-arm64-v8a-apk
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload armeabi-v7a APK (HP Android 32-bit Lama)
+        uses: actions/upload-artifact@v4
+        with:
+          name: EduEarth-armeabi-v7a-apk
+          path: build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
           if-no-files-found: error
           retention-days: 30
 
